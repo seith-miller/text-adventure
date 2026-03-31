@@ -1,0 +1,19 @@
+{
+  "name": "text-adventure",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "npm run build:story && npm run build:ts",
+    "build:ts": "tsc",
+    "build:story": "node scripts/compile-ink.mjs"
+  },
+  "dependencies": {
+    "inkjs": "^2.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
