@@ -1,11 +1,11 @@
 // Terminal game runner for the illustrated text adventure
 // Loads compiled Ink JSON and presents the story via stdin/stdout
 
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as readline from "node:readline";
+import { fileURLToPath } from "node:url";
 import { Story } from "inkjs";
-import * as fs from "fs";
-import * as path from "path";
-import * as readline from "readline";
-import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,15 +17,10 @@ const DEFAULT_STORY_PATH = path.join(
   "game",
   "dist",
   "story",
-  "opening.json"
+  "opening.json",
 );
 
-const DEFAULT_ASCII_DIR = path.join(
-  PROJECT_ROOT,
-  "game",
-  "assets",
-  "ascii"
-);
+const DEFAULT_ASCII_DIR = path.join(PROJECT_ROOT, "game", "assets", "ascii");
 
 export interface RunnerOptions {
   storyPath?: string;
@@ -51,7 +46,7 @@ function loadAsciiArt(asciiDir: string, name: string): string | null {
 function processTags(
   tags: string[],
   asciiDir: string,
-  log: (msg: string) => void
+  log: (msg: string) => void,
 ): void {
   for (const tag of tags) {
     const match = tag.match(/^\s*ascii:\s*(.+)\s*$/);
@@ -66,8 +61,8 @@ function processTags(
 }
 
 function formatStatusLine(story: Story): string | null {
-  const oxygen = story.variablesState["oxygen"];
-  const morale = story.variablesState["morale"];
+  const oxygen = story.variablesState.oxygen;
+  const morale = story.variablesState.morale;
   if (oxygen == null && morale == null) return null;
   const parts: string[] = [];
   if (oxygen != null) parts.push(`O2: ${oxygen}%`);
@@ -81,7 +76,7 @@ function formatStatusLine(story: Story): string | null {
  */
 function createLineReader(
   input: NodeJS.ReadableStream,
-  output: NodeJS.WritableStream
+  output: NodeJS.WritableStream,
 ) {
   const lineBuffer: string[] = [];
   let closed = false;
@@ -135,7 +130,7 @@ export async function runGame(options: RunnerOptions = {}): Promise<void> {
   const story = loadStory(storyPath);
   const reader = createLineReader(input, output);
   const log = (msg: string) => {
-    output.write(msg + "\n");
+    output.write(`${msg}\n`);
   };
 
   log("");
@@ -200,7 +195,7 @@ export async function runGame(options: RunnerOptions = {}): Promise<void> {
       }
 
       const num = parseInt(answer.trim(), 10);
-      if (isNaN(num) || num < 1 || num > choices.length) {
+      if (Number.isNaN(num) || num < 1 || num > choices.length) {
         log(`Please enter a number between 1 and ${choices.length}.`);
         continue;
       }
