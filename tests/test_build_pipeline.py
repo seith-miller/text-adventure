@@ -1,8 +1,15 @@
-"""Tests for the Ink compilation pipeline and project setup."""
+"""Tests for the project setup and build pipeline.
+
+The project has migrated from Ink to Inform 7. Ink-specific compilation
+tests are skipped; see test_inform7_pipeline.py for the new pipeline tests.
+"""
 
 import json
 import os
 import subprocess
+import shutil
+
+import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -46,7 +53,12 @@ def test_npm_install_succeeds():
     assert result.returncode == 0
 
 
-def test_build_story_compiles_ink_to_json():
+@pytest.mark.skipif(
+    shutil.which("inform7") is None and shutil.which("ni") is None,
+    reason="Inform 7 compiler not installed",
+)
+def test_build_story_compiles():
+    """build:story compiles Inform 7 source to a Glulx story file."""
     result = subprocess.run(
         ["npm", "run", "build:story"],
         cwd=ROOT,
@@ -56,12 +68,8 @@ def test_build_story_compiles_ink_to_json():
     )
     assert result.returncode == 0
 
-    json_path = os.path.join(ROOT, "game", "dist", "story", "main.json")
-    assert os.path.isfile(json_path), "Compiled JSON not found"
-
-    with open(json_path) as f:
-        data = json.load(f)
-    assert "inkVersion" in data, "JSON should be a valid ink story"
+    ulx_path = os.path.join(ROOT, "game", "dist", "story.ulx")
+    assert os.path.isfile(ulx_path), "Compiled .ulx not found"
 
 
 def test_build_ts_compiles():
@@ -73,46 +81,6 @@ def test_build_ts_compiles():
         timeout=60,
     )
     assert result.returncode == 0
-
-
-def test_full_build():
-    result = subprocess.run(
-        ["npm", "run", "build"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    assert result.returncode == 0
-
-
-def test_compiled_json_loadable_by_inkjs():
-    """Verify the compiled JSON can be loaded by inkjs at runtime."""
-    json_path = os.path.join(ROOT, "game", "dist", "story", "main.json")
-    if not os.path.isfile(json_path):
-        # Build first
-        subprocess.run(["npm", "run", "build:story"], cwd=ROOT, timeout=60)
-
-    result = subprocess.run(
-        [
-            "node",
-            "-e",
-            (
-                "const {Story} = require('inkjs');"
-                f"const json = require('fs').readFileSync('{json_path}','utf-8');"
-                "const s = new Story(json);"
-                "const text = s.ContinueMaximally();"
-                "if (!text.includes('awaken')) process.exit(1);"
-                "console.log('OK');"
-            ),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert result.returncode == 0
-    assert "OK" in result.stdout
 
 
 def test_readme_exists():

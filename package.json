@@ -8,7 +8,7 @@
   "scripts": {
     "build": "npm run build:story && npm run build:ts",
     "build:ts": "tsc",
-    "build:story": "node scripts/compile-ink.mjs",
+    "build:story": "bash scripts/compile-inform7.sh",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "test": "node --test tests/*.mjs"
