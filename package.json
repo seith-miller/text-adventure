@@ -2,6 +2,7 @@
   "name": "text-adventure",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=18"
   },
@@ -11,13 +12,15 @@
     "build:story": "node scripts/compile-ink.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
-    "test": "node --test tests/*.mjs"
+    "test": "node --test tests/*.mjs",
+    "start": "npm run build && node game/dist/runner.js"
   },
   "dependencies": {
     "inkjs": "^2.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
+    "@types/node": "^25.5.0",
     "typescript": "^5.4.0"
   }
 }
