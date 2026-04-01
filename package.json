@@ -8,12 +8,16 @@
   "scripts": {
     "build": "npm run build:story && npm run build:ts",
     "build:ts": "tsc",
-    "build:story": "node scripts/compile-ink.mjs"
+    "build:story": "node scripts/compile-ink.mjs",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "test": "node --test tests/*.mjs"
   },
   "dependencies": {
     "inkjs": "^2.3.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
     "typescript": "^5.4.0"
   }
 }

@@ -6,9 +6,9 @@
  * This makes setup simpler and more portable across platforms.
  */
 
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { Compiler } from "inkjs/compiler/Compiler";
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
-import { join, basename } from "node:path";
 
 const storyDir = join("game", "story");
 const outDir = join("game", "dist", "story");
@@ -26,7 +26,7 @@ let hasError = false;
 
 for (const file of inkFiles) {
   const inputPath = join(storyDir, file);
-  const outputName = basename(file, ".ink") + ".json";
+  const outputName = `${basename(file, ".ink")}.json`;
   const outputPath = join(outDir, outputName);
 
   console.log(`Compiling ${inputPath} -> ${outputPath}`);
