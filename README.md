@@ -5,22 +5,39 @@ An illustrated text adventure built with [Inform 7](http://inform7.com/) targeti
 ## Prerequisites
 
 - Node.js >= 18
-- Inform 7 compiler (one of the following):
-  - **CLI**: Install from [ganelson/inform](https://github.com/ganelson/inform)
-    - macOS: `brew install inform7`
-    - Linux: build from source (see below)
-  - **Docker**: `docker pull ganelson/inform7`
+- Inform 7 compiler (built from source)
 
-### Installing Inform 7 from Source (Linux)
+### Installing Inform 7
+
+There is no package manager formula — the compiler must be built from source. All three repos must be siblings in a shared parent directory:
 
 ```bash
+mkdir inform7-build && cd inform7-build
+
+# 1. Build inweb (build tool, no dependencies)
+git clone https://github.com/ganelson/inweb.git
+bash inweb/scripts/first.sh macosarm    # use 'macos' for Intel, 'linux' for Linux
+
+# 2. Build intest (test tool, depends on inweb)
+git clone https://github.com/ganelson/intest.git
+bash intest/scripts/first.sh
+
+# 3. Build inform (the compiler, depends on both)
 git clone https://github.com/ganelson/inform.git
 cd inform
-make
-sudo make install
+bash scripts/first.sh
 ```
 
-This installs the `inform7` CLI tool, which compiles `.ni` (Inform 7) source files to Glulx (`.ulx`) or Z-machine (`.z8`) story files.
+The compiler binary will be at `inform/inform7/Tangled/inform7`.
+
+**Configure for this project** — either:
+- Add the binary to your PATH, or
+- Set the `INFORM7_COMPILER` environment variable:
+  ```bash
+  export INFORM7_COMPILER=/path/to/inform7-build/inform/inform7/Tangled/inform7
+  ```
+
+The build script will auto-detect the Internal resources directory relative to the compiler binary.
 
 ## Setup
 
@@ -38,10 +55,7 @@ Compiles the Inform 7 source (`game/inform/Source/story.ni`) to a Glulx story fi
 npm run build:story
 ```
 
-The build script automatically detects available compilers in this order:
-1. `inform7` CLI (native)
-2. `ni` CLI (alternative name)
-3. Docker-based compilation
+The build script checks for the compiler via `INFORM7_COMPILER` env var or `inform7` on PATH.
 
 ### Compile TypeScript
 
