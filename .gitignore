@@ -1,3 +1,13 @@
 node_modules/
 game/dist/
 game/src/**/*.js
+
+# Inform 7 build artifacts
+game/inform/Build/
+game/inform/Index/
+game/inform/Extensions/
+game/inform/Release/
+game/inform/*.plist
+game/inform/*.iFiction
+game/inform/*.blurb
+gameinfo.dbg

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIR'S END</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #0f0;
+      font-family: "Courier New", Courier, monospace;
+    }
+    #gameport {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    /* Parchment / Quixe overrides for the space theme */
+    .BufferWindow {
+      background: #0a0a0a !important;
+      color: #c0ffc0 !important;
+    }
+    .Style_input {
+      color: #0f0 !important;
+    }
+  </style>
+</head>
+<body>
+
+<div id="gameport">
+  <noscript>
+    <p style="color: #0f0; padding: 2em;">
+      MIR'S END requires JavaScript to play. Please enable JavaScript in your browser.
+    </p>
+  </noscript>
+</div>
+
+<!--
+  Browser-based Glulx interpreter.
+
+  To play locally:
+  1. Build the story: npm run build:story
+  2. Download Parchment: https://github.com/curiousdannii/parchment/releases
+     OR Quixe: https://eblong.com/zarf/glulx/quixe/
+  3. Place interpreter files alongside this HTML
+  4. Update the script paths below
+
+  For Parchment, include:
+    - jquery.min.js
+    - parchment.min.js
+
+  For Quixe, include:
+    - quixe.min.js
+    - glkote.min.js
+    - glkote.css
+-->
+
+<script>
+  // Configuration for the interpreter
+  // Adjust these paths based on your interpreter choice
+  var defined_game_file = "dist/story.ulx";
+
+  // Parchment auto-configuration
+  var parchment_options = {
+    default_story: ["dist/story.ulx"],
+    lib_path: "lib/",
+    proxy_url: ""
+  };
+</script>
+
+<!-- Uncomment and adjust paths for your chosen interpreter:
+
+For Quixe:
+<link rel="stylesheet" href="lib/glkote.css">
+<script src="lib/glkote.min.js"></script>
+<script src="lib/quixe.min.js"></script>
+
+For Parchment:
+<script src="lib/jquery.min.js"></script>
+<script src="lib/parchment.min.js"></script>
+-->
+
+</body>
+</html>
