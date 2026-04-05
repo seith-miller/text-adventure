@@ -3,36 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MIR'S END</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #0f0;
-      font-family: "Courier New", Courier, monospace;
-    }
-    #gameport {
-      width: 100%;
-      max-width: 800px;
-      margin: 0 auto;
-      min-height: 100vh;
-    }
-    /* Parchment / Quixe overrides for the space theme */
-    .BufferWindow {
-      background: #0a0a0a !important;
-      color: #c0ffc0 !important;
-    }
-    .Style_input {
-      color: #0f0 !important;
-    }
-  </style>
+  <title>MIR'S END — An Interactive Survival Story</title>
+  <link rel="stylesheet" href="ui.css">
 </head>
 <body>
 
-<div id="gameport">
+<div id="game-shell">
+
+  <!-- Left panel: scrollable story text output -->
+  <div id="story-panel">
+    <div id="story-output"></div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div id="sidebar">
+
+    <!-- Top right: scene illustration -->
+    <div id="scene-panel">
+      <pre id="scene-art">[No signal]</pre>
+    </div>
+
+    <!-- Mid right: title display -->
+    <div id="title-panel">
+      <h1>MIR'S END</h1>
+      <div class="subtitle">An Interactive Survival Story</div>
+    </div>
+
+    <!-- Bottom right: status panel -->
+    <div id="status-panel">
+      <h2>Station Status</h2>
+
+      <div class="status-row">
+        <span class="status-label">O2 Level</span>
+        <span id="status-o2" class="status-value good">100%</span>
+      </div>
+      <div id="status-bar-o2">
+        <div class="bar-fill" style="width: 100%; background: var(--status-green);"></div>
+      </div>
+
+      <div class="status-row" style="margin-top: 0.5em;">
+        <span class="status-label">Morale</span>
+        <span id="status-morale" class="status-value good">70%</span>
+      </div>
+      <div id="status-bar-morale">
+        <div class="bar-fill" style="width: 70%; background: var(--status-green);"></div>
+      </div>
+
+      <div id="inventory-section">
+        <h2>Inventory</h2>
+        <ul id="inventory-list">
+          <li class="empty-inventory">Nothing carried</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom: command input -->
+  <div id="input-bar">
+    <span id="input-prompt">&gt;</span>
+    <input
+      type="text"
+      id="command-input"
+      placeholder="Enter command..."
+      autocomplete="off"
+      spellcheck="false"
+    >
+  </div>
+
+</div>
+
+<!-- Hidden gameport for interpreter attachment -->
+<div id="gameport" style="display: none;">
   <noscript>
-    <p style="color: #0f0; padding: 2em;">
+    <p style="color: #7ec8e3; padding: 2em;">
       MIR'S END requires JavaScript to play. Please enable JavaScript in your browser.
     </p>
   </noscript>
@@ -45,22 +89,20 @@
   1. Build the story: npm run build:story
   2. Download Parchment: https://github.com/curiousdannii/parchment/releases
      OR Quixe: https://eblong.com/zarf/glulx/quixe/
-  3. Place interpreter files alongside this HTML
-  4. Update the script paths below
+  3. Place interpreter files in game/lib/
+  4. Uncomment the script tags below
+
+  For Quixe, include:
+    - glkote.min.js, glkote.css
+    - quixe.min.js
 
   For Parchment, include:
     - jquery.min.js
     - parchment.min.js
-
-  For Quixe, include:
-    - quixe.min.js
-    - glkote.min.js
-    - glkote.css
 -->
 
 <script>
   // Configuration for the interpreter
-  // Adjust these paths based on your interpreter choice
   var defined_game_file = "dist/story.ulx";
 
   // Parchment auto-configuration
@@ -82,6 +124,9 @@ For Parchment:
 <script src="lib/jquery.min.js"></script>
 <script src="lib/parchment.min.js"></script>
 -->
+
+<!-- UI Shell — must load after interpreter scripts -->
+<script src="ui.js"></script>
 
 </body>
 </html>
