@@ -1,0 +1,314 @@
+/* MIR'S END — Hitchhiker's Guide-style Web UI */
+
+:root {
+  --bg-dark: #0a0c10;
+  --bg-panel: #0d1117;
+  --bg-input: #111820;
+  --border-color: #1e3a5f;
+  --border-glow: #2a5a8f;
+  --text-primary: #c8d6e5;
+  --text-dim: #6b7b8d;
+  --text-input: #7ec8e3;
+  --accent-blue: #2a7ab5;
+  --accent-cyan: #4dc9f6;
+  --scene-blue: #1a3a5c;
+  --scene-text: #5b9bd5;
+  --status-green: #3ddc84;
+  --status-yellow: #ffc107;
+  --status-red: #ff5252;
+  --title-color: #8ab4f8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* ── Main grid ── */
+#game-shell {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 1fr auto;
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+  background: var(--border-color);
+  border: 2px solid var(--border-color);
+}
+
+/* ── Left panel: story output ── */
+#story-panel {
+  grid-row: 1 / 2;
+  grid-column: 1 / 2;
+  background: var(--bg-panel);
+  overflow-y: auto;
+  padding: 1.2em 1.5em;
+  font-size: 15px;
+  line-height: 1.65;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-panel);
+}
+
+#story-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+#story-panel::-webkit-scrollbar-track {
+  background: var(--bg-panel);
+}
+
+#story-panel::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+#story-output {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+#story-output .story-text {
+  color: var(--text-primary);
+}
+
+#story-output .player-input {
+  color: var(--text-input);
+  font-weight: bold;
+}
+
+#story-output .system-text {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ── Right sidebar ── */
+#sidebar {
+  grid-row: 1 / 2;
+  grid-column: 2 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--border-color);
+}
+
+/* ── Scene art panel (top right) ── */
+#scene-panel {
+  flex: 1 1 auto;
+  background: var(--bg-panel);
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.8em;
+  min-height: 180px;
+}
+
+#scene-art {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 9px;
+  line-height: 1.1;
+  color: var(--scene-text);
+  white-space: pre;
+  text-align: center;
+}
+
+/* ── Title panel (mid right) ── */
+#title-panel {
+  flex: 0 0 auto;
+  background: var(--bg-panel);
+  padding: 0.6em 1em;
+  text-align: center;
+  border-bottom: 2px solid var(--border-color);
+}
+
+#title-panel h1 {
+  font-size: 18px;
+  letter-spacing: 6px;
+  color: var(--title-color);
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 0 0 12px rgba(138, 180, 248, 0.3);
+}
+
+#title-panel .subtitle {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ── Status panel (bottom right) ── */
+#status-panel {
+  flex: 0 0 auto;
+  background: var(--bg-panel);
+  padding: 0.8em 1em;
+  font-size: 13px;
+}
+
+#status-panel h2 {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.6em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25em 0;
+}
+
+.status-label {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.status-value {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.status-value.good {
+  color: var(--status-green);
+}
+
+.status-value.warning {
+  color: var(--status-yellow);
+}
+
+.status-value.danger {
+  color: var(--status-red);
+}
+
+#status-bar-o2, #status-bar-morale {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-dark);
+  border-radius: 3px;
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+#status-bar-o2 .bar-fill, #status-bar-morale .bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+#inventory-section {
+  margin-top: 0.6em;
+}
+
+#inventory-section h2 {
+  margin-bottom: 0.4em;
+}
+
+#inventory-list {
+  list-style: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+#inventory-list li {
+  padding: 0.15em 0;
+  padding-left: 0.8em;
+  position: relative;
+}
+
+#inventory-list li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent-blue);
+}
+
+#inventory-list .empty-inventory {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ── Input bar (bottom) ── */
+#input-bar {
+  grid-row: 2 / 3;
+  grid-column: 1 / -1;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  padding: 0.5em 1em;
+  border-top: 2px solid var(--border-color);
+}
+
+#input-prompt {
+  color: var(--accent-cyan);
+  font-size: 15px;
+  margin-right: 0.5em;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#command-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-input);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 15px;
+  caret-color: var(--accent-cyan);
+}
+
+#command-input::placeholder {
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+/* ── Location name display in story ── */
+.location-name {
+  color: var(--title-color);
+  font-weight: bold;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+  margin-bottom: 0.5em;
+  display: block;
+}
+
+/* ── Metallic frame effect on panels ── */
+#scene-panel::before,
+#title-panel::before,
+#status-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-glow),
+    transparent
+  );
+  pointer-events: none;
+}
+
+#scene-panel,
+#title-panel,
+#status-panel {
+  position: relative;
+}
