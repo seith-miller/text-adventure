@@ -108,6 +108,17 @@ story.ni (Inform 7 source)
 
 The build script (`scripts/compile-inform7.sh`) handles compiler detection, compilation, and output file placement.
 
+## CI
+
+GitHub Actions runs on every push to `main` and on every pull request targeting `main`. The workflow (`.github/workflows/ci.yml`) runs:
+
+- **Lint** — `npx biome check .`
+- **TypeScript** — `npm run build:ts`
+- **Node tests** — `npm test` (story validation)
+- **Python tests** — `pytest tests/` (project structure, assets, UI, Inform 7 source validation)
+
+The Inform 7 compiler is not available in CI, so toolchain-dependent tests skip automatically when `inbuild` is missing.
+
 ## Migration from Ink
 
 This project is migrating from Ink to Inform 7. The original Ink files are kept in `game/story/` as reference until the narrative port is complete. The Ink compilation script remains at `scripts/compile-ink.mjs` for reference.

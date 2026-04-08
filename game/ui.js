@@ -3,16 +3,14 @@
  * Hitchhiker's Guide-style layout with interpreter I/O interception.
  */
 
-(function () {
-  "use strict";
-
+(() => {
   /* ── Room-to-asset mapping ── */
   var ROOM_ART = {
     "crew quarters": "assets/ascii/bunks.txt",
     "main corridor": "assets/ascii/corridor.txt",
     "command module": "assets/ascii/command_module.txt",
     "observation cupola": "assets/ascii/earth_from_orbit.txt",
-    "darkness": "assets/ascii/darkness.txt",
+    darkness: "assets/ascii/darkness.txt",
   };
 
   /* ── Known room names for location detection ── */
@@ -61,7 +59,7 @@
     commandInput.addEventListener("keydown", handleKeyDown);
 
     /* Focus input on click anywhere */
-    document.addEventListener("click", function () {
+    document.addEventListener("click", () => {
       commandInput.focus();
     });
 
@@ -77,7 +75,7 @@
   /* ── Command history & input handling ── */
   function handleKeyDown(e) {
     if (e.key === "Enter") {
-      var cmd = commandInput.value.trim();
+      const cmd = commandInput.value.trim();
       if (cmd.length === 0) return;
 
       state.commandHistory.push(cmd);
@@ -108,7 +106,7 @@
   function appendStoryText(text) {
     var span = document.createElement("span");
     span.className = "story-text";
-    span.textContent = text + "\n\n";
+    span.textContent = `${text}\n\n`;
     storyOutput.appendChild(span);
     scrollToBottom();
     detectRoomChange(text);
@@ -117,7 +115,7 @@
   function appendPlayerInput(text) {
     var span = document.createElement("span");
     span.className = "player-input";
-    span.textContent = "> " + text + "\n";
+    span.textContent = `> ${text}\n`;
     storyOutput.appendChild(span);
     scrollToBottom();
   }
@@ -125,7 +123,7 @@
   function appendSystemText(text) {
     var span = document.createElement("span");
     span.className = "system-text";
-    span.textContent = text + "\n";
+    span.textContent = `${text}\n`;
     storyOutput.appendChild(span);
     scrollToBottom();
   }
@@ -137,12 +135,12 @@
 
   /* ── Room detection from story output ── */
   function detectRoomChange(text) {
-    for (var i = 0; i < KNOWN_ROOMS.length; i++) {
-      var room = KNOWN_ROOMS[i];
+    for (let i = 0; i < KNOWN_ROOMS.length; i++) {
+      const room = KNOWN_ROOMS[i];
       /* Match room name at start of line or as standalone line */
       if (
         text.indexOf(room) !== -1 &&
-        (text.indexOf(room + "\n") !== -1 ||
+        (text.indexOf(`${room}\n`) !== -1 ||
           text.substring(0, room.length) === room)
       ) {
         setCurrentRoom(room);
@@ -169,20 +167,20 @@
     }
 
     fetch(path)
-      .then(function (response) {
+      .then((response) => {
         if (!response.ok) {
           sceneArt.textContent = "[No signal]";
           return;
         }
         return response.text();
       })
-      .then(function (text) {
+      .then((text) => {
         if (text) {
           artCache[key] = text;
           sceneArt.textContent = text;
         }
       })
-      .catch(function () {
+      .catch(() => {
         sceneArt.textContent = "[No signal]";
       });
   }
@@ -190,7 +188,7 @@
   /* ── Status panel updates ── */
   function updateStatus() {
     /* O2 */
-    statusO2.textContent = state.o2 + "%";
+    statusO2.textContent = `${state.o2}%`;
     statusO2.className = "status-value";
     if (state.o2 > 50) {
       statusO2.classList.add("good");
@@ -202,10 +200,10 @@
       statusO2.classList.add("danger");
       barO2Fill.style.background = "var(--status-red)";
     }
-    barO2Fill.style.width = state.o2 + "%";
+    barO2Fill.style.width = `${state.o2}%`;
 
     /* Morale */
-    statusMorale.textContent = state.morale + "%";
+    statusMorale.textContent = `${state.morale}%`;
     statusMorale.className = "status-value";
     if (state.morale > 50) {
       statusMorale.classList.add("good");
@@ -217,18 +215,18 @@
       statusMorale.classList.add("danger");
       barMoraleFill.style.background = "var(--status-red)";
     }
-    barMoraleFill.style.width = state.morale + "%";
+    barMoraleFill.style.width = `${state.morale}%`;
 
     /* Inventory */
     inventoryList.innerHTML = "";
     if (state.inventory.length === 0) {
-      var li = document.createElement("li");
+      const li = document.createElement("li");
       li.className = "empty-inventory";
       li.textContent = "Nothing carried";
       inventoryList.appendChild(li);
     } else {
-      for (var i = 0; i < state.inventory.length; i++) {
-        var item = document.createElement("li");
+      for (let i = 0; i < state.inventory.length; i++) {
+        const item = document.createElement("li");
         item.textContent = state.inventory[i];
         inventoryList.appendChild(item);
       }
@@ -257,15 +255,15 @@
 
     /* No interpreter loaded — run in standalone shell mode */
     appendSystemText(
-      "[MIR'S END — UI Shell loaded. Waiting for interpreter...]"
+      "[MIR'S END — UI Shell loaded. Waiting for interpreter...]",
     );
     appendSystemText(
-      '[Load a Glulx interpreter (Quixe or Parchment) to play the story.]'
+      "[Load a Glulx interpreter (Quixe or Parchment) to play the story.]",
     );
 
     /* Poll for interpreter availability */
     var pollCount = 0;
-    var pollInterval = setInterval(function () {
+    var pollInterval = setInterval(() => {
       pollCount++;
       if (typeof window.GlkOte !== "undefined") {
         clearInterval(pollInterval);
@@ -284,15 +282,15 @@
 
     /* Wrap GlkOte.update to intercept output */
     var originalUpdate = window.GlkOte.update;
-    window.GlkOte.update = function (arg) {
-      if (arg && arg.content) {
-        for (var i = 0; i < arg.content.length; i++) {
-          var win = arg.content[i];
+    window.GlkOte.update = (arg) => {
+      if (arg?.content) {
+        for (let i = 0; i < arg.content.length; i++) {
+          const win = arg.content[i];
           if (win.text) {
-            for (var j = 0; j < win.text.length; j++) {
-              var line = win.text[j];
+            for (let j = 0; j < win.text.length; j++) {
+              const line = win.text[j];
               if (line.content) {
-                var fullText = extractGlkText(line.content);
+                const fullText = extractGlkText(line.content);
                 if (fullText.trim()) {
                   appendStoryText(fullText);
                 }
@@ -314,10 +312,10 @@
 
   function extractGlkText(content) {
     var text = "";
-    for (var i = 0; i < content.length; i++) {
+    for (let i = 0; i < content.length; i++) {
       if (typeof content[i] === "string") {
         text += content[i];
-      } else if (content[i] && content[i].text) {
+      } else if (content[i]?.text) {
         text += content[i].text;
       }
     }
@@ -352,32 +350,35 @@
     if (lower === "look" || lower === "l") {
       if (!state.currentRoom || state.currentRoom === "darkness") {
         appendStoryText(
-          "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong."
+          "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
         );
       } else {
-        appendStoryText("You look around " + state.currentRoom + ".");
+        appendStoryText(`You look around ${state.currentRoom}.`);
       }
     } else if (lower === "inventory" || lower === "i") {
       if (state.inventory.length === 0) {
         appendStoryText("You are carrying nothing.");
       } else {
-        appendStoryText("You are carrying:\n  " + state.inventory.join("\n  "));
+        appendStoryText(`You are carrying:\n  ${state.inventory.join("\n  ")}`);
       }
     } else if (lower === "north" || lower === "n") {
-      if (!state.currentRoom || state.currentRoom.toLowerCase() === "darkness") {
+      if (
+        !state.currentRoom ||
+        state.currentRoom.toLowerCase() === "darkness"
+      ) {
         setCurrentRoom("Crew Quarters");
         appendStoryText(
-          "Crew Quarters\n\nYou float in the cramped sleeping bay of Mir-2. Personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black. The main corridor lies to the north."
+          "Crew Quarters\n\nYou float in the cramped sleeping bay of Mir-2. Personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black. The main corridor lies to the north.",
         );
       } else if (state.currentRoom === "Crew Quarters") {
         setCurrentRoom("Main Corridor");
         appendStoryText(
-          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions, a tunnel of drifting debris and dead screens. The crew quarters lie to the south, the command module is to the north, and the observation cupola is to the east."
+          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions, a tunnel of drifting debris and dead screens. The crew quarters lie to the south, the command module is to the north, and the observation cupola is to the east.",
         );
       } else if (state.currentRoom === "Main Corridor") {
         setCurrentRoom("Command Module");
         appendStoryText(
-          "Command Module\n\nThe command module is a cramped space packed with control panels, all currently dead. A single console flickers with dim, partial life. The main corridor is to the south."
+          "Command Module\n\nThe command module is a cramped space packed with control panels, all currently dead. A single console flickers with dim, partial life. The main corridor is to the south.",
         );
       } else {
         appendStoryText("You can't go that way.");
@@ -386,12 +387,12 @@
       if (state.currentRoom === "Main Corridor") {
         setCurrentRoom("Crew Quarters");
         appendStoryText(
-          "Crew Quarters\n\nYou float in the cramped sleeping bay of Mir-2."
+          "Crew Quarters\n\nYou float in the cramped sleeping bay of Mir-2.",
         );
       } else if (state.currentRoom === "Command Module") {
         setCurrentRoom("Main Corridor");
         appendStoryText(
-          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions."
+          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions.",
         );
       } else {
         appendStoryText("You can't go that way.");
@@ -400,7 +401,7 @@
       if (state.currentRoom === "Main Corridor") {
         setCurrentRoom("Observation Cupola");
         appendStoryText(
-          "Observation Cupola\n\nThe observation cupola is a blister of reinforced glass on the station's nadir side. Through the viewport you can see the Earth below — scarred with blooms of orange and white across the nightside."
+          "Observation Cupola\n\nThe observation cupola is a blister of reinforced glass on the station's nadir side. Through the viewport you can see the Earth below — scarred with blooms of orange and white across the nightside.",
         );
       } else {
         appendStoryText("You can't go that way.");
@@ -409,17 +410,19 @@
       if (state.currentRoom === "Observation Cupola") {
         setCurrentRoom("Main Corridor");
         appendStoryText(
-          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions."
+          "Main Corridor\n\nThe main corridor of Mir-2 stretches in both directions.",
         );
       } else {
         appendStoryText("You can't go that way.");
       }
     } else if (lower === "help") {
       appendStoryText(
-        "Available commands: look, inventory, north, south, east, west, help\n\n[Shell mode — load a Glulx interpreter for the full game experience.]"
+        "Available commands: look, inventory, north, south, east, west, help\n\n[Shell mode — load a Glulx interpreter for the full game experience.]",
       );
     } else {
-      appendStoryText("I didn't understand that command. Type 'help' for available commands.");
+      appendStoryText(
+        "I didn't understand that command. Type 'help' for available commands.",
+      );
     }
 
     updateStatus();
@@ -432,13 +435,12 @@
     appendSystemText: appendSystemText,
     setCurrentRoom: setCurrentRoom,
     updateStatus: updateStatus,
-    getState: function () {
-      return state;
-    },
-    setState: function (newState) {
+    getState: () => state,
+    setState: (newState) => {
       if (newState.o2 !== undefined) state.o2 = newState.o2;
       if (newState.morale !== undefined) state.morale = newState.morale;
-      if (newState.inventory !== undefined) state.inventory = newState.inventory;
+      if (newState.inventory !== undefined)
+        state.inventory = newState.inventory;
       if (newState.currentRoom !== undefined)
         setCurrentRoom(newState.currentRoom);
       updateStatus();

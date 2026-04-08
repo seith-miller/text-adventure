@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Lint with Biome
+        run: npx biome check .
+
+      - name: TypeScript compile check
+        run: npm run build:ts
+
+      - name: Run Node tests
+        run: npm test
+
+      - name: Set up Python test environment
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest
+
+      - name: Run pytest
+        run: .venv/bin/pytest tests/ -v
