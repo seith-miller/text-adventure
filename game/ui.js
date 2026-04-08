@@ -311,7 +311,7 @@
   }
 
   function extractGlkText(content) {
-    var text = "";
+    let text = "";
     for (let i = 0; i < content.length; i++) {
       if (typeof content[i] === "string") {
         text += content[i];
