@@ -81,12 +81,20 @@ def test_build_script_checks_source():
     )
 
 
-def test_build_script_supports_docker():
-    """Build script supports Docker as a fallback compiler."""
+def test_build_script_uses_inbuild():
+    """Build script orchestrates compilation through inbuild.
+
+    The script was rewritten in d61de4a to use the native Inform 7 toolchain
+    (inbuild → inform7 → Inform 6 → Glulx). The earlier Docker fallback
+    was removed; this test documents the current contract.
+    """
     path = os.path.join(ROOT, "scripts", "compile-inform7.sh")
     with open(path) as f:
         content = f.read()
-    assert "docker" in content.lower(), "Build script has no Docker support"
+    assert "inbuild" in content, "Build script no longer drives inbuild"
+    assert "INFORM7_HOME" in content or "INFORM7_COMPILER" in content, (
+        "Build script does not look up the toolchain via env vars"
+    )
 
 
 def test_package_json_has_build_story():
