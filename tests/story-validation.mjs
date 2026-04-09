@@ -82,12 +82,20 @@ function walkAllPaths(jsonContent) {
 describe("Story validation", () => {
   const storyFiles = getStoryFiles();
 
-  it("should have compiled story files available", () => {
-    assert.ok(
-      storyFiles.length > 0,
-      "No compiled story JSON files found in game/dist/story/. Run 'npm run build:story' first.",
-    );
-  });
+  // The project has migrated from Ink to Inform 7. The Ink path validation
+  // only runs when compiled Ink JSON happens to be present (e.g. during a
+  // bisect against a pre-migration commit). Skip cleanly otherwise so CI
+  // can keep this test in place as a regression check without failing on
+  // every run.
+  if (storyFiles.length === 0) {
+    it("Ink story files not present — skipping (project migrated to Inform 7)", () => {
+      console.log(
+        "  No compiled Ink JSON found in game/dist/story/. " +
+          "Validation skipped — see #11 / #12 for the Inform 7 migration.",
+      );
+    });
+    return;
+  }
 
   for (const file of storyFiles) {
     describe(file, () => {
