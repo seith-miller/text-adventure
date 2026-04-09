@@ -18,17 +18,21 @@ def test_ci_workflow_exists():
     assert os.path.isfile(WORKFLOW_PATH), "CI workflow file not found"
 
 
-def test_triggers_on_push_to_main(workflow):
+def test_triggers_on_push_to_main_and_develop(workflow):
     # YAML parses 'on' as boolean True
     triggers = workflow[True]
     assert "push" in triggers
-    assert "main" in triggers["push"]["branches"]
+    branches = triggers["push"]["branches"]
+    assert "main" in branches
+    assert "develop" in branches, "Gitflow integration branch missing from push trigger"
 
 
-def test_triggers_on_pull_request_to_main(workflow):
+def test_triggers_on_pull_request_to_main_and_develop(workflow):
     triggers = workflow[True]
     assert "pull_request" in triggers
-    assert "main" in triggers["pull_request"]["branches"]
+    branches = triggers["pull_request"]["branches"]
+    assert "main" in branches
+    assert "develop" in branches, "Gitflow integration branch missing from PR trigger"
 
 
 def test_uses_node_22(workflow):
