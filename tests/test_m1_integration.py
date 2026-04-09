@@ -51,6 +51,10 @@ needs_glulxe = pytest.mark.skipif(
     not have_glulxe(),
     reason="glulxe interpreter not available",
 )
+needs_compiled_story = pytest.mark.skipif(
+    not STORY_OUTPUT.is_file(),
+    reason="game/dist/story.ulx not present — run `npm run build:story` first",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -71,6 +75,7 @@ def test_story_source_exists_and_declares_title():
     assert '"MIR\'S END"' in text, "title declaration missing from story.ni"
 
 
+@needs_compiled_story
 def test_compiled_story_exists():
     """A compiled .ulx exists in game/dist (build:story has been run)."""
     assert STORY_OUTPUT.is_file(), (
@@ -78,6 +83,7 @@ def test_compiled_story_exists():
     )
 
 
+@needs_compiled_story
 def test_compiled_story_has_glulx_magic_header():
     """The .ulx file starts with the Glulx magic number 'Glul'."""
     with STORY_OUTPUT.open("rb") as f:
@@ -85,6 +91,7 @@ def test_compiled_story_has_glulx_magic_header():
     assert magic == b"Glul", f"unexpected magic header: {magic!r}"
 
 
+@needs_compiled_story
 def test_compiled_story_is_nontrivial_size():
     """A successful compile produces a story file larger than a stub."""
     size = STORY_OUTPUT.stat().st_size
@@ -156,6 +163,7 @@ def test_build_script_fails_on_invalid_source(tmp_path):
 
 
 @needs_glulxe
+@needs_compiled_story
 def test_story_loads_and_shows_title():
     """Launching the story shows the title and the Crew Quarters room."""
     output = normalize(run_glulxe(str(STORY_OUTPUT), ["quit"]))
@@ -164,6 +172,7 @@ def test_story_loads_and_shows_title():
 
 
 @needs_glulxe
+@needs_compiled_story
 def test_story_responds_to_look():
     """LOOK reprints the current room description."""
     output = normalize(run_glulxe(str(STORY_OUTPUT), ["look", "quit"]))
@@ -174,6 +183,7 @@ def test_story_responds_to_look():
 
 
 @needs_glulxe
+@needs_compiled_story
 def test_story_supports_object_interaction():
     """The player can OPEN and EXAMINE the emergency locker."""
     output = normalize(
@@ -187,6 +197,7 @@ def test_story_supports_object_interaction():
 
 
 @needs_glulxe
+@needs_compiled_story
 def test_story_supports_navigation():
     """The player can move from Crew Quarters to the Main Corridor."""
     output = normalize(run_glulxe(str(STORY_OUTPUT), ["n", "quit"]))
@@ -197,6 +208,7 @@ def test_story_supports_navigation():
 
 
 @needs_glulxe
+@needs_compiled_story
 def test_story_quit_exits_cleanly():
     """The QUIT verb followed by Y produces the 'Hit any key to exit.' prompt."""
     output = normalize(run_glulxe(str(STORY_OUTPUT), ["quit"]))
