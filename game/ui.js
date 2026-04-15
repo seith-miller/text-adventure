@@ -30,7 +30,11 @@
     morale: 70,
     inventory: [],
     interpreterReady: false,
+    gameStarted: false,
   };
+
+  /* ── Save key for localStorage ── */
+  var SAVE_KEY = "mirsend_save";
 
   /* ── DOM references ── */
   var storyOutput;
@@ -41,6 +45,9 @@
   var barO2Fill;
   var barMoraleFill;
   var inventoryList;
+  var titleScreen;
+  var menuContinueBtn;
+  var ingameMenuBtn;
 
   /* ── ASCII art cache ── */
   var artCache = {};
@@ -55,21 +62,148 @@
     barO2Fill = document.querySelector("#status-bar-o2 .bar-fill");
     barMoraleFill = document.querySelector("#status-bar-morale .bar-fill");
     inventoryList = document.getElementById("inventory-list");
+    titleScreen = document.getElementById("title-screen");
+    menuContinueBtn = document.getElementById("menu-continue");
+    ingameMenuBtn = document.getElementById("ingame-menu-btn");
 
     commandInput.addEventListener("keydown", handleKeyDown);
 
-    /* Focus input on click anywhere */
-    document.addEventListener("click", () => {
-      commandInput.focus();
+    /* Menu button handlers */
+    document.getElementById("menu-new-game").addEventListener("click", startNewGame);
+    menuContinueBtn.addEventListener("click", continueGame);
+    ingameMenuBtn.addEventListener("click", showMenu);
+
+    /* ESC key to toggle menu during gameplay */
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        if (state.gameStarted && titleScreen && !titleScreen.classList.contains("hidden")) {
+          hideMenu();
+        } else if (state.gameStarted) {
+          showMenu();
+        }
+      }
     });
 
-    commandInput.focus();
+    /* Focus input on click anywhere (only when game is active) */
+    document.addEventListener("click", function (e) {
+      if (state.gameStarted && titleScreen.classList.contains("hidden") &&
+          !e.target.closest("#title-screen") && !e.target.closest(".menu-btn") &&
+          !e.target.closest("#ingame-menu-btn")) {
+        commandInput.focus();
+      }
+    });
 
+    updateStatus();
+
+    /* Check for saved game to enable Continue button */
+    checkSavedGame();
+
+    /* Show title screen on launch */
+    showMenu();
+  }
+
+  /* ── Menu system ── */
+
+  function showMenu() {
+    if (titleScreen) {
+      titleScreen.classList.remove("hidden");
+      checkSavedGame();
+    }
+  }
+
+  function hideMenu() {
+    if (titleScreen) {
+      titleScreen.classList.add("hidden");
+      if (state.gameStarted) {
+        commandInput.focus();
+      }
+    }
+  }
+
+  function checkSavedGame() {
+    if (!menuContinueBtn) return;
+    var hasSave = false;
+    try {
+      hasSave = typeof localStorage !== "undefined" && localStorage.getItem(SAVE_KEY) !== null;
+    } catch (e) {
+      /* localStorage may be unavailable */
+    }
+    menuContinueBtn.disabled = !hasSave;
+  }
+
+  function startNewGame() {
+    /* Reset game state */
+    state.commandHistory = [];
+    state.historyIndex = -1;
+    state.currentRoom = null;
+    state.o2 = 100;
+    state.morale = 70;
+    state.inventory = [];
+    state.gameStarted = true;
+
+    /* Clear story output */
+    storyOutput.innerHTML = "";
+
+    hideMenu();
     updateStatus();
     loadSceneArt("darkness");
 
     /* Hook into interpreter if available */
     hookInterpreter();
+
+    commandInput.focus();
+  }
+
+  function continueGame() {
+    var saved;
+    try {
+      var raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return;
+      saved = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+
+    /* Restore saved state */
+    if (saved.o2 !== undefined) state.o2 = saved.o2;
+    if (saved.morale !== undefined) state.morale = saved.morale;
+    if (saved.inventory !== undefined) state.inventory = saved.inventory;
+    if (saved.currentRoom !== undefined) state.currentRoom = saved.currentRoom;
+    if (saved.commandHistory !== undefined) state.commandHistory = saved.commandHistory;
+    state.historyIndex = state.commandHistory.length;
+    state.gameStarted = true;
+
+    /* Clear story output and show restored message */
+    storyOutput.innerHTML = "";
+
+    hideMenu();
+    updateStatus();
+
+    if (state.currentRoom) {
+      loadSceneArt(state.currentRoom.toLowerCase());
+    } else {
+      loadSceneArt("darkness");
+    }
+
+    appendSystemText("[Game restored.]");
+    hookInterpreter();
+
+    commandInput.focus();
+  }
+
+  function saveGame() {
+    try {
+      var data = {
+        o2: state.o2,
+        morale: state.morale,
+        inventory: state.inventory,
+        currentRoom: state.currentRoom,
+        commandHistory: state.commandHistory,
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    } catch (e) {
+      /* localStorage may be unavailable */
+    }
   }
 
   /* ── Command history & input handling ── */
@@ -445,6 +579,11 @@
         setCurrentRoom(newState.currentRoom);
       updateStatus();
     },
+    showMenu: showMenu,
+    hideMenu: hideMenu,
+    saveGame: saveGame,
+    startNewGame: startNewGame,
+    continueGame: continueGame,
   };
 
   /* ── Boot ── */
