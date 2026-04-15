@@ -1,0 +1,167 @@
+/* MIR'S END — Intro Sequence Styles */
+
+/* ── Intro overlay — covers full screen ── */
+#intro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "Courier New", Courier, monospace;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+#intro-overlay.hidden {
+  display: none;
+}
+
+/* ── Intro text container ── */
+#intro-text {
+  text-align: center;
+  max-width: 700px;
+  padding: 2em;
+  position: relative;
+  z-index: 2;
+}
+
+#intro-text .intro-line {
+  opacity: 0;
+  transition: opacity 1.2s ease-in;
+  margin: 0.6em 0;
+  line-height: 1.7;
+}
+
+#intro-text .intro-line.visible {
+  opacity: 1;
+}
+
+#intro-text .intro-line.fade-out {
+  opacity: 0;
+  transition: opacity 0.8s ease-out;
+}
+
+/* ── Text styles ── */
+.intro-datestamp {
+  color: #3a7a3a;
+  font-size: 13px;
+  letter-spacing: 4px;
+}
+
+.intro-location {
+  color: #5b9bd5;
+  font-size: 14px;
+  letter-spacing: 3px;
+}
+
+.intro-narrative {
+  color: #8a9aaa;
+  font-size: 15px;
+}
+
+.intro-emphasis {
+  color: #c8d6e5;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.intro-silence {
+  color: #3a4a5a;
+  font-size: 13px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+
+.intro-title {
+  color: #8ab4f8;
+  font-size: 28px;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(138, 180, 248, 0.4);
+}
+
+.intro-subtitle {
+  color: #6b7b8d;
+  font-size: 11px;
+  letter-spacing: 4px;
+}
+
+/* ── Skip prompt ── */
+#intro-skip {
+  position: fixed;
+  bottom: 2em;
+  right: 2em;
+  color: #3a4a5a;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  z-index: 1001;
+  opacity: 0;
+  transition: opacity 1.5s ease-in;
+}
+
+#intro-skip.visible {
+  opacity: 1;
+}
+
+/* ── EMP flash ── */
+#intro-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  z-index: 1002;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#intro-flash.flash {
+  animation: emp-flash 2.5s ease-out forwards;
+}
+
+@keyframes emp-flash {
+  0%   { opacity: 0; }
+  5%   { opacity: 1; }
+  15%  { opacity: 1; }
+  40%  { opacity: 0.6; }
+  50%  { opacity: 0.8; }
+  70%  { opacity: 0.2; }
+  100% { opacity: 0; }
+}
+
+/* ── Static noise overlay ── */
+#intro-static {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1001;
+  opacity: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.03) 0px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+#intro-static.active {
+  opacity: 1;
+  animation: static-flicker 0.15s infinite;
+}
+
+@keyframes static-flicker {
+  0%   { opacity: 0.04; }
+  50%  { opacity: 0.08; }
+  100% { opacity: 0.02; }
+}
