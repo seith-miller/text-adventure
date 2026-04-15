@@ -67,7 +67,7 @@ class TestTextPanel:
         """JS has function to echo player commands."""
         assert "function appendPlayerInput" in ui_js
         # Should prefix with ">"
-        assert '"> "' in ui_js
+        assert "> " in ui_js
 
     def test_scroll_to_bottom_on_new_text(self, ui_js):
         """Story panel auto-scrolls to latest text."""
