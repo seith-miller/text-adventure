@@ -33,8 +33,11 @@
     gameStarted: false,
   };
 
-  /* ── Save key for localStorage ── */
+  /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
+
+  /* ── Save/Load UI state ── */
+  var _saveLoadModalOpen = false;
 
   /* ── DOM references ── */
   var storyOutput;
@@ -107,6 +110,9 @@
 
     updateStatus();
 
+    /* Wire up save/load UI buttons (SaveManager multi-slot system) */
+    initSaveLoadButtons();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -175,6 +181,26 @@
   }
 
   function continueGame() {
+    /* Prefer SaveManager's multi-slot store when available, fall back to
+       the inline single-slot SAVE_KEY that gates the menu Continue button. */
+    if (window.SaveManager) {
+      const recent = window.SaveManager.getMostRecentSave();
+      if (recent) {
+        window.SaveManager.applyState(recent.data);
+        state.gameStarted = true;
+        storyOutput.innerHTML = "";
+        hideMenu();
+        updateStatus();
+        loadSceneArt(
+          state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
+        );
+        appendSystemText("[Resumed from last save.]");
+        hookInterpreter();
+        commandInput.focus();
+        return;
+      }
+    }
+
     var saved;
     var raw;
     try {
@@ -201,11 +227,9 @@
     hideMenu();
     updateStatus();
 
-    if (state.currentRoom) {
-      loadSceneArt(state.currentRoom.toLowerCase());
-    } else {
-      loadSceneArt("darkness");
-    }
+    loadSceneArt(
+      state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
+    );
 
     appendSystemText("[Game restored.]");
     hookInterpreter();
@@ -307,10 +331,18 @@
   }
 
   function setCurrentRoom(roomName) {
-    if (state.currentRoom === roomName) return;
+    var changed = state.currentRoom !== roomName;
     state.currentRoom = roomName;
     var key = roomName.toLowerCase();
     loadSceneArt(key);
+
+    /* Auto-save when entering a new area */
+    if (changed && window.SaveManager) {
+      const result = window.SaveManager.autoSave();
+      if (result.success) {
+        appendSystemText("[Auto-saved]");
+      }
+    }
   }
 
   /* ── Scene art loading ── */
@@ -504,7 +536,19 @@
   function handleShellCommand(cmd) {
     var lower = cmd.toLowerCase().trim();
 
-    if (lower === "look" || lower === "l") {
+    if (lower === "save") {
+      quickSave();
+      return;
+    } else if (lower === "restore" || lower === "load") {
+      quickLoad();
+      return;
+    } else if (lower === "saves") {
+      showSaveLoadModal("save");
+      return;
+    } else if (lower === "loads") {
+      showSaveLoadModal("load");
+      return;
+    } else if (lower === "look" || lower === "l") {
       if (!state.currentRoom || state.currentRoom === "darkness") {
         appendStoryText(
           "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
@@ -574,7 +618,7 @@
       }
     } else if (lower === "help") {
       appendStoryText(
-        "Available commands: look, inventory, north, south, east, west, help\n\n[Shell mode — load a Glulx interpreter for the full game experience.]",
+        "Available commands: look, inventory, north, south, east, west, save, restore, saves, loads, help\n\n[Shell mode — load a Glulx interpreter for the full game experience.]",
       );
     } else {
       appendStoryText(
@@ -583,6 +627,161 @@
     }
 
     updateStatus();
+  }
+
+  /* ── Save/Load UI ── */
+
+  /**
+   * Show the save/load modal overlay.
+   * @param {string} mode - "save" or "load"
+   */
+  function showSaveLoadModal(mode) {
+    closeSaveLoadModal(); // remove any existing modal
+    _saveLoadModalOpen = true;
+
+    var overlay = document.createElement("div");
+    overlay.id = "save-load-overlay";
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeSaveLoadModal();
+    });
+
+    var modal = document.createElement("div");
+    modal.id = "save-load-modal";
+
+    var title = document.createElement("h2");
+    title.textContent = mode === "save" ? "Save Game" : "Load Game";
+    modal.appendChild(title);
+
+    if (!window.SaveManager?.storageAvailable()) {
+      const msg = document.createElement("p");
+      msg.className = "save-load-error";
+      msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
+      modal.appendChild(msg);
+    } else {
+      const slots = window.SaveManager.listSlots();
+      for (let i = 0; i < slots.length; i++) {
+        ((slot) => {
+          const row = document.createElement("div");
+          row.className = "save-slot-row";
+
+          const label = document.createElement("span");
+          label.className = "save-slot-label";
+          label.textContent =
+            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
+
+          const summary = document.createElement("span");
+          summary.className = "save-slot-summary";
+          summary.textContent = slot.summary;
+
+          row.appendChild(label);
+          row.appendChild(summary);
+
+          if (mode === "save" && slot.slot !== "auto") {
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "save-slot-btn";
+            saveBtn.textContent = "Save";
+            saveBtn.addEventListener("click", () => {
+              const result = window.SaveManager.saveToSlot(slot.slot);
+              appendSystemText(`[${result.message}]`);
+              closeSaveLoadModal();
+            });
+            row.appendChild(saveBtn);
+          } else if (mode === "load" && slot.hasData) {
+            const loadBtn = document.createElement("button");
+            loadBtn.className = "save-slot-btn";
+            loadBtn.textContent = "Load";
+            loadBtn.addEventListener("click", () => {
+              let result;
+              if (slot.slot === "auto") {
+                result = window.SaveManager.loadAutoSave();
+              } else {
+                result = window.SaveManager.loadFromSlot(slot.slot);
+              }
+              if (result.success) {
+                window.SaveManager.applyState(result.data);
+                appendSystemText(`[${result.message}]`);
+              } else {
+                appendSystemText(`[${result.message}]`);
+              }
+              closeSaveLoadModal();
+            });
+            row.appendChild(loadBtn);
+          }
+
+          modal.appendChild(row);
+        })(slots[i]);
+      }
+    }
+
+    var closeBtn = document.createElement("button");
+    closeBtn.id = "save-load-close";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", closeSaveLoadModal);
+    modal.appendChild(closeBtn);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  function closeSaveLoadModal() {
+    _saveLoadModalOpen = false;
+    var existing = document.getElementById("save-load-overlay");
+    if (existing) existing.remove();
+  }
+
+  /**
+   * Quick-save to slot 1 (for command-line SAVE).
+   */
+  function quickSave() {
+    if (!window.SaveManager) {
+      appendSystemText("[Save system not available.]");
+      return;
+    }
+    var result = window.SaveManager.saveToSlot(1);
+    appendSystemText(`[${result.message}]`);
+  }
+
+  /**
+   * Quick-load from slot 1 or most recent save (for command-line RESTORE).
+   */
+  function quickLoad() {
+    if (!window.SaveManager) {
+      appendSystemText("[Save system not available.]");
+      return;
+    }
+    var recent = window.SaveManager.getMostRecentSave();
+    if (recent) {
+      window.SaveManager.applyState(recent.data);
+      appendSystemText("[Game loaded successfully.]");
+    } else {
+      appendSystemText("[No save data found.]");
+    }
+  }
+
+  /* ── Wire up sidebar save/load buttons ── */
+  function initSaveLoadButtons() {
+    var saveBtn = document.getElementById("btn-save");
+    var loadBtn = document.getElementById("btn-load");
+    var continueBtn = document.getElementById("btn-continue");
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showSaveLoadModal("save");
+      });
+    }
+    if (loadBtn) {
+      loadBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showSaveLoadModal("load");
+      });
+    }
+    if (continueBtn) {
+      continueBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        continueGame();
+      });
+    }
   }
 
   /* ── Public API for interpreter integration ── */
@@ -606,6 +805,10 @@
     hideMenu: hideMenu,
     saveGame: saveGame,
     startNewGame: startNewGame,
+    showSaveModal: () => showSaveLoadModal("save"),
+    showLoadModal: () => showSaveLoadModal("load"),
+    quickSave: quickSave,
+    quickLoad: quickLoad,
     continueGame: continueGame,
   };
 

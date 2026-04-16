@@ -45,6 +45,11 @@
     <div id="title-panel">
       <h1>MIR'S END</h1>
       <div class="subtitle">An Interactive Survival Story</div>
+      <div id="save-load-buttons">
+        <button id="btn-save" class="sl-btn" title="Save game">Save</button>
+        <button id="btn-load" class="sl-btn" title="Load game">Load</button>
+        <button id="btn-continue" class="sl-btn" title="Continue from last save">Continue</button>
+      </div>
     </div>
 
     <!-- Bottom right: status panel -->
@@ -145,6 +150,10 @@ For Parchment:
 
 <!-- Intro sequence — must load before UI shell -->
 <script src="intro.js"></script>
+
+<!-- Save/Load Manager — must load before UI shell -->
+<script src="save-manager.js"></script>
+
 <!-- UI Shell — must load after interpreter scripts -->
 <script src="ui.js"></script>
 
