@@ -78,6 +78,7 @@
     /* ESC key to toggle menu during gameplay */
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        if (window.MirsEndIntro?.isActive()) return;
         if (
           state.gameStarted &&
           titleScreen &&
@@ -90,8 +91,9 @@
       }
     });
 
-    /* Focus input on click anywhere (only when game is active) */
+    /* Focus input on click anywhere (only when game is active, not during intro) */
     document.addEventListener("click", (e) => {
+      if (window.MirsEndIntro?.isActive()) return;
       if (
         state.gameStarted &&
         titleScreen.classList.contains("hidden") &&
@@ -160,10 +162,16 @@
     updateStatus();
     loadSceneArt("darkness");
 
-    /* Hook into interpreter if available */
-    hookInterpreter();
-
-    commandInput.focus();
+    /* Play intro sequence if available, then hook the interpreter */
+    if (window.MirsEndIntro) {
+      window.MirsEndIntro.run(() => {
+        hookInterpreter();
+        commandInput.focus();
+      });
+    } else {
+      hookInterpreter();
+      commandInput.focus();
+    }
   }
 
   function continueGame() {
