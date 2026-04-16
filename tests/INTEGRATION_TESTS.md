@@ -8,7 +8,7 @@ before the next milestone can be considered started.
 |---|---|---|
 | M1: Inform 7 Foundation | `test_m1_integration.py` | #17 |
 | M2: Playable Prototype | `test_m2_inform7_game.py`, `test_m2_web_ui.py`, `test_m2_integration.py` | #18 |
-| M3: Complete Experience | _pending_ | #19 |
+| M3: Complete Experience | `test_m3_integration.py` | #19 |
 
 ## Running the suite
 
@@ -188,6 +188,54 @@ green→red as it drops, subtle dark scrollbar, no white backgrounds anywhere.
 
 #### Console
 No JS errors on load, no errors after commands, no 404s for CSS/JS/art.
+
+## What M3 verifies (`test_m3_integration.py`)
+
+M3 is the final quality gate for the complete experience. It verifies all
+three M3 features and confirms M1/M2 regression:
+
+### Title screen & menu
+- Title screen overlay displays on initial load (init calls showMenu)
+- "New Game" resets state, runs intro, then hooks interpreter
+- "Continue" loads most recent save (disabled when no save exists)
+- In-game menu via ESC key or menu button
+- Returning to game from menu preserves state (hideMenu only toggles visibility)
+
+### Save/Load
+- SAVE command delegates to SaveManager.saveToSlot with feedback
+- RESTORE command loads most recent save via SaveManager
+- Multiple save slots (at least 3) plus auto-save slot
+- Auto-save triggers on room transitions (only on actual change)
+- Continue in menu loads most recent save across all slots
+- Clear success/failure feedback messages
+- Save data includes timestamp, room, O2, morale, inventory, history
+
+### Intro sequence
+- Intro plays on New Game (startNewGame calls MirsEndIntro.run)
+- Skippable via keypress or click (with accidental-skip delay)
+- Does NOT replay on Continue/Load (sessionStorage + URL param checks)
+- Smooth transition: fade-out overlay, show game-shell, call completion callback
+- Duration under 60 seconds
+
+### Regression (M1 + M2)
+- Inform 7 source, compile script, Ink reference files, ASCII art all intact
+- Package.json build scripts, .gitignore, README documentation
+- Web UI files, room-art mapping, known rooms, status variables
+- Story content: rooms, NPCs, resource tracking
+- Public API completeness
+
+### Build pipeline & code quality
+- TypeScript compiles, biome lint passes
+- All M3 files exist and are valid UTF-8
+- No console.error, debugger, or alert() in any JS file
+- HTML accessibility (lang, charset, viewport)
+
+### End-to-end flow
+- Launch -> title screen -> New Game -> intro -> gameplay
+- Shell mode navigation through all rooms
+- Save/restore round-trip via SaveManager
+- Script load order: intro.js -> save-manager.js -> ui.js
+- All DOM IDs referenced in JS exist in HTML
 
 ## Adding tests for a new milestone
 
