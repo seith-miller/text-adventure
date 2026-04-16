@@ -69,14 +69,20 @@
     commandInput.addEventListener("keydown", handleKeyDown);
 
     /* Menu button handlers */
-    document.getElementById("menu-new-game").addEventListener("click", startNewGame);
+    document
+      .getElementById("menu-new-game")
+      .addEventListener("click", startNewGame);
     menuContinueBtn.addEventListener("click", continueGame);
     ingameMenuBtn.addEventListener("click", showMenu);
 
     /* ESC key to toggle menu during gameplay */
-    document.addEventListener("keydown", function (e) {
+    document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        if (state.gameStarted && titleScreen && !titleScreen.classList.contains("hidden")) {
+        if (
+          state.gameStarted &&
+          titleScreen &&
+          !titleScreen.classList.contains("hidden")
+        ) {
           hideMenu();
         } else if (state.gameStarted) {
           showMenu();
@@ -85,10 +91,14 @@
     });
 
     /* Focus input on click anywhere (only when game is active) */
-    document.addEventListener("click", function (e) {
-      if (state.gameStarted && titleScreen.classList.contains("hidden") &&
-          !e.target.closest("#title-screen") && !e.target.closest(".menu-btn") &&
-          !e.target.closest("#ingame-menu-btn")) {
+    document.addEventListener("click", (e) => {
+      if (
+        state.gameStarted &&
+        titleScreen.classList.contains("hidden") &&
+        !e.target.closest("#title-screen") &&
+        !e.target.closest(".menu-btn") &&
+        !e.target.closest("#ingame-menu-btn")
+      ) {
         commandInput.focus();
       }
     });
@@ -124,8 +134,10 @@
     if (!menuContinueBtn) return;
     var hasSave = false;
     try {
-      hasSave = typeof localStorage !== "undefined" && localStorage.getItem(SAVE_KEY) !== null;
-    } catch (e) {
+      hasSave =
+        typeof localStorage !== "undefined" &&
+        localStorage.getItem(SAVE_KEY) !== null;
+    } catch (_e) {
       /* localStorage may be unavailable */
     }
     menuContinueBtn.disabled = !hasSave;
@@ -156,11 +168,12 @@
 
   function continueGame() {
     var saved;
+    var raw;
     try {
-      var raw = localStorage.getItem(SAVE_KEY);
+      raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       saved = JSON.parse(raw);
-    } catch (e) {
+    } catch (_e) {
       return;
     }
 
@@ -169,7 +182,8 @@
     if (saved.morale !== undefined) state.morale = saved.morale;
     if (saved.inventory !== undefined) state.inventory = saved.inventory;
     if (saved.currentRoom !== undefined) state.currentRoom = saved.currentRoom;
-    if (saved.commandHistory !== undefined) state.commandHistory = saved.commandHistory;
+    if (saved.commandHistory !== undefined)
+      state.commandHistory = saved.commandHistory;
     state.historyIndex = state.commandHistory.length;
     state.gameStarted = true;
 
@@ -192,8 +206,9 @@
   }
 
   function saveGame() {
+    var data;
     try {
-      var data = {
+      data = {
         o2: state.o2,
         morale: state.morale,
         inventory: state.inventory,
@@ -201,7 +216,7 @@
         commandHistory: state.commandHistory,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    } catch (e) {
+    } catch (_e) {
       /* localStorage may be unavailable */
     }
   }
