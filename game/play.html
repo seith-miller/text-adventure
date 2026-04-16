@@ -8,7 +8,24 @@
 </head>
 <body>
 
+<!-- Title screen overlay — shown on launch, before gameplay -->
+<div id="title-screen">
+  <div id="title-screen-content">
+    <h1 id="title-logo">MIR'S END</h1>
+    <div id="title-subtitle">An Interactive Survival Story</div>
+    <nav id="title-menu">
+      <button class="menu-btn" id="menu-new-game">New Game</button>
+      <button class="menu-btn" id="menu-continue" disabled>Continue</button>
+      <button class="menu-btn" id="menu-settings" disabled>Settings</button>
+    </nav>
+    <div id="title-footer">Press ESC during gameplay to return to this menu</div>
+  </div>
+</div>
+
 <div id="game-shell">
+
+  <!-- Menu button — visible during gameplay -->
+  <button id="ingame-menu-btn" title="Menu (ESC)">☰ MENU</button>
 
   <!-- Left panel: scrollable story text output -->
   <div id="story-panel">
