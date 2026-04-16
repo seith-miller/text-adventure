@@ -4,12 +4,10 @@
  * Supports multiple save slots, auto-save, and manual save/restore.
  */
 
-(function () {
-  "use strict";
-
+(() => {
   var STORAGE_PREFIX = "mirsend_";
   var SLOT_COUNT = 3;
-  var AUTO_SAVE_KEY = STORAGE_PREFIX + "autosave";
+  var AUTO_SAVE_KEY = `${STORAGE_PREFIX}autosave`;
 
   /**
    * Build the localStorage key for a numbered slot.
@@ -17,7 +15,7 @@
    * @returns {string}
    */
   function slotKey(slotNum) {
-    return STORAGE_PREFIX + "slot_" + slotNum;
+    return `${STORAGE_PREFIX}slot_${slotNum}`;
   }
 
   /**
@@ -26,11 +24,11 @@
    */
   function storageAvailable() {
     try {
-      var test = "__storage_test__";
+      const test = "__storage_test__";
       localStorage.setItem(test, test);
       localStorage.removeItem(test);
       return true;
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }
@@ -48,7 +46,9 @@
       o2: uiState.o2 !== undefined ? uiState.o2 : 100,
       morale: uiState.morale !== undefined ? uiState.morale : 70,
       inventory: uiState.inventory ? uiState.inventory.slice() : [],
-      commandHistory: uiState.commandHistory ? uiState.commandHistory.slice() : [],
+      commandHistory: uiState.commandHistory
+        ? uiState.commandHistory.slice()
+        : [],
     };
   }
 
@@ -62,11 +62,11 @@
       return { success: false, message: "localStorage is not available." };
     }
     try {
-      var snapshot = captureState();
+      const snapshot = captureState();
       localStorage.setItem(key, JSON.stringify(snapshot));
       return { success: true, message: "Game saved successfully." };
     } catch (e) {
-      return { success: false, message: "Save failed: " + e.message };
+      return { success: false, message: `Save failed: ${e.message}` };
     }
   }
 
@@ -77,17 +77,29 @@
    */
   function loadFromKey(key) {
     if (!storageAvailable()) {
-      return { success: false, message: "localStorage is not available.", data: null };
+      return {
+        success: false,
+        message: "localStorage is not available.",
+        data: null,
+      };
     }
     try {
-      var raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(key);
       if (!raw) {
         return { success: false, message: "No save data found.", data: null };
       }
-      var data = JSON.parse(raw);
-      return { success: true, message: "Game loaded successfully.", data: data };
+      const data = JSON.parse(raw);
+      return {
+        success: true,
+        message: "Game loaded successfully.",
+        data: data,
+      };
     } catch (e) {
-      return { success: false, message: "Load failed: " + e.message, data: null };
+      return {
+        success: false,
+        message: `Load failed: ${e.message}`,
+        data: null,
+      };
     }
   }
 
@@ -115,12 +127,12 @@
     var raw = localStorage.getItem(key);
     if (!raw) return "[ empty ]";
     try {
-      var data = JSON.parse(raw);
-      var room = data.currentRoom || "Unknown";
-      var date = new Date(data.timestamp);
-      var dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString();
-      return room + " — O2: " + data.o2 + "%, Morale: " + data.morale + "% — " + dateStr;
-    } catch (e) {
+      const data = JSON.parse(raw);
+      const room = data.currentRoom || "Unknown";
+      const date = new Date(data.timestamp);
+      const dateStr = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+      return `${room} — O2: ${data.o2}%, Morale: ${data.morale}% — ${dateStr}`;
+    } catch (_e) {
       return "[ corrupted ]";
     }
   }
@@ -138,7 +150,7 @@
       localStorage.removeItem(key);
       return { success: true, message: "Save deleted." };
     } catch (e) {
-      return { success: false, message: "Delete failed: " + e.message };
+      return { success: false, message: `Delete failed: ${e.message}` };
     }
   }
 
@@ -153,11 +165,12 @@
       slot: "auto",
       key: AUTO_SAVE_KEY,
       summary: slotSummary(AUTO_SAVE_KEY),
-      hasData: storageAvailable() && localStorage.getItem(AUTO_SAVE_KEY) !== null,
+      hasData:
+        storageAvailable() && localStorage.getItem(AUTO_SAVE_KEY) !== null,
     });
     // Numbered slots
-    for (var i = 1; i <= SLOT_COUNT; i++) {
-      var key = slotKey(i);
+    for (let i = 1; i <= SLOT_COUNT; i++) {
+      const key = slotKey(i);
       slots.push({
         slot: i,
         key: key,
@@ -177,20 +190,20 @@
     var newest = null;
     var newestTime = 0;
     var allKeys = [AUTO_SAVE_KEY];
-    for (var i = 1; i <= SLOT_COUNT; i++) {
+    for (let i = 1; i <= SLOT_COUNT; i++) {
       allKeys.push(slotKey(i));
     }
-    for (var k = 0; k < allKeys.length; k++) {
-      var raw = localStorage.getItem(allKeys[k]);
+    for (let k = 0; k < allKeys.length; k++) {
+      const raw = localStorage.getItem(allKeys[k]);
       if (raw) {
         try {
-          var data = JSON.parse(raw);
-          var t = new Date(data.timestamp).getTime();
+          const data = JSON.parse(raw);
+          const t = new Date(data.timestamp).getTime();
           if (t > newestTime) {
             newestTime = t;
             newest = { key: allKeys[k], data: data };
           }
-        } catch (e) {
+        } catch (_e) {
           // skip corrupted
         }
       }
@@ -205,22 +218,12 @@
     slotKey: slotKey,
     AUTO_SAVE_KEY: AUTO_SAVE_KEY,
 
-    saveToSlot: function (slotNum) {
-      return saveToKey(slotKey(slotNum));
-    },
-    loadFromSlot: function (slotNum) {
-      return loadFromKey(slotKey(slotNum));
-    },
-    deleteSlot: function (slotNum) {
-      return deleteFromKey(slotKey(slotNum));
-    },
+    saveToSlot: (slotNum) => saveToKey(slotKey(slotNum)),
+    loadFromSlot: (slotNum) => loadFromKey(slotKey(slotNum)),
+    deleteSlot: (slotNum) => deleteFromKey(slotKey(slotNum)),
 
-    autoSave: function () {
-      return saveToKey(AUTO_SAVE_KEY);
-    },
-    loadAutoSave: function () {
-      return loadFromKey(AUTO_SAVE_KEY);
-    },
+    autoSave: () => saveToKey(AUTO_SAVE_KEY),
+    loadAutoSave: () => loadFromKey(AUTO_SAVE_KEY),
 
     applyState: applyState,
     captureState: captureState,

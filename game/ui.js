@@ -37,7 +37,7 @@
   var SAVE_KEY = "mirsend_save";
 
   /* ── Save/Load UI state ── */
-  var saveLoadModalOpen = false;
+  var _saveLoadModalOpen = false;
 
   /* ── DOM references ── */
   var storyOutput;
@@ -181,6 +181,26 @@
   }
 
   function continueGame() {
+    /* Prefer SaveManager's multi-slot store when available, fall back to
+       the inline single-slot SAVE_KEY that gates the menu Continue button. */
+    if (window.SaveManager) {
+      const recent = window.SaveManager.getMostRecentSave();
+      if (recent) {
+        window.SaveManager.applyState(recent.data);
+        state.gameStarted = true;
+        storyOutput.innerHTML = "";
+        hideMenu();
+        updateStatus();
+        loadSceneArt(
+          state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
+        );
+        appendSystemText("[Resumed from last save.]");
+        hookInterpreter();
+        commandInput.focus();
+        return;
+      }
+    }
+
     var saved;
     var raw;
     try {
@@ -207,11 +227,9 @@
     hideMenu();
     updateStatus();
 
-    if (state.currentRoom) {
-      loadSceneArt(state.currentRoom.toLowerCase());
-    } else {
-      loadSceneArt("darkness");
-    }
+    loadSceneArt(
+      state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
+    );
 
     appendSystemText("[Game restored.]");
     hookInterpreter();
@@ -320,7 +338,7 @@
 
     /* Auto-save when entering a new area */
     if (changed && window.SaveManager) {
-      var result = window.SaveManager.autoSave();
+      const result = window.SaveManager.autoSave();
       if (result.success) {
         appendSystemText("[Auto-saved]");
       }
@@ -619,11 +637,11 @@
    */
   function showSaveLoadModal(mode) {
     closeSaveLoadModal(); // remove any existing modal
-    saveLoadModalOpen = true;
+    _saveLoadModalOpen = true;
 
     var overlay = document.createElement("div");
     overlay.id = "save-load-overlay";
-    overlay.addEventListener("click", function (e) {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeSaveLoadModal();
     });
 
@@ -634,23 +652,24 @@
     title.textContent = mode === "save" ? "Save Game" : "Load Game";
     modal.appendChild(title);
 
-    if (!window.SaveManager || !window.SaveManager.storageAvailable()) {
-      var msg = document.createElement("p");
+    if (!window.SaveManager?.storageAvailable()) {
+      const msg = document.createElement("p");
       msg.className = "save-load-error";
-      msg.textContent = "localStorage is not available. Cannot " + mode + " games.";
+      msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
       modal.appendChild(msg);
     } else {
-      var slots = window.SaveManager.listSlots();
-      for (var i = 0; i < slots.length; i++) {
-        (function (slot) {
-          var row = document.createElement("div");
+      const slots = window.SaveManager.listSlots();
+      for (let i = 0; i < slots.length; i++) {
+        ((slot) => {
+          const row = document.createElement("div");
           row.className = "save-slot-row";
 
-          var label = document.createElement("span");
+          const label = document.createElement("span");
           label.className = "save-slot-label";
-          label.textContent = slot.slot === "auto" ? "Auto-save" : "Slot " + slot.slot;
+          label.textContent =
+            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
 
-          var summary = document.createElement("span");
+          const summary = document.createElement("span");
           summary.className = "save-slot-summary";
           summary.textContent = slot.summary;
 
@@ -658,21 +677,21 @@
           row.appendChild(summary);
 
           if (mode === "save" && slot.slot !== "auto") {
-            var saveBtn = document.createElement("button");
+            const saveBtn = document.createElement("button");
             saveBtn.className = "save-slot-btn";
             saveBtn.textContent = "Save";
-            saveBtn.addEventListener("click", function () {
-              var result = window.SaveManager.saveToSlot(slot.slot);
-              appendSystemText("[" + result.message + "]");
+            saveBtn.addEventListener("click", () => {
+              const result = window.SaveManager.saveToSlot(slot.slot);
+              appendSystemText(`[${result.message}]`);
               closeSaveLoadModal();
             });
             row.appendChild(saveBtn);
           } else if (mode === "load" && slot.hasData) {
-            var loadBtn = document.createElement("button");
+            const loadBtn = document.createElement("button");
             loadBtn.className = "save-slot-btn";
             loadBtn.textContent = "Load";
-            loadBtn.addEventListener("click", function () {
-              var result;
+            loadBtn.addEventListener("click", () => {
+              let result;
               if (slot.slot === "auto") {
                 result = window.SaveManager.loadAutoSave();
               } else {
@@ -680,9 +699,9 @@
               }
               if (result.success) {
                 window.SaveManager.applyState(result.data);
-                appendSystemText("[" + result.message + "]");
+                appendSystemText(`[${result.message}]`);
               } else {
-                appendSystemText("[" + result.message + "]");
+                appendSystemText(`[${result.message}]`);
               }
               closeSaveLoadModal();
             });
@@ -705,7 +724,7 @@
   }
 
   function closeSaveLoadModal() {
-    saveLoadModalOpen = false;
+    _saveLoadModalOpen = false;
     var existing = document.getElementById("save-load-overlay");
     if (existing) existing.remove();
   }
@@ -719,7 +738,7 @@
       return;
     }
     var result = window.SaveManager.saveToSlot(1);
-    appendSystemText("[" + result.message + "]");
+    appendSystemText(`[${result.message}]`);
   }
 
   /**
@@ -739,23 +758,6 @@
     }
   }
 
-  /**
-   * Continue from most recent save (for menu / startup).
-   */
-  function continueGame() {
-    if (!window.SaveManager) {
-      appendSystemText("[Save system not available.]");
-      return false;
-    }
-    var recent = window.SaveManager.getMostRecentSave();
-    if (recent) {
-      window.SaveManager.applyState(recent.data);
-      appendSystemText("[Resumed from last save.]");
-      return true;
-    }
-    return false;
-  }
-
   /* ── Wire up sidebar save/load buttons ── */
   function initSaveLoadButtons() {
     var saveBtn = document.getElementById("btn-save");
@@ -763,19 +765,19 @@
     var continueBtn = document.getElementById("btn-continue");
 
     if (saveBtn) {
-      saveBtn.addEventListener("click", function (e) {
+      saveBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         showSaveLoadModal("save");
       });
     }
     if (loadBtn) {
-      loadBtn.addEventListener("click", function (e) {
+      loadBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         showSaveLoadModal("load");
       });
     }
     if (continueBtn) {
-      continueBtn.addEventListener("click", function (e) {
+      continueBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         continueGame();
       });

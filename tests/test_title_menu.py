@@ -243,12 +243,14 @@ class TestMenuJavaScript:
         js = _read("ui.js")
         continue_idx = js.find("function continueGame")
         assert continue_idx != -1, "continueGame function not found"
-        chunk = js[continue_idx:continue_idx + 600]
+        # Widened window: continueGame may delegate to a SaveManager path
+        # before falling back to direct localStorage/JSON.parse.
+        chunk = js[continue_idx:continue_idx + 2000]
         assert "localStorage" in chunk or "SAVE_KEY" in chunk, (
             "continueGame should read from localStorage"
         )
-        assert "JSON.parse" in chunk, (
-            "continueGame should parse saved JSON data"
+        assert "JSON.parse" in chunk or "SaveManager" in chunk, (
+            "continueGame should parse saved JSON data (directly or via SaveManager)"
         )
 
 
