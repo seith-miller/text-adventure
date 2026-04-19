@@ -50,3 +50,12 @@
     morale-level, and inventory — and the magic status line is never
     visible in the story panel.
   surfaces: [dom, state, interpreter]
+
+- id: user-input-reaches-interpreter
+  area: ui
+  demonstrates: >
+    Typing a command into the visible #command-input (the bar the real
+    player uses) reaches the Inform 7 interpreter and produces a
+    response. Guards against regressions where the input-forwarding
+    logic (ui.js sendToInterpreter) silently stops driving GlkOte.
+  surfaces: [dom, interpreter]

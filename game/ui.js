@@ -591,17 +591,35 @@
   function sendToInterpreter(cmd) {
     if (state.interpreterReady) {
       const glkInput = document.querySelector("#windowport input.LineInput");
-      if (glkInput && window.jQuery) {
-        /* GlkOte binds keydown via jQuery .on(). Use jQuery.trigger so the
-           event goes through the same dispatcher and carries keyCode 13. */
+      if (glkInput) {
+        /* GlkOte listens for keydown on the LineInput (bound via jQuery).
+           Set the value, focus, and fire a complete event sequence with
+           both native and jQuery paths to cover either binding style. */
         glkInput.value = cmd;
-        const $input = window.jQuery(glkInput);
-        const evt = window.jQuery.Event("keydown", {
+        glkInput.focus();
+
+        const native = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
           keyCode: 13,
           which: 13,
-          key: "Enter",
+          bubbles: true,
+          cancelable: true,
         });
-        $input.trigger(evt);
+        /* keyCode/which are non-writable on native events unless we force them. */
+        Object.defineProperty(native, "keyCode", { value: 13 });
+        Object.defineProperty(native, "which", { value: 13 });
+        glkInput.dispatchEvent(native);
+
+        if (window.jQuery) {
+          const $input = window.jQuery(glkInput);
+          const jqEvt = window.jQuery.Event("keydown", {
+            keyCode: 13,
+            which: 13,
+            key: "Enter",
+          });
+          $input.trigger(jqEvt);
+        }
         return;
       }
     }
