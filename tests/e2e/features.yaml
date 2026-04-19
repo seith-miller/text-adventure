@@ -40,3 +40,13 @@
     interpreter, which updates currentRoom in window.MirsEnd.getState()
     and emits new room text into the story panel.
   surfaces: [dom, state, interpreter]
+
+- id: ui-status-mirrors-game
+  area: ui
+  demonstrates: >
+    The Inform 7 every-turn rule emits a machine-readable status line
+    that ui.js parses and applies to window.MirsEnd state. After taking
+    items and advancing turns, the sidebar reflects the real oxygen-level,
+    morale-level, and inventory — and the magic status line is never
+    visible in the story panel.
+  surfaces: [dom, state, interpreter]

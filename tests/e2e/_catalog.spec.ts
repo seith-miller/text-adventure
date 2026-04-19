@@ -38,7 +38,7 @@ function parseFeatures(path: string): FeatureEntry[] {
     }
     if (raw.startsWith("- id:")) {
       flushFolded();
-      if (current && current.id) entries.push(current as FeatureEntry);
+      if (current?.id) entries.push(current as FeatureEntry);
       current = { id: raw.split(":")[1].trim() };
     } else if (raw.startsWith("  ") && current) {
       const line = raw.trim();
@@ -62,7 +62,7 @@ function parseFeatures(path: string): FeatureEntry[] {
     }
   }
   flushFolded();
-  if (current && current.id) entries.push(current as FeatureEntry);
+  if (current?.id) entries.push(current as FeatureEntry);
   return entries;
 }
 

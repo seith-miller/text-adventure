@@ -297,7 +297,29 @@
   }
 
   /* ── Display functions ── */
+  /**
+   * Match the machine-readable status line emitted by the Inform 7 every-turn
+   * rule. Format: [MIRSEND o2=N morale=N inv=a,b,c]  (inv may be empty)
+   */
+  var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
+
+  function parseAndApplyMirsendStatus(text) {
+    var m = text.match(MIRSEND_STATUS_RE);
+    if (!m) return false;
+    var o2 = parseInt(m[1], 10);
+    var morale = parseInt(m[2], 10);
+    var invStr = (m[3] || "").trim();
+    var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
+    state.o2 = o2;
+    state.morale = morale;
+    state.inventory = inventory;
+    updateStatus();
+    return true;
+  }
+
   function appendStoryText(text) {
+    /* Intercept status lines before they reach the DOM. */
+    if (parseAndApplyMirsendStatus(text)) return;
     var span = document.createElement("span");
     span.className = "story-text";
     span.textContent = `${text}\n\n`;

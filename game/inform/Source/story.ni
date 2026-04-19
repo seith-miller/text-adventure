@@ -26,6 +26,24 @@ Every turn:
 		say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could, but without oxygen, the darkness wins.";
 		end the story saying "You have suffocated".
 
+Chapter 4 - UI Status Bridge
+
+[Emit a machine-readable status line every turn so the Web UI can mirror
+ oxygen-level / morale-level / inventory into window.MirsEnd.setState.
+ ui.js detects the [MIRSEND ...] prefix, parses it, and suppresses it
+ from the visible story panel.]
+
+To say mirsend-inventory-list:
+	let counter be 0;
+	repeat with item running through things carried by the player:
+		if counter > 0:
+			say ",";
+		say "[printed name of item]";
+		increment counter.
+
+Every turn:
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list][close bracket][line break]".
+
 Part 2 - The Station
 
 Chapter 1 - Crew Quarters
@@ -175,6 +193,9 @@ After asking Yevgenia about "selengrad/moon/lunar":
 After asking Yevgenia about "freedom/americans/chen/distress":
 	say "'Those people did not launch anything,' Yevgenia says firmly. 'They are cosmonauts. Like us. Whatever happened down there, we might need each other before this is over.'";
 
+After asking Yevgenia about "war/nuclear/earth/attack":
+	say "'I do not want to think about who pushed which button first,' Yevgenia says, her hands clenching. 'That is a problem for people who still have a ground under their feet. Our problem is air, water, and power — in that order. Grieving can wait. Surviving cannot.'";
+
 After asking Petrov about "emp/pulse/electromagnetic":
 	say "'In thirty years of service I have seen equipment failures, solar storms, even a depressurisation drill that turned real,' Petrov says. 'I have never seen anything kill every system on a station simultaneously. This was military grade.'";
 
@@ -215,7 +236,7 @@ Instead of listening when the player is in the Main Corridor:
 Instead of listening when the player is in the Observation Cupola:
 	say "Silence. The observation cupola is eerily quiet — just the faint tick of thermal stress in the glass panels and the sound of your own breathing."
 
-Instead of listening when the player is in the Command Module:
+Instead of listening when the player is in the Command Module and (power-is-restored is false or distress-call-heard is true):
 	say "[if power-is-restored is true]The restored console hums faintly. The communications array crackles with static and, beneath it, the ghost of a signal.[otherwise]Dead silence. Not even the background hum of electronics that you have grown so accustomed to over months aboard the station.[end if]"
 
 Chapter 3 - Restoring Power
@@ -339,17 +360,25 @@ Part 7 - Score Tracking
 
 Chapter 1 - Achievements
 
+[Each After rule here must `continue the action`, otherwise the default
+ Report narrative is suppressed — the player sees only the score bump
+ and misses the intended response text. See issue #34.]
+
 After switching on the chemical flashlight for the first time:
-	increase the score by 1.
+	increase the score by 1;
+	continue the action.
 
 After opening the emergency locker for the first time:
-	increase the score by 1.
+	increase the score by 1;
+	continue the action.
 
 After restoring power:
-	increase the score by 3.
+	increase the score by 3;
+	continue the action.
 
 After transmitting for the first time:
-	increase the score by 5.
+	increase the score by 5;
+	continue the action.
 
 The maximum score is 10.
 
