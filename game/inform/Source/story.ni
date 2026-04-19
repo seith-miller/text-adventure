@@ -16,7 +16,13 @@ Morale-level is a number that varies. Morale-level is 50.
 
 Chapter 2 - Status Bar
 
-[Status bar rendering disabled — see issue: Table-of-Fancy-Status fill causes stack overflow under Inform 7 v10.2.0 / glulxe. The Web UI renders status independently via window.MirsEnd.setState, so the in-story bar is not required for gameplay.]
+Rule for constructing the status line:
+	fill status bar with Table of Fancy Status;
+	rule succeeds.
+
+Table of Fancy Status
+left	central	right
+" [location]"	""	"O2: [oxygen-level]% | Morale: [morale-level] "
 
 Chapter 3 - Oxygen Timer
 

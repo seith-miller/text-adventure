@@ -162,19 +162,15 @@ class TestResources:
         assert "Morale-level is 50" in story_source
 
     def test_oxygen_displayed_in_status(self, story_source):
-        # The in-story status bar is temporarily disabled (Inform 7 v10.2.0 +
-        # glulxe: Table-of-Fancy-Status fill causes a runtime stack overflow).
-        # The Web UI renders O2 independently via window.MirsEnd.setState, so
-        # we only require the variable to exist in the source.
+        assert "O2:" in story_source
         assert "oxygen-level" in story_source.lower()
 
     def test_morale_displayed_in_status(self, story_source):
+        assert "Morale:" in story_source
         assert "morale-level" in story_source.lower()
 
     def test_status_bar_rule(self, story_source):
-        # Status bar fill is disabled pending an Inform-side fix (see above).
-        # We keep a placeholder note in the source so greps find it.
-        assert "Status Bar" in story_source
+        assert "constructing the status line" in story_source
 
     def test_oxygen_decreases_over_time(self, story_source):
         assert "decrease oxygen-level by 1" in story_source
