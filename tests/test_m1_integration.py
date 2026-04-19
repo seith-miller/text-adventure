@@ -181,7 +181,7 @@ def test_story_loads_and_shows_title():
 def test_story_responds_to_look():
     """LOOK reprints the current room description."""
     output = normalize(run_glulxe(str(STORY_OUTPUT), ["look", "quit"]))
-    assert "sleeping bay of Mir-2" in output, (
+    assert "sleeping bay of Mir-3" in output, (
         "LOOK did not return the Crew Quarters description"
     )
     assert "main corridor lies to the north" in output

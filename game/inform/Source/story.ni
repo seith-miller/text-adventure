@@ -2,7 +2,7 @@
 
 The story headline is "An Interactive Survival Story".
 The story genre is "Science Fiction".
-The story description is "You awaken aboard the Soviet space station Mir-2 after a catastrophic electromagnetic pulse. The world below has changed forever. Now you must survive."
+The story description is "You awaken aboard the Soviet space station Mir-3 after a catastrophic electromagnetic pulse. The world below has changed forever. Now you must survive."
 The release number is 1.
 
 Use scoring.
@@ -52,7 +52,7 @@ Part 2 - The Station
 
 Chapter 1 - Crew Quarters
 
-The Crew Quarters is a room. "You float in the cramped sleeping bay of Mir-2.[if the chemical flashlight is lit] The warm yellow beam from the Zhuchok reveals chaos — personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black.[otherwise] The darkness is absolute. You can barely see your hand in front of your face.[end if] The main corridor lies to the north."
+The Crew Quarters is a room. "You float in the cramped sleeping bay of Mir-3.[if the chemical flashlight is lit] The warm yellow beam from the Zhuchok reveals chaos — personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black.[otherwise] The darkness is absolute. You can barely see your hand in front of your face.[end if] The main corridor lies to the north."
 
 The player is in the Crew Quarters.
 
@@ -95,7 +95,7 @@ The bunk status panel is scenery in the Crew Quarters. The description of the bu
 
 Chapter 2 - Main Corridor
 
-The Main Corridor is north of the Crew Quarters. "The main corridor of Mir-2 stretches in both directions, a tunnel of drifting debris and dead screens. Without power, the station feels less like a spacecraft and more like a submarine at the bottom of an ocean.[paragraph break]The crew quarters lie to the south, the command module is to the north, and the observation cupola is to the east."
+The Main Corridor is north of the Crew Quarters. "The main corridor of Mir-3 stretches in both directions, a tunnel of drifting debris and dead screens. Without power, the station feels less like a spacecraft and more like a submarine at the bottom of an ocean.[paragraph break]The crew quarters lie to the south, the command module is to the north, and the observation cupola is to the east."
 
 The drifting debris is scenery in the Main Corridor. The description of the drifting debris is "Cables hang loose from open maintenance panels. Frost is forming on the inner hull where insulation has lost power. Small droplets of condensation drift through the air."
 
@@ -236,7 +236,7 @@ Part 5 - Story Progression
 Chapter 1 - Opening Scene
 
 When play begins:
-	say "You wake to nothing.[paragraph break]No hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.[paragraph break]Something has gone terribly wrong.[paragraph break]The emergency lighting should have kicked in by now. The station batteries alone could power the corridor strips for days. Whatever hit Mir-2 was not a simple power failure.[paragraph break]You float in your sleeping harness, weightless, breathing stale air that already tastes thin."
+	say "You wake to nothing.[paragraph break]No hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.[paragraph break]Something has gone terribly wrong.[paragraph break]The emergency lighting should have kicked in by now. The station batteries alone could power the corridor strips for days. Whatever hit Mir-3 was not a simple power failure.[paragraph break]You float in your sleeping harness, weightless, breathing stale air that already tastes thin."
 
 Chapter 2 - Listening Action
 
@@ -317,7 +317,7 @@ Carry out transmitting:
 	increase morale-level by 8.
 
 Report transmitting:
-	say "You key the microphone.[paragraph break]'Freedom Station, this is Mir-2. We read your distress call. We have sustained similar damage but have partial systems restored. What is your status? Over.'[paragraph break]The loop cuts. A pause. Then a new voice — live this time, shaking with relief and surprise.[paragraph break]'Mir-2... oh my God. This is Commander Diane Chen, Freedom Station. We... we did not expect anyone to answer.'[paragraph break]The conversation unfolds over twenty minutes. You trade damage reports, crew status, supply inventories. Between both crews — eight people, maybe thirty hours of oxygen, patchy communications, no ground support, and a planet below that can no longer help you.[paragraph break]Petrov straightens. 'We cannot stay in orbit,' he says. 'Yevgenia — tell them about Selengrad.'[paragraph break]Yevgenia pulls up the navigational chart. 'Selengrad. The lunar base. Self-sustaining — closed-loop atmosphere, water recycling, hydroponics. If we combine both stations['] fuel reserves, we can make it.'[paragraph break]Chen's voice crackles: 'You are proposing we fly to the Moon?'[paragraph break]Eight people. Two crippled stations. One destination.[paragraph break]Petrov looks at you. 'This is the moment. Everything we do from here is a step toward the Moon or a step toward a slow death in orbit. There is no middle ground.'[paragraph break]He straightens, and for the first time since the lights went out, something like resolve settles over his features.[paragraph break]'Begin preparations. We have work to do.'"
+	say "You key the microphone.[paragraph break]'Freedom Station, this is Mir-3. We read your distress call. We have sustained similar damage but have partial systems restored. What is your status? Over.'[paragraph break]The loop cuts. A pause. Then a new voice — live this time, shaking with relief and surprise.[paragraph break]'Mir-3... oh my God. This is Commander Diane Chen, Freedom Station. We... we did not expect anyone to answer.'[paragraph break]The conversation unfolds over twenty minutes. You trade damage reports, crew status, supply inventories. Between both crews — eight people, maybe thirty hours of oxygen, patchy communications, no ground support, and a planet below that can no longer help you.[paragraph break]Petrov straightens. 'We cannot stay in orbit,' he says. 'Yevgenia — tell them about Selengrad.'[paragraph break]Yevgenia pulls up the navigational chart. 'Selengrad. The lunar base. Self-sustaining — closed-loop atmosphere, water recycling, hydroponics. If we combine both stations['] fuel reserves, we can make it.'[paragraph break]Chen's voice crackles: 'You are proposing we fly to the Moon?'[paragraph break]Eight people. Two crippled stations. One destination.[paragraph break]Petrov looks at you. 'This is the moment. Everything we do from here is a step toward the Moon or a step toward a slow death in orbit. There is no middle ground.'[paragraph break]He straightens, and for the first time since the lights went out, something like resolve settles over his features.[paragraph break]'Begin preparations. We have work to do.'"
 
 Chapter 6 - Staying Silent
 
@@ -337,7 +337,7 @@ Carry out staying silent:
 	now responded-to-americans is true.
 
 Report staying silent:
-	say "You look at Petrov. He looks at the radio. The distress call loops again.[paragraph break]Petrov closes his eyes. 'Their country just tried to kill everyone I have ever loved.' His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.'[paragraph break]He opens his eyes. 'We answer. That is not a political decision. It is a human one.'[paragraph break]He keys the microphone himself.[paragraph break]'Freedom Station, this is Commander Petrov, Mir-2. We hear you. What is your status? Over.'[paragraph break]A stunned silence. Then: 'Mir-2... this is Commander Chen. I... thank you. Thank you for answering.'[paragraph break]The conversation unfolds. Between both crews — eight people, dwindling oxygen, and a burning planet below. Yevgenia proposes the only plan that makes sense: Selengrad, the lunar base.[paragraph break]'Begin preparations,' Petrov orders. 'We have work to do.'"
+	say "You look at Petrov. He looks at the radio. The distress call loops again.[paragraph break]Petrov closes his eyes. 'Their country just tried to kill everyone I have ever loved.' His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.'[paragraph break]He opens his eyes. 'We answer. That is not a political decision. It is a human one.'[paragraph break]He keys the microphone himself.[paragraph break]'Freedom Station, this is Commander Petrov, Mir-3. We hear you. What is your status? Over.'[paragraph break]A stunned silence. Then: 'Mir-3... this is Commander Chen. I... thank you. Thank you for answering.'[paragraph break]The conversation unfolds. Between both crews — eight people, dwindling oxygen, and a burning planet below. Yevgenia proposes the only plan that makes sense: Selengrad, the lunar base.[paragraph break]'Begin preparations,' Petrov orders. 'We have work to do.'"
 
 Part 6 - Scene-Specific Responses
 
