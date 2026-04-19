@@ -27,7 +27,7 @@ test.describe("user-input-reaches-interpreter", () => {
     await page.waitForTimeout(800);
 
     const story = await storyText(page);
-    expect(story).toMatch(/revealing (a chemical flashlight|Zhuchok)/i);
+    expect(story).toMatch(/revealing a flashlight/i);
   });
 
   test("multiple commands in a row each get responses", async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe("user-input-reaches-interpreter", () => {
     }
 
     const story = await storyText(page);
-    expect(story).toMatch(/revealing (a chemical flashlight|Zhuchok)/i);
+    expect(story).toMatch(/revealing a flashlight/i);
     expect(story).toMatch(/Taken/i);
   });
 });

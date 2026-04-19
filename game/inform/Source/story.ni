@@ -60,13 +60,18 @@ The sleeping harness is scenery in the Crew Quarters. The description of the sle
 
 The emergency locker is a closed openable container in the Crew Quarters. The emergency locker is fixed in place. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a Zhuchok — the hand-dynamo flashlight every cosmonaut grew up with.[end if]"
 
+[The flashlight's printed name is "flashlight" so players see familiar
+ language everywhere. "Zhuchok" lives on in the description and the
+ switch-on narrative as historical flavor. Understand synonyms cover
+ both names.]
+
 Instead of taking the emergency locker:
 	say "The locker is bolted to the bulkhead. It's not going anywhere."
 
 [The Inform name "chemical flashlight" is kept for schema stability with
  save files and tests; the player sees "Zhuchok" via the printed name
  and Understand synonyms below.]
-The chemical flashlight is a thing in the emergency locker. The printed name of the chemical flashlight is "Zhuchok". Understand "zhuchok" or "zhuk" or "torch" or "dynamo" as the chemical flashlight. The description of the chemical flashlight is "A Zhuchok — Bakelite body, a small folding squeeze-lever, made in Krasnodar sometime in the last thirty years. No batteries; the lever spins a tiny generator against a rotor and the whole thing whirs like its namesake beetle when you pump it.[if lit] It is throwing a warm, unsteady yellow beam right now.[otherwise] Give it a few squeezes and the lamp will glow for as long as you keep pumping.[end if]".
+The chemical flashlight is a thing in the emergency locker. The printed name of the chemical flashlight is "flashlight". Understand "zhuchok" or "zhuk" or "torch" or "dynamo" or "lamp" as the chemical flashlight. The description of the chemical flashlight is "A Zhuchok — Bakelite body, a small folding squeeze-lever, made in Krasnodar sometime in the last thirty years. No batteries; the lever spins a tiny generator against a rotor and the whole thing whirs like its namesake beetle when you pump it.[if lit] It is throwing a warm, unsteady yellow beam right now.[otherwise] Give it a few squeezes and the lamp will glow for as long as you keep pumping.[end if]".
 
 The chemical flashlight can be lit or unlit. The chemical flashlight is unlit.
 

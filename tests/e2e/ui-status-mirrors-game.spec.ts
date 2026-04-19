@@ -52,14 +52,13 @@ test.describe("ui-status-mirrors-game", () => {
     await startNewGame(page);
     await sendCommand(page, "open emergency locker");
     await waitForStoryText(page, /flashlight|locker|Zhuchok/i);
-    // Object accepts "zhuchok", "torch", "flashlight" as synonyms.
-    await sendCommand(page, "take zhuchok");
+    await sendCommand(page, "take flashlight");
     await waitForStoryText(page, /Taken/i);
     await expect
       .poll(async () => (await asMirsEnd(page)).inventory.join(","), {
         timeout: 3_000,
       })
-      .toMatch(/Zhuchok/i);
+      .toMatch(/flashlight/i);
   });
 
   test("the machine-readable status line is suppressed from the visible panel", async ({
