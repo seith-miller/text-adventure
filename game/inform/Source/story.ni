@@ -58,7 +58,10 @@ The player is in the Crew Quarters.
 
 The sleeping harness is scenery in the Crew Quarters. The description of the sleeping harness is "A standard-issue cosmonaut sleeping harness, bolted to the bulkhead. The velcro straps are frayed from months of use."
 
-The emergency locker is a closed openable container in the Crew Quarters. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a Zhuchok — the hand-dynamo flashlight every cosmonaut grew up with.[end if]"
+The emergency locker is a closed openable container in the Crew Quarters. The emergency locker is fixed in place. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a Zhuchok — the hand-dynamo flashlight every cosmonaut grew up with.[end if]"
+
+Instead of taking the emergency locker:
+	say "The locker is bolted to the bulkhead. It's not going anywhere."
 
 [The Inform name "chemical flashlight" is kept for schema stability with
  save files and tests; the player sees "Zhuchok" via the printed name
@@ -129,7 +132,7 @@ The multimeter is a thing in the emergency toolkit. The description of the multi
 
 The manual pressure gauges are scenery in the Command Module. The description of the manual pressure gauges is "Analogue pressure gauges — the only instruments still functioning. They show hull pressure is nominal, but CO2 levels are slowly rising."
 
-The status console is a device in the Command Module. The status console is switched off. The description of the status console is "[if power-is-restored is true]The screen is dim and half the pixels are dead, but it works. Status readouts scroll across it — most of them bad. Hull integrity nominal. Life support offline. Communications array available. Oxygen reserves: critical.[otherwise]The main status console is completely dead. No power reaches it.[end if]"
+The status console is a device in the Command Module. The status console is fixed in place. The status console is switched off. The description of the status console is "[if power-is-restored is true]The screen is dim and half the pixels are dead, but it works. Status readouts scroll across it — most of them bad. Hull integrity nominal. Life support offline. Communications array available. Oxygen reserves: critical.[otherwise]The main status console is completely dead. No power reaches it.[end if]"
 
 To say comms-status-powered:
 	if distress-call-heard is false:
