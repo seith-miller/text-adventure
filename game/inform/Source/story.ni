@@ -105,7 +105,7 @@ The maintenance panel is scenery in the Main Corridor. The description of the ma
 
 Chapter 3 - Observation Cupola
 
-The Observation Cupola is east of the Main Corridor. "The observation cupola is a blister of reinforced glass on the station's nadir side.[if war-is-discovered is true] Through the viewport you can see the Earth below — scarred with blooms of orange and white across the nightside. The sight is devastating.[otherwise] Through the viewport you can see the Earth below. Something seems wrong with the nightside.[end if] The corridor lies to the west."
+The Observation Cupola is east of the Main Corridor. "The observation cupola is a blister of reinforced glass on the station's nadir side.[if war-is-discovered is true] Through the viewport you can see the Earth below. Fresh nuclear flashes keep blooming across the nightside — new ones every few seconds, a constellation of deaths.[otherwise] Through the viewport you can see the Earth below. Something seems wrong with the nightside.[end if] The corridor lies to the west."
 
 The viewport is scenery in the Observation Cupola.
 
@@ -115,9 +115,9 @@ Instead of examining the viewport:
 	if war-is-discovered is false:
 		now war-is-discovered is true;
 		decrease morale-level by 15;
-		say "You press your face to the reinforced glass and look down at the Earth.[paragraph break]The planet below is scarred.[paragraph break]Across the nightside — which should be a field of glittering city lights — there are new lights. Not cities. These are blooms of orange and white, vast and spreading, dotting the continents in clusters. Some are fading. Some are fresh, expanding in slow-motion circles that your mind refuses to interpret.[paragraph break]But you know what they are.[paragraph break]Nuclear exchange. Full-scale. Both sides.[paragraph break]The silence that follows your realization is heavier than vacuum.";
+		say "You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire — point fire. Hundreds of points. Blooms of orange and white: some already fading, some still expanding in slow-motion circles, fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. And from three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
 	otherwise:
-		say "The planet below is scarred. Blooms of orange and white dot the continents — nuclear fires, still burning. You force yourself to look away."
+		say "You look down. The flashes are still coming. Fewer now, perhaps, or perhaps only harder to pick out from the smoke. You force yourself to look away."
 
 Understand "look through [something]" as examining.
 
@@ -190,7 +190,7 @@ Understand "talk to [someone]" as talking to.
 Chapter 2 - Asking About Topics
 
 After asking Yevgenia about "emp/pulse/electromagnetic":
-	say "'A military-grade electromagnetic pulse,' Yevgenia says. 'It burned through every bus, every backup, even the battery isolators. I have never seen anything kill every system on a station simultaneously. Whatever happened down there was deliberate.'";
+	say "'A military-grade electromagnetic pulse,' Yevgenia says. 'It burned through every bus, every backup, even the battery isolators. I have never seen anything kill every system on a station simultaneously. Whatever is happening down there is deliberate.'";
 
 After asking Yevgenia about "station/mir/damage/status":
 	say "'The whole grid is dead,' Yevgenia says. 'Every bus. Every backup. Something burned through everything at once.[if power-is-restored is false] I think I can restore the isolated power bus in the command module, but I will need help.'[otherwise] At least we have partial power now. The isolated bus is holding.'[end if]";
@@ -208,7 +208,7 @@ After asking Yevgenia about "selengrad/moon/lunar":
 	say "'Selengrad was designed to be self-sustaining,' Yevgenia says, her eyes lighting up despite everything. 'Closed-loop atmosphere, water recycling, hydroponics. It has been in caretaker mode for two years, but the systems should still be functional. It is our best chance.'";
 
 After asking Yevgenia about "freedom/americans/chen/distress":
-	say "'Those people did not launch anything,' Yevgenia says firmly. 'They are cosmonauts. Like us. Whatever happened down there, we might need each other before this is over.'";
+	say "'Those people did not launch anything,' Yevgenia says firmly. 'They are cosmonauts. Like us. Whatever is happening down there, we might need each other before this is over.'";
 
 After asking Yevgenia about "war/nuclear/earth/attack":
 	say "'I do not want to think about who pushed which button first,' Yevgenia says, her hands clenching. 'That is a problem for people who still have a ground under their feet. Our problem is air, water, and power — in that order. Grieving can wait. Surviving cannot.'";
@@ -217,13 +217,13 @@ After asking Petrov about "emp/pulse/electromagnetic":
 	say "'In thirty years of service I have seen equipment failures, solar storms, even a depressurisation drill that turned real,' Petrov says. 'I have never seen anything kill every system on a station simultaneously. This was military grade.'";
 
 After asking Petrov about "war/nuclear/earth/attack":
-	say "'Nuclear exchange,' Petrov says, his voice barely above a whisper. 'Full-scale. Both sides. The pattern is unmistakable — military targets first, then cities. The textbook escalation everyone prayed would remain theoretical.'";
+	say "'Nuclear exchange,' Petrov says, his voice barely above a whisper. 'Full-scale. Both sides. Still going. Military targets first — we saw those go in the first few minutes. Then the cities. They are still detonating, even now. The textbook escalation everyone prayed would remain theoretical.'";
 
 After asking Petrov about "status/situation/damage":
 	say "'We are alive. The station is crippled but intact,' Petrov says with military precision. 'We need to restore what systems we can, assess our supplies, and make a plan. We cannot afford to waste time.'";
 
 After asking Petrov about "freedom/americans/chen/distress":
-	say "'Their country just tried to kill everyone I have ever loved,' Petrov says. His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.' He pauses. 'Up here, there are no sides. There is only survival.'";
+	say "'Their country is killing everyone I have ever loved,' Petrov says. 'Right now. As we speak.' His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.' He pauses. 'Up here, there are no sides. There is only survival.'";
 
 After asking Petrov about "selengrad/moon/lunar":
 	say "'It is insane,' Petrov says. Then, after a pause: 'It is also the only option that does not end with eight people suffocating in orbit. We plan for the Moon.'";
@@ -287,7 +287,7 @@ Distress-call-heard is a truth state that varies. Distress-call-heard is false.
 Instead of listening when the player is in the Command Module and power-is-restored is true and distress-call-heard is false:
 	now distress-call-heard is true;
 	increase morale-level by 3;
-	say "You tune the communications array carefully through the static.[paragraph break]Through the noise, a voice. Faint, broken, but unmistakably human. And unmistakably speaking English.[paragraph break]'...this is Freedom Station, transmitting on emergency frequency... if anyone... we have sustained critical damage from the electromagnetic pulse... life support failing... request assistance from any station, any vessel... five crew, two injured... oxygen reserves critical...'[paragraph break]The transmission loops. An automated distress call.[paragraph break]Freedom Station. The American orbital platform. Your mirror image. The Americans are dying.[paragraph break]Twelve hours ago, your nations tried to destroy each other."
+	say "You tune the communications array carefully through the static.[paragraph break]Through the noise, a voice. Faint, broken, but unmistakably human. And unmistakably speaking English.[paragraph break]'...this is Freedom Station, transmitting on emergency frequency... if anyone... we have sustained critical damage from the electromagnetic pulse... life support failing... request assistance from any station, any vessel... five crew, two injured... oxygen reserves critical...'[paragraph break]The transmission loops. An automated distress call.[paragraph break]Freedom Station. The American orbital platform. Your mirror image. The Americans are dying.[paragraph break]Below you, the nations that built both your stations are still destroying each other."
 
 Chapter 5 - Responding to Distress Call
 
@@ -337,7 +337,7 @@ Carry out staying silent:
 	now responded-to-americans is true.
 
 Report staying silent:
-	say "You look at Petrov. He looks at the radio. The distress call loops again.[paragraph break]Petrov closes his eyes. 'Their country just tried to kill everyone I have ever loved.' His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.'[paragraph break]He opens his eyes. 'We answer. That is not a political decision. It is a human one.'[paragraph break]He keys the microphone himself.[paragraph break]'Freedom Station, this is Commander Petrov, Mir-3. We hear you. What is your status? Over.'[paragraph break]A stunned silence. Then: 'Mir-3... this is Commander Chen. I... thank you. Thank you for answering.'[paragraph break]The conversation unfolds. Between both crews — eight people, dwindling oxygen, and a burning planet below. Yevgenia proposes the only plan that makes sense: Selengrad, the lunar base.[paragraph break]'Begin preparations,' Petrov orders. 'We have work to do.'"
+	say "You look at Petrov. He looks at the radio. The distress call loops again.[paragraph break]Petrov closes his eyes. 'Their country is killing everyone I have ever loved. Right now.' His jaw works. 'But those people up there — they did not launch anything. They are cosmonauts. Like us.'[paragraph break]He opens his eyes. 'We answer. That is not a political decision. It is a human one.'[paragraph break]He keys the microphone himself.[paragraph break]'Freedom Station, this is Commander Petrov, Mir-3. We hear you. What is your status? Over.'[paragraph break]A stunned silence. Then: 'Mir-3... this is Commander Chen. I... thank you. Thank you for answering.'[paragraph break]The conversation unfolds. Between both crews — eight people, dwindling oxygen, and a burning planet below. Yevgenia proposes the only plan that makes sense: Selengrad, the lunar base.[paragraph break]'Begin preparations,' Petrov orders. 'We have work to do.'"
 
 Part 6 - Scene-Specific Responses
 

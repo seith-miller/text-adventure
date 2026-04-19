@@ -39,9 +39,17 @@ A **tool**, not just flavor. The player can:
 
 ### 1. Dead ASAT drone (concrete, gameplay-critical)
 
-A Soviet anti-satellite bus, dormant since pre-war, knocked loose by
-the EMP and drifting into a collision course with Mir-3. Radar sweep
-reports it at ~45 minutes to impact.
+An anti-satellite bus — **origin unknown** — closing on Mir-3. The
+radar track shows neither IFF nor a recognizable launch signature.
+It could be Soviet. It could be American. It could be one of the
+proxy-state designs nobody has ever officially confirmed. What is
+certain is that it is closing at three kilometres per second and
+has the signature of a kinetic kill vehicle.
+
+> Yevgenia, over Petrov's shoulder: "I do not recognize its profile.
+> I do not think anyone does."
+
+Radar sweep reports it at ~15 turns to impact.
 
 - **If destroyed**: station safe. `asat-destroyed = true`. Morale +5.
 - **If ignored past N turns**: station is torn open. Game ends.

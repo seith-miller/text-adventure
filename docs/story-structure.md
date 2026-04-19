@@ -34,8 +34,9 @@ Four rooms. Darkness gates the first north move until the flashlight is lit.
 │     ASK ABOUT topics: emp, war, power, selengrad, americans, etc.      │
 │                                                                         │
 │  ACT 3  —  The viewport                                                │
-│     Observation Cupola: EXAMINE VIEWPORT → nuclear exchange revealed   │
-│     Morale −15 (war-is-discovered = true from here on)                 │
+│     Observation Cupola: EXAMINE VIEWPORT → hundreds of thermonuclear   │
+│     detonations, still blooming. WW3 is happening, live, right now,    │
+│     beneath them. Morale −15 (war-is-discovered = true from here on)   │
 │                                                                         │
 │  ACT 4  —  Restoring power                                             │
 │     Command Module: open toolkit → take multimeter → restore power     │

@@ -279,8 +279,10 @@ class TestProseQuality:
         assert "darkness so complete" in story_source
 
     def test_viewport_discovery_dramatic(self, story_source):
+        # Updated for the in-progress WWIII framing — the Earth isn't just
+        # "scarred" after the fact, hundreds of detonations are still going.
         assert "blooms of orange and white" in story_source.lower()
-        assert "scarred" in story_source
+        assert "thermonuclear" in story_source.lower() or "world war" in story_source.lower()
 
     def test_distress_call_text(self, story_source):
         assert "this is Freedom Station" in story_source
