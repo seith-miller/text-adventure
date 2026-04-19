@@ -35,17 +35,22 @@ COMPILE_SCRIPT = ROOT / "scripts" / "compile-inform7.sh"
 
 
 def _have_inform_compiler() -> bool:
-    """Return True if the Inform 7 toolchain is reachable."""
-    if shutil.which("inbuild") or shutil.which("inform7"):
-        return True
-    if os.environ.get("INFORM7_HOME") or os.environ.get("INFORM7_COMPILER"):
+    """Return True if the stable Inform 7 toolchain is reachable."""
+    stable_home = os.environ.get("INFORM7_STABLE_HOME", "/Users/seithmiller/Code/inform-stable")
+    ni = os.path.join(stable_home, "ni")
+    i6 = os.path.join(stable_home, "inform6")
+    internal = os.path.join(stable_home, "Internal")
+    if os.access(ni, os.X_OK) and os.access(i6, os.X_OK) and os.path.isdir(internal):
         return True
     return False
 
 
 needs_compiler = pytest.mark.skipif(
     not _have_inform_compiler(),
-    reason="Inform 7 toolchain not available (set INFORM7_HOME or install inbuild)",
+    reason=(
+        "Stable Inform 7 toolchain not available — see scripts/compile-inform7.sh "
+        "for installation instructions. Set INFORM7_STABLE_HOME to override the path."
+    ),
 )
 needs_glulxe = pytest.mark.skipif(
     not have_glulxe(),

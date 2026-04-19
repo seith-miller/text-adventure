@@ -16,13 +16,11 @@ Morale-level is a number that varies. Morale-level is 50.
 
 Chapter 2 - Status Bar
 
-Rule for constructing the status line:
-	fill status bar with Table of Fancy Status;
-	rule succeeds.
-
-Table of Fancy Status
-left	central	right
-" [location]"	""	"O2: [oxygen-level]% | Morale: [morale-level] "
+[In-story status bar intentionally omitted. The Web UI renders
+ O2 / Morale / Inventory from window.MirsEnd.setState, driven by
+ the MIRSEND status line emitted below. The Inform 7 v10.1.2
+ compiler we use doesn't recognize "fill status bar with ...", and
+ we don't need an in-game bar since the Web UI covers it.]
 
 Chapter 3 - Oxygen Timer
 
@@ -54,27 +52,32 @@ Part 2 - The Station
 
 Chapter 1 - Crew Quarters
 
-The Crew Quarters is a room. "You float in the cramped sleeping bay of Mir-2.[if the chemical flashlight is lit] The sickly green chemical glow reveals chaos — personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black.[otherwise] The darkness is absolute. You can barely see your hand in front of your face.[end if] The main corridor lies to the north."
+The Crew Quarters is a room. "You float in the cramped sleeping bay of Mir-2.[if the chemical flashlight is lit] The warm yellow beam from the Zhuchok reveals chaos — personal effects drift in zero-g: a photograph, a pen, a sachet of reconstituted borscht. The status panel above your bunk is dead black.[otherwise] The darkness is absolute. You can barely see your hand in front of your face.[end if] The main corridor lies to the north."
 
 The player is in the Crew Quarters.
 
 The sleeping harness is scenery in the Crew Quarters. The description of the sleeping harness is "A standard-issue cosmonaut sleeping harness, bolted to the bulkhead. The velcro straps are frayed from months of use."
 
-The emergency locker is a closed openable container in the Crew Quarters. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a chemical flashlight.[end if]"
+The emergency locker is a closed openable container in the Crew Quarters. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a Zhuchok — the hand-dynamo flashlight every cosmonaut grew up with.[end if]"
 
-The chemical flashlight is a thing in the emergency locker. The description of the chemical flashlight is "A chemical glow stick.[if lit] It emits a sickly green glow that turns every surface into a cave wall of shadow and pale light.[otherwise] Crack it and it will emit a sickly green light for several hours.[end if]".
+[The Inform name "chemical flashlight" is kept for schema stability with
+ save files and tests; the player sees "Zhuchok" via the printed name
+ and Understand synonyms below.]
+The chemical flashlight is a thing in the emergency locker. The printed name of the chemical flashlight is "Zhuchok". Understand "zhuchok" or "zhuk" or "torch" or "dynamo" as the chemical flashlight. The description of the chemical flashlight is "A Zhuchok — Bakelite body, a small folding squeeze-lever, made in Krasnodar sometime in the last thirty years. No batteries; the lever spins a tiny generator against a rotor and the whole thing whirs like its namesake beetle when you pump it.[if lit] It is throwing a warm, unsteady yellow beam right now.[otherwise] Give it a few squeezes and the lamp will glow for as long as you keep pumping.[end if]".
 
 The chemical flashlight can be lit or unlit. The chemical flashlight is unlit.
 
 The chemical flashlight is a device.
 
 Instead of switching on the chemical flashlight:
+	if the chemical flashlight is not carried by the player:
+		try silently taking the chemical flashlight;
 	if the chemical flashlight is lit:
-		say "The flashlight is already glowing.";
+		say "The Zhuchok is already glowing.";
 	otherwise:
 		now the chemical flashlight is lit;
 		increase morale-level by 5;
-		say "You crack the chemical flashlight. A sickly green glow floods your surroundings, revealing the cramped sleeping bay in eerie detail."
+		say "You squeeze the lever in a quick rhythm. The dynamo whirs up with that familiar beetle-drone and the little lamp throws a warm yellow beam across the bay. Shadows — cables, straps, the edges of your bunk — resolve into real objects again."
 
 The photograph is a thing in the Crew Quarters. The description of the photograph is "A small photograph of a family standing before a dacha in winter. The faces smile from another lifetime."
 

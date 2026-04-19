@@ -139,9 +139,9 @@ class TestStatusVariables:
         ).read()
 
     def test_status_bar_in_inform7(self, story_source):
-        """Inform 7 has a status bar showing O2 and Morale."""
-        assert "O2:" in story_source
-        assert "Morale:" in story_source
+        """Inform 7 source emits MIRSEND status with oxygen + morale for the UI."""
+        assert "MIRSEND o2=" in story_source
+        assert "morale=" in story_source
 
     def test_state_set_api(self, ui_js):
         """UI setState API can update o2, morale, inventory, currentRoom."""

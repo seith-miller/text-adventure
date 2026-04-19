@@ -162,15 +162,20 @@ class TestResources:
         assert "Morale-level is 50" in story_source
 
     def test_oxygen_displayed_in_status(self, story_source):
-        assert "O2:" in story_source
+        # The in-game status bar is intentionally omitted — the Web UI
+        # displays O2 from window.MirsEnd.setState, driven by the MIRSEND
+        # status line emitted every turn.
         assert "oxygen-level" in story_source.lower()
+        assert "MIRSEND o2=" in story_source
 
     def test_morale_displayed_in_status(self, story_source):
-        assert "Morale:" in story_source
         assert "morale-level" in story_source.lower()
+        assert "MIRSEND" in story_source and "morale=" in story_source
 
     def test_status_bar_rule(self, story_source):
-        assert "constructing the status line" in story_source
+        # Status bridge is the MIRSEND every-turn emission, consumed by ui.js.
+        assert "MIRSEND" in story_source
+        assert "mirsend-inventory-list" in story_source
 
     def test_oxygen_decreases_over_time(self, story_source):
         assert "decrease oxygen-level by 1" in story_source

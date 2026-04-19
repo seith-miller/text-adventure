@@ -81,19 +81,23 @@ def test_build_script_checks_source():
     )
 
 
-def test_build_script_uses_inbuild():
-    """Build script orchestrates compilation through inbuild.
+def test_build_script_drives_inform7_toolchain():
+    """Build script runs the Inform 7 → Inform 6 → Glulx pipeline.
 
-    The script was rewritten in d61de4a to use the native Inform 7 toolchain
-    (inbuild → inform7 → Inform 6 → Glulx). The earlier Docker fallback
-    was removed; this test documents the current contract.
+    We pin to the stable v10.1.2 `ni` compiler from the Inform 7 macOS IDE
+    because the master-branch inform7/inbuild (v10.2.0) was non-deterministically
+    producing broken binaries. The toolchain is located via INFORM7_STABLE_HOME.
     """
     path = os.path.join(ROOT, "scripts", "compile-inform7.sh")
     with open(path) as f:
         content = f.read()
-    assert "inbuild" in content, "Build script no longer drives inbuild"
-    assert "INFORM7_HOME" in content or "INFORM7_COMPILER" in content, (
-        "Build script does not look up the toolchain via env vars"
+    # Invokes ni + inform6
+    assert "ni" in content and "inform6" in content, (
+        "Build script does not drive the ni + inform6 pipeline"
+    )
+    # Locatable via environment variable
+    assert "INFORM7_STABLE_HOME" in content, (
+        "Build script does not look up the toolchain via INFORM7_STABLE_HOME"
     )
 
 
