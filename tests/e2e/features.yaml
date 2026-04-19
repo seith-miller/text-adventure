@@ -1,0 +1,42 @@
+# MIR'S END — Feature Registry
+#
+# Every user-visible feature we promise to support is listed here.
+# Each entry MUST have a corresponding e2e test file at
+# `tests/e2e/<id>.spec.ts`. The meta test at `tests/e2e/_catalog.spec.ts`
+# enforces that mapping.
+#
+# Adding a feature:
+#   1. Append a new entry below.
+#   2. Create `tests/e2e/<id>.spec.ts` with at least one test.
+#   3. Run `npx playwright test` — the catalog test will verify the link.
+#
+# Fields:
+#   id            — kebab-case, matches spec filename
+#   area          — grouping (menu, save-load, intro, gameplay, ui, story)
+#   demonstrates  — one-line description of what this proves
+#   surfaces      — which observation surfaces the feature touches
+#                   (dom | state | storage | interpreter)
+
+- id: menu-new-game
+  area: menu
+  demonstrates: >
+    Clicking "New Game" transitions past the title screen, skips the
+    intro on Escape, boots the Inform 7 story, and renders the opening
+    narrative into the story panel.
+  surfaces: [dom, state, interpreter]
+
+- id: save-roundtrip
+  area: save-load
+  demonstrates: >
+    A save written via the UI persists to localStorage under a known
+    key, and reading that key back yields a payload that (when applied)
+    restores the game state. Covers the DOM → storage → DOM loop.
+  surfaces: [dom, storage, state]
+
+- id: command-moves-room
+  area: gameplay
+  demonstrates: >
+    Typing a movement command (e.g. NORTH) into the input drives the
+    interpreter, which updates currentRoom in window.MirsEnd.getState()
+    and emits new room text into the story panel.
+  surfaces: [dom, state, interpreter]

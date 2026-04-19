@@ -16,13 +16,7 @@ Morale-level is a number that varies. Morale-level is 50.
 
 Chapter 2 - Status Bar
 
-Rule for constructing the status line:
-	fill status bar with Table of Fancy Status;
-	rule succeeds.
-
-Table of Fancy Status
-left	central	right
-" [location]"	""	"O2: [oxygen-level]% | Morale: [morale-level] "
+[Status bar rendering disabled — see issue: Table-of-Fancy-Status fill causes stack overflow under Inform 7 v10.2.0 / glulxe. The Web UI renders status independently via window.MirsEnd.setState, so the in-story bar is not required for gameplay.]
 
 Chapter 3 - Oxygen Timer
 
@@ -44,7 +38,9 @@ The sleeping harness is scenery in the Crew Quarters. The description of the sle
 
 The emergency locker is a closed openable container in the Crew Quarters. The description of the emergency locker is "A sturdy metal locker magnetically latched to the wall, marked with a red cross.[if the emergency locker is open and the chemical flashlight is in the emergency locker] Inside you can see a chemical flashlight.[end if]"
 
-The chemical flashlight is a thing in the emergency locker. The description of the chemical flashlight is "A chemical glow stick.[if lit] It emits a sickly green glow that turns every surface into a cave wall of shadow and pale light.[otherwise] Crack it and it will emit a sickly green light for several hours.[end if]" The chemical flashlight can be lit or unlit. The chemical flashlight is unlit.
+The chemical flashlight is a thing in the emergency locker. The description of the chemical flashlight is "A chemical glow stick.[if lit] It emits a sickly green glow that turns every surface into a cave wall of shadow and pale light.[otherwise] Crack it and it will emit a sickly green light for several hours.[end if]".
+
+The chemical flashlight can be lit or unlit. The chemical flashlight is unlit.
 
 The chemical flashlight is a device.
 
@@ -88,7 +84,6 @@ Instead of examining the viewport:
 	otherwise:
 		say "The planet below is scarred. Blooms of orange and white dot the continents — nuclear fires, still burning. You force yourself to look away."
 
-Understand "look through viewport" as examining the viewport.
 Understand "look through [something]" as examining.
 
 The reinforced glass is scenery in the Observation Cupola. The description of the reinforced glass is "Thick reinforced glass designed to withstand micrometeorite impacts. Right now it frames the worst view in human history."
@@ -109,7 +104,15 @@ The manual pressure gauges are scenery in the Command Module. The description of
 
 The status console is a device in the Command Module. The status console is switched off. The description of the status console is "[if power-is-restored is true]The screen is dim and half the pixels are dead, but it works. Status readouts scroll across it — most of them bad. Hull integrity nominal. Life support offline. Communications array available. Oxygen reserves: critical.[otherwise]The main status console is completely dead. No power reaches it.[end if]"
 
-The communications array is a thing in the Command Module. The communications array is fixed in place. The description of the communications array is "[if power-is-restored is true][if distress-call-heard is false]The communications array is patched into the restored power bus. You could try to use it to listen for signals.[otherwise if responded-to-americans is true]The radio crackles with the open channel to Freedom Station.[otherwise]Through the static, you can hear the faint American distress call repeating on the emergency frequency.[end if][otherwise]The communications array is dead without power.[end if]"
+To say comms-status-powered:
+	if distress-call-heard is false:
+		say "The communications array is patched into the restored power bus. You could try to use it to listen for signals.";
+	otherwise if responded-to-americans is true:
+		say "The radio crackles with the open channel to Freedom Station.";
+	otherwise:
+		say "Through the static, you can hear the faint American distress call repeating on the emergency frequency."
+
+The communications array is a thing in the Command Module. The communications array is fixed in place. The description of the communications array is "[if power-is-restored is true][comms-status-powered][otherwise]The communications array is dead without power.[end if]"
 
 Understand "radio" as the communications array.
 

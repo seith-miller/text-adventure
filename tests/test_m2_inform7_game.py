@@ -414,7 +414,9 @@ class TestParserResponses:
             '"respond" as transmitting',
             '"stay silent" as staying silent',
             '"talk to [someone]" as talking to',
-            '"look through viewport" as examining the viewport',
+            # Viewport uses the generic "look through [something]" form; the
+            # viewport-specific rule was illegal under Inform 7 v10.2.0.
+            '"look through [something]" as examining',
         ]
         for rule in custom_actions:
             assert rule in story_source, f"Missing Understand rule: {rule}"

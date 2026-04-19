@@ -251,16 +251,15 @@ def test_play_html_has_save_load_buttons():
 
 
 def test_play_html_loads_save_manager():
-    """play.html includes save-manager.js script before ui.js."""
+    """play.html loads save-manager.js via <script> before the ui.js tag."""
     path = os.path.join(GAME_DIR, "play.html")
     with open(path) as f:
         content = f.read()
-    assert "save-manager.js" in content, (
+    assert 'src="save-manager.js"' in content, (
         "play.html does not reference save-manager.js"
     )
-    # save-manager.js should load before ui.js
-    sm_pos = content.index("save-manager.js")
-    ui_pos = content.index("ui.js")
+    sm_pos = content.index('src="save-manager.js"')
+    ui_pos = content.index('src="ui.js"')
     assert sm_pos < ui_pos, "save-manager.js must load before ui.js"
 
 

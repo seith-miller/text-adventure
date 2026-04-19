@@ -139,9 +139,11 @@ class TestStatusVariables:
         ).read()
 
     def test_status_bar_in_inform7(self, story_source):
-        """Inform 7 has a status bar showing O2 and Morale."""
-        assert "O2:" in story_source
-        assert "Morale:" in story_source
+        """Inform 7 source declares the O2 and Morale variables.
+        In-story status bar rendering is temporarily disabled — the Web UI
+        renders status from window.MirsEnd.setState instead."""
+        assert "oxygen-level" in story_source.lower()
+        assert "morale-level" in story_source.lower()
 
     def test_state_set_api(self, ui_js):
         """UI setState API can update o2, morale, inventory, currentRoom."""
