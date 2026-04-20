@@ -72,6 +72,8 @@ The chemical flashlight can be lit or unlit. The chemical flashlight is unlit.
 
 The chemical flashlight is a device.
 
+Flashlight-first-lit is a truth state that varies. Flashlight-first-lit is false.
+
 Instead of switching on the chemical flashlight:
 	if the chemical flashlight is not carried by the player:
 		try silently taking the chemical flashlight;
@@ -80,11 +82,24 @@ Instead of switching on the chemical flashlight:
 	otherwise:
 		now the chemical flashlight is lit;
 		increase morale-level by 5;
+		[Score the achievement here — Inform's Instead rule short-circuits
+		 the action chain so an "After switching on" rule never fires.]
+		if flashlight-first-lit is false:
+			now flashlight-first-lit is true;
+			increase the score by 1;
 		say "You squeeze the lever in a quick rhythm. The dynamo whirs up with that familiar beetle-drone and the little lamp throws a warm yellow beam across the bay. Shadows — cables, straps, the edges of your bunk — resolve into real objects again."
 
 The photograph is a thing in the Crew Quarters. The description of the photograph is "A small photograph of a family standing before a dacha in winter. The faces smile from another lifetime."
 
 The pen is a thing in the Crew Quarters. The description of the pen is "A standard-issue ballpoint pen, drifting lazily in zero gravity."
+
+The borscht is scenery in the Crew Quarters. Understand "sachet" or "borscht" or "borshch" or "soup" or "rations" or "ration" as the borscht. The printed name of the borscht is "sachet of reconstituted borscht". The description of the borscht is "A foil sachet of reconstituted beet borscht. Cold. The label is in Cyrillic. You have eaten thousands of these. The thought of opening one now is faintly nauseating."
+
+Instead of taking the borscht:
+	say "The sachet drifts away from your reach. You have no appetite for it."
+
+Instead of eating the borscht:
+	say "Not now. The thought turns your stomach."
 
 The bunk status panel is scenery in the Crew Quarters. The description of the bunk status panel is "The status panel above your bunk is dead black. Not even the emergency indicators are lit."
 
@@ -128,7 +143,11 @@ The maintenance panel is scenery in the Main Corridor. The description of the ma
 
 [Yevgenia's body — was an NPC, now scenery. Keep the Inform object
  name for save-state compatibility.]
-Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" or "her" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova, the station's engineer, suspended in the middle of the corridor by zero-g. Her face is calm — she probably never registered what happened. A thin film of frost on her eyelashes. She still has her flight notebook clipped to the chest of her suit. The hand nearest the maintenance panel holds a screwdriver she will never put down."
+Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova, the station's engineer, suspended in the middle of the corridor by zero-g. Her face is calm — she probably never registered what happened. A thin film of frost on her eyelashes. She still has her flight notebook clipped to the chest of her suit. The hand nearest the maintenance panel holds a screwdriver she will never put down."
+
+After examining Yevgenia:
+	now the prior named object is Yevgenia;
+	continue the action.
 
 Instead of taking Yevgenia:
 	say "You can't bring yourself to move her. Not yet."
@@ -172,7 +191,11 @@ Understand "look through [something]" as examining.
 The reinforced glass is scenery in the Observation Cupola. The description of the reinforced glass is "Thick reinforced glass designed to withstand micrometeorite impacts. Right now it frames the worst view in human history."
 
 [Petrov's body — was an NPC, now scenery.]
-Petrov is scenery in the Observation Cupola. The printed name of Petrov is "Commander Petrov's body". Understand "petrov" or "commander" or "body" or "man" or "him" as Petrov. The description of Petrov is "Commander Petrov, thirty years' service, one hand still on the hatch wheel. He was trying to get inside the cupola — trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had."
+Petrov is a man. Petrov is scenery in the Observation Cupola. The printed name of Petrov is "Commander Petrov's body". Understand "petrov" or "commander" or "body" as Petrov. The description of Petrov is "Commander Petrov, thirty years' service, one hand still on the hatch wheel. He was trying to get inside the cupola — trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had."
+
+After examining Petrov:
+	now the prior named object is Petrov;
+	continue the action.
 
 Instead of taking Petrov:
 	say "You can't."
@@ -180,7 +203,7 @@ Instead of taking Petrov:
 Instead of attacking Petrov:
 	say "He is beyond anything you could do."
 
-The mechanical watch is a thing that is part of Petrov. The description of the mechanical watch is "Petrov's mechanical watch — no electronics, unaffected by the EMP. It still ticks. It reads just past 03:47 Moscow time. The impact was not long ago."
+The mechanical watch is a thing that is part of Petrov. The description of the mechanical watch is "Petrov's mechanical watch — no electronics, unaffected by the EMP. It still ticks, the second hand sweeping placidly past a man who is no longer using it. It reads just past 03:54 Moscow time, only a few minutes since the impact."
 
 Instead of taking the mechanical watch:
 	say "You consider taking the watch. You decide against it. Let him keep the time."
@@ -253,7 +276,7 @@ Listening-to-station is a truth state that varies. Listening-to-station is false
 Instead of listening when the player is in the Crew Quarters and listening-to-station is false:
 	now listening-to-station is true;
 	decrease morale-level by 3;
-	say "You hold your breath and listen.[paragraph break]The station groans — low metal stress, the long settling of something freshly deformed. Through the hatch you can hear the hiss of a slow leak somewhere well beyond the corridor, narrowing, gone.[paragraph break]And nothing else. No voices. No footsteps. No tapping of knuckles against the bulkhead.[paragraph break]If anyone else survived, they are not calling out.[paragraph break]You try to remember how many people were on watch. You try not to remember."
+	say "You hold your breath and listen.[paragraph break]The station groans — low metal stress, the long settling of something freshly deformed. Through the hatch you can hear the hiss of a slow leak somewhere well beyond the corridor, narrowing, gone.[paragraph break]And nothing else. No voices. No footsteps. No human sound at all.[paragraph break]If anyone else survived, they are not calling out.[paragraph break]You try to remember how many people were on watch. You try not to remember."
 
 Instead of listening when the player is in the Crew Quarters:
 	say "The station groans. Nothing else."
@@ -405,9 +428,8 @@ Chapter 1 - Achievements
  Report narrative is suppressed — the player sees only the score bump
  and misses the intended response text. See issue #34.]
 
-After switching on the chemical flashlight for the first time:
-	increase the score by 1;
-	continue the action.
+[Switching on the flashlight scores +1 inside the Instead rule above —
+ Inform's Instead short-circuits action processing so After never fires.]
 
 After opening the emergency locker for the first time:
 	increase the score by 1;
