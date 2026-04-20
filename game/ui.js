@@ -113,6 +113,9 @@
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
 
+    /* Record the playtest session on every change to #story-output. */
+    initSessionRecorder();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -160,6 +163,7 @@
     state.morale = 70;
     state.inventory = [];
     state.gameStarted = true;
+    state.sessionStartedAt = new Date().toISOString();
 
     /* Clear story output */
     storyOutput.innerHTML = "";
@@ -194,6 +198,8 @@
           state.historyIndex = state.commandHistory.length;
         }
         state.gameStarted = true;
+        state.sessionStartedAt =
+          state.sessionStartedAt || new Date().toISOString();
         storyOutput.innerHTML = "";
         hideMenu();
         updateStatus();
@@ -226,6 +232,7 @@
       state.commandHistory = saved.commandHistory;
     state.historyIndex = state.commandHistory.length;
     state.gameStarted = true;
+    state.sessionStartedAt = state.sessionStartedAt || new Date().toISOString();
 
     /* Clear story output and show restored message */
     storyOutput.innerHTML = "";
@@ -278,6 +285,9 @@
 
       appendPlayerInput(cmd);
       sendToInterpreter(cmd);
+      /* Session persistence is handled by a MutationObserver on
+         #story-output — it fires for any input path, including the
+         Playwright helpers that drive GlkOte's input directly. */
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (state.historyIndex > 0) {
@@ -865,6 +875,7 @@
     var saveBtn = document.getElementById("btn-save");
     var loadBtn = document.getElementById("btn-load");
     var continueBtn = document.getElementById("btn-continue");
+    var exportBtn = document.getElementById("btn-export");
 
     if (saveBtn) {
       saveBtn.addEventListener("click", (e) => {
@@ -884,6 +895,94 @@
         continueGame();
       });
     }
+    if (exportBtn) {
+      exportBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        downloadSession();
+      });
+    }
+    /* Ctrl+E / Cmd+E anywhere on the page exports too. */
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        downloadSession();
+      }
+    });
+  }
+
+  /* ── Playtest session recording ── */
+
+  var SESSION_KEY = "mirsend_session";
+  var SESSION_FORMAT_VERSION = 1;
+  var sessionPersistTimer = null;
+
+  /* Persist the session to localStorage on every turn so a page crash or
+     reload doesn't lose the playtest record. */
+  function persistSession() {
+    if (!state.gameStarted) return;
+    try {
+      const session = snapshotSession();
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (_e) {
+      /* localStorage may be unavailable or full — silently ignore. */
+    }
+  }
+
+  /* Observe the story panel for any update (new command echo, new
+     interpreter response) and persist the session. Debounced so a burst
+     of paragraphs from one response produces a single write. */
+  function initSessionRecorder() {
+    if (!storyOutput) return;
+    var observer = new MutationObserver(() => {
+      if (sessionPersistTimer) clearTimeout(sessionPersistTimer);
+      sessionPersistTimer = setTimeout(persistSession, 250);
+    });
+    observer.observe(storyOutput, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  function snapshotSession() {
+    return {
+      version: SESSION_FORMAT_VERSION,
+      startedAt: state.sessionStartedAt || null,
+      exportedAt: new Date().toISOString(),
+      turnCount: state.commandHistory.length,
+      commandHistory: state.commandHistory.slice(),
+      transcript: storyOutput ? storyOutput.textContent || "" : "",
+      finalState: {
+        currentRoom: state.currentRoom,
+        o2: state.o2,
+        morale: state.morale,
+        inventory: state.inventory.slice(),
+        gameStarted: state.gameStarted,
+      },
+    };
+  }
+
+  function exportSession() {
+    return snapshotSession();
+  }
+
+  function downloadSession() {
+    var session = snapshotSession();
+    var json = JSON.stringify(session, null, 2);
+    var blob = new Blob([json], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var stamp = (session.startedAt || new Date().toISOString()).replace(
+      /[:.]/g,
+      "-",
+    );
+    a.href = url;
+    a.download = `mirsend-session-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    appendSystemText("[Session exported.]");
   }
 
   /* ── Public API for interpreter integration ── */
@@ -907,6 +1006,8 @@
     hideMenu: hideMenu,
     saveGame: saveGame,
     startNewGame: startNewGame,
+    exportSession: exportSession,
+    downloadSession: downloadSession,
     showSaveModal: () => showSaveLoadModal("save"),
     showLoadModal: () => showSaveLoadModal("load"),
     quickSave: quickSave,

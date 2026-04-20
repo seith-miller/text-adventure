@@ -59,3 +59,12 @@
     response. Guards against regressions where the input-forwarding
     logic (ui.js sendToInterpreter) silently stops driving GlkOte.
   surfaces: [dom, interpreter]
+
+- id: session-export
+  area: ui
+  demonstrates: >
+    Every playthrough is recorded to localStorage as the player types
+    commands. The recording includes the full transcript, command
+    history, and final state. Clicking Export (or Ctrl/Cmd+E) downloads
+    the session as JSON, which can be shared for post-playtest review.
+  surfaces: [dom, storage, state]
