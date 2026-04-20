@@ -620,6 +620,13 @@
           });
           $input.trigger(jqEvt);
         }
+
+        /* Return focus to the visible #command-input so the player can
+           keep typing without clicking. Defer slightly: GlkOte may
+           re-focus its own LineInput when it renders the next prompt,
+           so we wait one frame plus a small timeout to win the race. */
+        setTimeout(() => commandInput.focus(), 0);
+        setTimeout(() => commandInput.focus(), 50);
         return;
       }
     }

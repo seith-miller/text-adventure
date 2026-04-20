@@ -46,4 +46,32 @@ test.describe("user-input-reaches-interpreter", () => {
     expect(story).toMatch(/revealing a flashlight/i);
     expect(story).toMatch(/Taken/i);
   });
+
+  test("focus stays on #command-input after pressing Enter (keyboard-only play)", async ({
+    page,
+  }) => {
+    await startNewGame(page);
+    const cmdInput = page.locator("#command-input");
+
+    // First command — explicitly focus + type + submit.
+    await cmdInput.focus();
+    await page.keyboard.type("open emergency locker");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(600);
+
+    // After Enter, focus must still be on #command-input. We type the next
+    // command WITHOUT focusing first — it must land in #command-input, not
+    // somewhere else (GlkOte's offscreen input was the bug).
+    await page.keyboard.type("take flashlight");
+    // Inspect the visible input value before pressing Enter to confirm
+    // each character went where we expected.
+    const typedValue = await cmdInput.inputValue();
+    expect(typedValue).toBe("take flashlight");
+
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(600);
+
+    const story = await storyText(page);
+    expect(story).toMatch(/Taken/i);
+  });
 });
