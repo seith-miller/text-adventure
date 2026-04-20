@@ -304,13 +304,9 @@ class TestProseQuality:
 # ── Ink Files Preserved ───────────────────────────────────────────────
 
 
-class TestInkPreserved:
-    """Original Ink files remain in the repository."""
+class TestInkRetired:
+    """The Ink draft and compile pipeline were retired. Narrative lives
+    in Inform 7 only."""
 
-    def test_opening_ink_exists(self):
-        path = os.path.join(ROOT, "game", "story", "opening.ink")
-        assert os.path.isfile(path), "opening.ink should be kept as reference"
-
-    def test_main_ink_exists(self):
-        path = os.path.join(ROOT, "game", "story", "main.ink")
-        assert os.path.isfile(path), "main.ink should be kept as reference"
+    def test_ink_directory_gone(self):
+        assert not os.path.isdir(os.path.join(ROOT, "game", "story"))

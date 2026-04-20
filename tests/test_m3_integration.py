@@ -503,9 +503,9 @@ class TestM1Regression:
         import stat
         assert os.stat(path).st_mode & stat.S_IXUSR
 
-    def test_ink_reference_files_preserved(self):
-        assert os.path.isfile(os.path.join(GAME_DIR, "story", "opening.ink"))
-        assert os.path.isfile(os.path.join(GAME_DIR, "story", "main.ink"))
+    def test_ink_directory_retired(self):
+        """The Ink draft was retired in the repo cleanup."""
+        assert not os.path.isdir(os.path.join(GAME_DIR, "story"))
 
     def test_ascii_art_files_all_present(self):
         ascii_dir = os.path.join(GAME_DIR, "assets", "ascii")

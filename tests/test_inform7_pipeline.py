@@ -162,12 +162,12 @@ def test_readme_documents_browser_playback():
     )
 
 
-def test_ink_files_preserved():
-    """Original Ink files are kept as reference."""
-    opening = os.path.join(ROOT, "game", "story", "opening.ink")
-    main = os.path.join(ROOT, "game", "story", "main.ink")
-    assert os.path.isfile(opening), "opening.ink removed (should be kept as reference)"
-    assert os.path.isfile(main), "main.ink removed (should be kept as reference)"
+def test_ink_toolchain_removed():
+    """The Ink draft files and compile pipeline were retired in the
+    repo cleanup. The narrative lives entirely in Inform 7 now."""
+    assert not os.path.isdir(os.path.join(ROOT, "game", "story"))
+    assert not os.path.isfile(os.path.join(ROOT, "scripts", "compile-ink.mjs"))
+    assert not os.path.isfile(os.path.join(ROOT, "tests", "story-validation.mjs"))
 
 
 def test_inform7_project_structure():

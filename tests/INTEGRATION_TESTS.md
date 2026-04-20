@@ -96,7 +96,7 @@ The M1 gate has three sections:
 ### Regression
 - `package.json` still wires `npm run build:story` to the Inform 7 script.
 - `npx biome check .` passes (lint regression of CI workflow #6).
-- `node_modules` exists and `inkjs` is still installed (regression of #3).
+- `node_modules` exists and Playwright is installed.
 
 ## What M2 verifies
 
@@ -218,7 +218,7 @@ three M3 features and confirms M1/M2 regression:
 - Duration under 60 seconds
 
 ### Regression (M1 + M2)
-- Inform 7 source, compile script, Ink reference files, ASCII art all intact
+- Inform 7 source, compile script, ASCII art all intact
 - Package.json build scripts, .gitignore, README documentation
 - Web UI files, room-art mapping, known rooms, status variables
 - Story content: rooms, NPCs, resource tracking

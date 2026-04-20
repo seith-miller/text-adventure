@@ -278,7 +278,8 @@ def test_biome_lint_passes():
 
 
 def test_node_dependencies_intact():
-    """node_modules is populated and inkjs (still referenced) is installed."""
+    """node_modules is populated. Inkjs was removed when the Ink toolchain
+    was retired in favor of Inform 7."""
     nm = ROOT / "node_modules"
     assert nm.is_dir(), "node_modules missing — run `npm install`"
-    assert (nm / "inkjs").is_dir(), "inkjs not installed (regression of #3)"
+    assert (nm / "@playwright" / "test").is_dir(), "Playwright not installed"
