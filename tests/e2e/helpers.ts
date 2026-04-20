@@ -67,7 +67,7 @@ export async function startNewGame(page: Page): Promise<void> {
   // Wait for the first line of Inform narrative to render.
   await page
     .locator("#story-output")
-    .filter({ hasText: "You wake to nothing" })
+    .filter({ hasText: "You wake to" })
     .waitFor({ timeout: 15_000 });
 }
 

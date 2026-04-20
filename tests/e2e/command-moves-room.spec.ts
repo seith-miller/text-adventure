@@ -39,6 +39,9 @@ test.describe("command-moves-room", () => {
       "open emergency locker",
       "take chemical flashlight",
       "switch on chemical flashlight",
+      // Corridor is hard vacuum at start (prologue ASAT impact).
+      // Equalize via the manual pressure valve before NORTH works.
+      "pull lever",
       "north",
     ];
     let expected = (await asMirsEnd(page)).commandHistory.length;

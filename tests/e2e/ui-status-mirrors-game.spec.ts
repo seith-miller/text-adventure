@@ -38,7 +38,7 @@ test.describe("ui-status-mirrors-game", () => {
     await sendCommand(page, "take chemical flashlight");
     await waitForStoryText(page, /Taken/i);
     await sendCommand(page, "switch on chemical flashlight");
-    await waitForStoryText(page, /green|glow/i);
+    await waitForStoryText(page, /yellow|whir|beetle|glowing/i);
     /* +5 morale from the flashlight Instead rule; morale doesn't decay per
        turn (only oxygen does), so the bump should be observable. */
     await expect

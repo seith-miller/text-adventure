@@ -184,7 +184,7 @@ def test_story_responds_to_look():
     assert "sleeping bay of Mir-3" in output, (
         "LOOK did not return the Crew Quarters description"
     )
-    assert "main corridor lies to the north" in output
+    assert "sealed hatch" in output.lower() or "main corridor" in output.lower()
 
 
 @needs_glulxe
@@ -223,6 +223,9 @@ def test_story_supports_navigation():
                 "open emergency locker",
                 "take chemical flashlight",
                 "switch on chemical flashlight",
+                # Corridor is hard vacuum at start (prologue impact). Equalize
+                # via the manual pressure valve before the hatch will open.
+                "pull lever",
                 "n",
                 "quit",
             ],

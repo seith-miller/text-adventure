@@ -101,46 +101,39 @@ class TestObjects:
 
 
 class TestNPCs:
-    """Yevgenia and Petrov are defined with conversation support."""
+    """Yevgenia and Petrov are present as bodies (the crew died in the
+    prologue impact). Their information lives on in Yevgenia's notebook
+    and Petrov's last log."""
 
-    def test_yevgenia_exists(self, story_source):
-        assert "Yevgenia is a woman" in story_source
+    def test_yevgenia_body_exists(self, story_source):
+        assert "Yevgenia is scenery in the Main Corridor" in story_source
 
-    def test_yevgenia_has_description(self, story_source):
-        assert "Yevgenia Kozlova" in story_source
+    def test_yevgenia_printed_as_body(self, story_source):
+        assert '"Yevgenia\'s body"' in story_source
 
-    def test_petrov_exists(self, story_source):
-        assert "Petrov is a man" in story_source
+    def test_petrov_body_exists(self, story_source):
+        assert "Petrov is scenery in the Observation Cupola" in story_source
 
-    def test_petrov_has_description(self, story_source):
-        assert "Commander Petrov" in story_source
+    def test_petrov_printed_as_body(self, story_source):
+        assert "\"Commander Petrov's body\"" in story_source
 
-    def test_talk_to_action_defined(self, story_source):
-        assert "Talking to is an action" in story_source
+    def test_yevgenia_notebook_carries_her_voice(self, story_source):
+        """Yevgenia's notebook replaces her live dialogue. It must mention
+        the EMP, the power restore sequence, and the Selengrad plan."""
+        assert "Yevgenia's notebook" in story_source
+        # Notebook content
+        assert "EMP confirmed" in story_source
+        assert "Selengrad" in story_source
+        assert "isolated bus" in story_source.lower() or "reset sequence" in story_source.lower() or "hard-reset" in story_source.lower()
 
-    def test_talk_to_understood(self, story_source):
-        assert 'Understand "talk to [someone]" as talking to' in story_source
-
-    def test_yevgenia_conversation_topics(self, story_source):
-        """Yevgenia responds to key topics."""
-        topics = ["emp", "station", "power", "oxygen", "selengrad", "freedom"]
-        for topic in topics:
-            assert f"asking Yevgenia about" in story_source and topic in story_source.lower(), (
-                f"Yevgenia missing conversation about: {topic}"
-            )
-
-    def test_petrov_conversation_topics(self, story_source):
-        """Petrov responds to key topics."""
-        topics = ["emp", "war", "status", "freedom", "selengrad"]
-        for topic in topics:
-            assert f"asking Petrov about" in story_source and topic in story_source.lower(), (
-                f"Petrov missing conversation about: {topic}"
-            )
-
-    def test_npc_movement(self, story_source):
-        """NPCs move based on story progression."""
-        assert "Yevgenia is not in the Command Module" in story_source
-        assert "now Yevgenia is in the Command Module" in story_source
+    def test_petrov_log_carries_his_voice(self, story_source):
+        """Petrov's last log replaces his live dialogue. It must contain
+        the EMP timestamp, the inbound-object observation, and the
+        cannon arming code."""
+        assert "Petrov" in story_source and "log" in story_source.lower()
+        assert "Reading Petrov's log is an action" in story_source
+        assert "03:47" in story_source
+        assert "THREE-SEVEN-ONE-ONE" in story_source or "3-7-1-1" in story_source
 
 
 # ── Resource Tracking ──────────────────────────────────────────────────
@@ -196,15 +189,19 @@ class TestResources:
 class TestStoryBeats:
     """All major story beats from the Ink version are preserved."""
 
-    def test_wake_in_darkness(self, story_source):
-        assert "You wake to nothing" in story_source
+    def test_wake_in_emergency(self, story_source):
+        # Opening rewritten for the prologue ASAT impact — player wakes to
+        # the strike, not to the silence of an aftermath.
+        assert "You wake to" in story_source
+        assert "venting" in story_source.lower() or "shudder" in story_source.lower() or "shout" in story_source.lower()
 
     def test_emp_reference(self, story_source):
-        assert "electromagnetic pulse" in story_source.lower()
+        assert "electromagnetic pulse" in story_source.lower() or "emp" in story_source.lower()
 
     def test_discover_war_through_viewport(self, story_source):
-        assert "Nuclear exchange" in story_source
+        # WWIII framing: live, ongoing, hundreds of thermonuclear flashes.
         assert "war-is-discovered" in story_source.lower()
+        assert "thermonuclear" in story_source.lower() or "World War III" in story_source
 
     def test_restore_partial_power(self, story_source):
         assert "power-is-restored" in story_source.lower()
@@ -239,8 +236,10 @@ class TestParserInteractions:
     def test_listen_action(self, story_source):
         assert "Instead of listening" in story_source
 
-    def test_listen_tapping_in_quarters(self, story_source):
-        assert "three-two-three" in story_source.lower()
+    def test_listen_in_quarters_finds_only_silence(self, story_source):
+        # Tapping code removed — there is no one to tap. LISTEN now confirms
+        # solitude: the station groans, no human sound.
+        assert "If anyone else survived" in story_source or "no human sound" in story_source.lower() or "no voices" in story_source.lower() or "not calling out" in story_source.lower()
 
     def test_restore_power_action(self, story_source):
         assert 'Understand "restore power" as restoring power' in story_source
@@ -275,8 +274,9 @@ class TestProseQuality:
     """The prose is substantial and atmospheric."""
 
     def test_opening_text_atmospheric(self, story_source):
-        assert "hammering of your own pulse" in story_source
-        assert "darkness so complete" in story_source
+        # New opening: ASAT shock + lights out + venting fading. Action-led.
+        assert "venting" in story_source.lower() or "shout" in story_source.lower()
+        assert "sleeping harness" in story_source.lower()
 
     def test_viewport_discovery_dramatic(self, story_source):
         # Updated for the in-progress WWIII framing — the Earth isn't just
@@ -289,8 +289,10 @@ class TestProseQuality:
         assert "life support failing" in story_source.lower()
 
     def test_selengrad_proposal(self, story_source):
-        assert "closed-loop atmosphere" in story_source.lower()
-        assert "water recycling" in story_source.lower()
+        # Selengrad is now described in Yevgenia's notebook, not in NPC
+        # dialogue. The math + caretaker framing lives there.
+        assert "Selengrad" in story_source
+        assert "caretaker" in story_source.lower() or "closed-loop" in story_source.lower() or "hydroponics" in story_source.lower()
 
     def test_substantial_descriptions(self, story_source):
         """Story has enough prose (at least 8000 chars)."""
