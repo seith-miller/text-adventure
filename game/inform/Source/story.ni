@@ -81,6 +81,7 @@ Instead of switching on the chemical flashlight:
 		say "The Zhuchok is already glowing.";
 	otherwise:
 		now the chemical flashlight is lit;
+		now the chemical flashlight is switched on;
 		increase morale-level by 5;
 		[Score the achievement here — Inform's Instead rule short-circuits
 		 the action chain so an "After switching on" rule never fires.]
@@ -88,6 +89,26 @@ Instead of switching on the chemical flashlight:
 			now flashlight-first-lit is true;
 			increase the score by 1;
 		say "You squeeze the lever in a quick rhythm. The dynamo whirs up with that familiar beetle-drone and the little lamp throws a warm yellow beam across the bay. Shadows — cables, straps, the edges of your bunk — resolve into real objects again."
+
+Instead of switching off the chemical flashlight:
+	if the chemical flashlight is lit:
+		now the chemical flashlight is unlit;
+		now the chemical flashlight is switched off;
+		say "You stop pumping the lever. The dynamo winds down and the little lamp fades to dark.";
+	otherwise:
+		say "It is not pumping. There is nothing to switch off."
+
+[Verb synonyms for switching on the flashlight — matches the
+ description's "squeeze the lever" / "give it a few squeezes" prose.
+ SQUEEZE defaults to RUB, LIGHT defaults to BURN; clear those first,
+ then bind the grammar we want.]
+Understand the command "squeeze" as something new.
+Understand the command "light" as something new.
+Understand "squeeze [something]" as switching on.
+Understand "pump [something]" as switching on.
+Understand "crank [something]" as switching on.
+Understand "wind [something]" as switching on.
+Understand "light [something]" as switching on.
 
 The photograph is a thing in the Crew Quarters. The description of the photograph is "A small photograph of a family standing before a dacha in winter. The faces smile from another lifetime."
 
@@ -143,7 +164,7 @@ The maintenance panel is scenery in the Main Corridor. The description of the ma
 
 [Yevgenia's body — was an NPC, now scenery. Keep the Inform object
  name for save-state compatibility.]
-Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova, the station's engineer, suspended in the middle of the corridor by zero-g. Her face is calm — she probably never registered what happened. A thin film of frost on her eyelashes. She still has her flight notebook clipped to the chest of her suit. The hand nearest the maintenance panel holds a screwdriver she will never put down."
+Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova, the station's engineer, suspended in the middle of the corridor by zero-g. Her face is calm — she probably never registered what happened. A thin film of frost on her eyelashes.[if Yevgenia's notebook is part of Yevgenia] She still has her flight notebook clipped to the chest of her suit.[otherwise] The clip where her flight notebook was is empty now; you have the notebook.[end if] The hand nearest the maintenance panel holds a screwdriver she will never put down."
 
 After examining Yevgenia:
 	now the prior named object is Yevgenia;
@@ -163,6 +184,20 @@ Instead of taking Yevgenia's notebook when Yevgenia's notebook is part of Yevgen
 	say "You unclip the notebook from the front of her suit. You try not to disturb her more than you have to."
 
 Yevgenia's notebook is part of Yevgenia.
+
+Talking to is an action applying to one thing.
+Understand "talk to [something]" as talking to.
+Understand "speak to [something]" as talking to.
+Understand "speak with [something]" as talking to.
+
+Instead of talking to Yevgenia:
+	say "You try. The words catch in your throat. She does not move. You knew she would not."
+
+Instead of talking to Petrov:
+	say "You say his name. The word has nowhere to go. His hand does not leave the hatch wheel."
+
+Instead of talking to something:
+	say "There is no one here to speak with."
 
 Reading is an action applying to one thing.
 Understand "read [something]" as reading.
@@ -349,7 +384,7 @@ Check transmitting:
 	if responded-to-americans is true:
 		say "You are already in contact with Freedom Station. Commander Chen's crew is standing by." instead;
 	if chose-silence is true:
-		say "You chose silence. You can still change your mind, but you already heard the loop fade." instead.
+		say "You chose silence. The loop is gone. There is no one on the other end anymore." instead.
 
 Carry out transmitting:
 	now responded-to-americans is true;
@@ -378,7 +413,7 @@ Carry out staying silent:
 	now chose-silence is true.
 
 Report staying silent:
-	say "You listen to the loop. You do not key the microphone.[paragraph break]The first time it plays, you almost answer. The second time you almost answer. The third time you catch yourself already reaching for the mic, and you pull your hand back.[paragraph break]Chen's voice fades. Maybe her battery failed; maybe she gave up. Maybe she is still talking and the signal is too weak to reach you anymore.[paragraph break]You sit alone with the static and with the math in Yevgenia's notebook. Alone, you cannot make Selengrad. The combined fuel is not optional; it is arithmetic.[paragraph break]Unless Chen transmits again. Unless you change your mind.[paragraph break]You tell yourself you chose this for good reasons. You are not sure you believe yourself."
+	say "You listen to the loop. You do not key the microphone.[paragraph break]The first time it plays, you almost answer. The second time you almost answer. The third time you catch yourself already reaching for the mic, and you pull your hand back.[paragraph break]Chen's voice fades. Maybe her battery failed; maybe she gave up. Maybe she is still talking and the signal is too weak to reach you anymore. Whichever it is, the channel is gone.[paragraph break]You sit alone with the static and with the math in Yevgenia's notebook. Alone, you cannot make Selengrad. The combined fuel is not optional; it is arithmetic.[paragraph break]You tell yourself you chose this for good reasons. You are not sure you believe yourself."
 
 Part 9 - Scene-Specific Responses
 
@@ -443,7 +478,7 @@ After restoring power:
 	increase the score by 3;
 	continue the action.
 
-After reading Petrov's log:
+After reading Petrov's log for the first time:
 	increase the score by 1;
 	continue the action.
 
