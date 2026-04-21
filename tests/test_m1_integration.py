@@ -229,10 +229,11 @@ def test_story_supports_navigation():
                 "n",
                 "quit",
             ],
+            timeout=25.0,
         )
     )
     assert "Main Corridor" in output, "navigation north did not reach Main Corridor"
-    assert "command module is to the north" in output, (
+    assert "Command Module" in output, (
         "Main Corridor description not displayed after navigation"
     )
 

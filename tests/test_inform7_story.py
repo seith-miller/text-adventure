@@ -34,7 +34,7 @@ class TestRooms:
         assert "Main Corridor is north of the Crew Quarters" in story_source
 
     def test_observation_cupola_is_room(self, story_source):
-        assert "Observation Cupola is east of the Main Corridor" in story_source
+        assert "Observation Cupola is down from the Main Corridor" in story_source
 
     def test_command_module_is_room(self, story_source):
         assert "Command Module is north of the Main Corridor" in story_source
@@ -45,7 +45,7 @@ class TestRooms:
     def test_rooms_have_descriptions(self, story_source):
         """Each room has a quoted description after its definition."""
         for room in ["Crew Quarters is a room.", "Main Corridor is north",
-                      "Observation Cupola is east", "Command Module is north"]:
+                      "Observation Cupola is down", "Command Module is north"]:
             # Find the room definition and ensure a quoted description follows
             idx = story_source.find(room)
             assert idx != -1, f"Room definition not found: {room}"

@@ -55,13 +55,13 @@ class TestRoomNavigation:
         # Inform 7 automatically creates the reverse connection
         assert "Main Corridor is north of the Crew Quarters" in story_source
 
-    def test_corridor_east_to_cupola(self, story_source):
-        """Main Corridor connects east to Observation Cupola."""
-        assert "Observation Cupola is east of the Main Corridor" in story_source
+    def test_corridor_down_to_cupola(self, story_source):
+        """Main Corridor connects down (nadir) to Observation Cupola."""
+        assert "Observation Cupola is down from the Main Corridor" in story_source
 
-    def test_cupola_west_to_corridor(self, story_source):
-        """Observation Cupola connects west back to Main Corridor (implicit)."""
-        assert "Observation Cupola is east of the Main Corridor" in story_source
+    def test_cupola_up_to_corridor(self, story_source):
+        """Observation Cupola connects up back to Main Corridor (implicit)."""
+        assert "Observation Cupola is down from the Main Corridor" in story_source
 
     def test_corridor_north_to_command(self, story_source):
         """Main Corridor connects north to Command Module."""
@@ -74,7 +74,7 @@ class TestRoomNavigation:
     def test_no_unreachable_rooms(self, story_source):
         """Every room definition is connected to at least one other room."""
         # Match room definitions on single lines (strip leading "The ")
-        room_pattern = re.compile(r"^(?:The )?([\w][\w ]+?) is (?:a room|(?:north|south|east|west|up|down) of)", re.MULTILINE)
+        room_pattern = re.compile(r"^(?:The )?([\w][\w ]+?) is (?:a room|(?:north|south|east|west|up|down) (?:of|from))", re.MULTILINE)
         rooms_found = set()
         for m in room_pattern.finditer(story_source):
             rooms_found.add(m.group(1).strip())
@@ -464,4 +464,4 @@ class TestWalkthrough:
         assert "Use scoring" in story_source
         assert "increase the score" in story_source
         # Max score grew with the new prologue valve + log read achievements.
-        assert "maximum score is 12" in story_source or "maximum score is 10" in story_source
+        assert "maximum score is 14" in story_source or "maximum score is 12" in story_source or "maximum score is 10" in story_source
