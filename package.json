@@ -11,13 +11,11 @@
     "build:story": "bash scripts/compile-inform7.sh",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
-    "test": "node --test tests/*.mjs"
-  },
-  "dependencies": {
-    "inkjs": "^2.3.0"
+    "test": "echo 'No node-side tests. Use \\`npx playwright test\\` (e2e) and \\`pytest tests/\\` (story + UI structure).'"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
+    "@playwright/test": "^1.59.1",
     "typescript": "^5.4.0"
   }
 }

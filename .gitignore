@@ -1,6 +1,17 @@
 node_modules/
-game/dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+game/dist/*
+# Keep the compiled story so CI / Playwright e2e tests can run without
+# the Inform 7 toolchain. Rebuild and commit this when story.ni changes.
+!game/dist/story.ulx
 game/src/**/*.js
+
+# Playwright output
+test-results/
+playwright-report/
 
 # Inform 7 build artifacts
 game/inform/Build/

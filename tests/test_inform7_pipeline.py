@@ -81,12 +81,24 @@ def test_build_script_checks_source():
     )
 
 
-def test_build_script_supports_docker():
-    """Build script supports Docker as a fallback compiler."""
+def test_build_script_drives_inform7_toolchain():
+    """Build script runs the Inform 7 → Inform 6 → Glulx pipeline.
+
+    We pin to the stable v10.1.2 `ni` compiler from the Inform 7 macOS IDE
+    because the master-branch inform7/inbuild (v10.2.0) was non-deterministically
+    producing broken binaries. The toolchain is located via INFORM7_STABLE_HOME.
+    """
     path = os.path.join(ROOT, "scripts", "compile-inform7.sh")
     with open(path) as f:
         content = f.read()
-    assert "docker" in content.lower(), "Build script has no Docker support"
+    # Invokes ni + inform6
+    assert "ni" in content and "inform6" in content, (
+        "Build script does not drive the ni + inform6 pipeline"
+    )
+    # Locatable via environment variable
+    assert "INFORM7_STABLE_HOME" in content, (
+        "Build script does not look up the toolchain via INFORM7_STABLE_HOME"
+    )
 
 
 def test_package_json_has_build_story():
@@ -150,12 +162,12 @@ def test_readme_documents_browser_playback():
     )
 
 
-def test_ink_files_preserved():
-    """Original Ink files are kept as reference."""
-    opening = os.path.join(ROOT, "game", "story", "opening.ink")
-    main = os.path.join(ROOT, "game", "story", "main.ink")
-    assert os.path.isfile(opening), "opening.ink removed (should be kept as reference)"
-    assert os.path.isfile(main), "main.ink removed (should be kept as reference)"
+def test_ink_toolchain_removed():
+    """The Ink draft files and compile pipeline were retired in the
+    repo cleanup. The narrative lives entirely in Inform 7 now."""
+    assert not os.path.isdir(os.path.join(ROOT, "game", "story"))
+    assert not os.path.isfile(os.path.join(ROOT, "scripts", "compile-ink.mjs"))
+    assert not os.path.isfile(os.path.join(ROOT, "tests", "story-validation.mjs"))
 
 
 def test_inform7_project_structure():

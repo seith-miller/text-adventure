@@ -5,39 +5,33 @@ An illustrated text adventure built with [Inform 7](http://inform7.com/) targeti
 ## Prerequisites
 
 - Node.js >= 18
-- Inform 7 compiler (built from source)
+- Inform 7 compiler (v10.1.2, from the macOS IDE — see below)
 
 ### Installing Inform 7
 
-There is no package manager formula — the compiler must be built from source. All three repos must be siblings in a shared parent directory:
+We pin to the **stable v10.1.2** compiler from the [TobyLobster Inform macOS IDE](https://github.com/TobyLobster/Inform/releases). The `ganelson/inform` master branch (v10.2.0 experimental) is non-deterministically broken — it produces corrupt Glulx binaries from the same source across repeated runs — so we avoid it.
 
 ```bash
-mkdir inform7-build && cd inform7-build
+# 1. Download the latest Inform.app DMG
+#    https://github.com/TobyLobster/Inform/releases
+open ~/Downloads/inform_10_1_2_macOS_*.dmg
 
-# 1. Build inweb (build tool, no dependencies)
-git clone https://github.com/ganelson/inweb.git
-bash inweb/scripts/first.sh macosarm    # use 'macos' for Intel, 'linux' for Linux
+# 2. Copy the compiler binaries + Internal resources
+mkdir -p $HOME/Code/inform-stable
+cp /Volumes/Inform/Inform.app/Contents/MacOS/ni        $HOME/Code/inform-stable/
+cp /Volumes/Inform/Inform.app/Contents/MacOS/inform6   $HOME/Code/inform-stable/
+cp -R /Volumes/Inform/Inform.app/Contents/Resources/Internal $HOME/Code/inform-stable/
 
-# 2. Build intest (test tool, depends on inweb)
-git clone https://github.com/ganelson/intest.git
-bash intest/scripts/first.sh
-
-# 3. Build inform (the compiler, depends on both)
-git clone https://github.com/ganelson/inform.git
-cd inform
-bash scripts/first.sh
+# 3. Unmount
+hdiutil detach /Volumes/Inform
 ```
 
-The compiler binary will be at `inform/inform7/Tangled/inform7`.
+If your install path differs, set `INFORM7_STABLE_HOME`:
+```bash
+export INFORM7_STABLE_HOME=/custom/path/to/inform-stable
+```
 
-**Configure for this project** — either:
-- Add the binary to your PATH, or
-- Set the `INFORM7_COMPILER` environment variable:
-  ```bash
-  export INFORM7_COMPILER=/path/to/inform7-build/inform/inform7/Tangled/inform7
-  ```
-
-The build script will auto-detect the Internal resources directory relative to the compiler binary.
+The `scripts/compile-inform7.sh` script runs `ni` (I7 → I6) then `inform6` (I6 → Glulx) directly.
 
 ## Setup
 
@@ -107,6 +101,17 @@ story.ni (Inform 7 source)
 ```
 
 The build script (`scripts/compile-inform7.sh`) handles compiler detection, compilation, and output file placement.
+
+## CI
+
+GitHub Actions runs on every push to `main` and on every pull request targeting `main`. The workflow (`.github/workflows/ci.yml`) runs:
+
+- **Lint** — `npx biome check .`
+- **TypeScript** — `npm run build:ts`
+- **Node tests** — `npm test` (story validation)
+- **Python tests** — `pytest tests/` (project structure, assets, UI, Inform 7 source validation)
+
+The Inform 7 compiler is not available in CI, so toolchain-dependent tests skip automatically when `inbuild` is missing.
 
 ## Migration from Ink
 

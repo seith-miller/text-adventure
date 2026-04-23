@@ -312,3 +312,254 @@ html, body {
 #status-panel {
   position: relative;
 }
+
+/* ── Title screen overlay ── */
+#title-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-dark);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+#title-screen.hidden {
+  display: none;
+}
+
+#title-screen-content {
+  text-align: center;
+}
+
+#title-logo {
+  font-size: 48px;
+  letter-spacing: 12px;
+  color: var(--title-color);
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 0 0 20px rgba(138, 180, 248, 0.4),
+               0 0 40px rgba(138, 180, 248, 0.15);
+  margin-bottom: 0.15em;
+}
+
+#title-subtitle {
+  font-size: 14px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  margin-bottom: 3em;
+}
+
+#title-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.menu-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 0.6em 2.5em;
+  cursor: pointer;
+  width: 240px;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.menu-btn:hover:not(:disabled) {
+  background: var(--border-color);
+  border-color: var(--border-glow);
+  color: var(--title-color);
+}
+
+.menu-btn:focus {
+  outline: 1px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.menu-btn:disabled {
+  color: var(--text-dim);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#title-footer {
+  margin-top: 3em;
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  letter-spacing: 1px;
+}
+
+/* ── In-game menu button ── */
+#ingame-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 350px;
+  z-index: 100;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 0.3em 0.8em;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+#ingame-menu-btn:hover {
+  color: var(--title-color);
+  border-color: var(--border-glow);
+}
+
+#game-shell {
+  position: relative;
+}
+
+/* ── Save/Load buttons ── */
+#save-load-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.sl-btn {
+  background: var(--bg-dark);
+  color: var(--text-input);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 3px 12px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.sl-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+/* ── Save/Load modal overlay ── */
+#save-load-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#save-load-modal {
+  background: var(--bg-panel);
+  border: 2px solid var(--border-glow);
+  border-radius: 6px;
+  padding: 1.5em;
+  min-width: 420px;
+  max-width: 520px;
+  font-family: "Courier New", Courier, monospace;
+  color: var(--text-primary);
+  box-shadow: 0 0 30px rgba(42, 90, 143, 0.3);
+}
+
+#save-load-modal h2 {
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--title-color);
+  text-transform: uppercase;
+  margin-bottom: 1em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5em;
+  text-align: center;
+}
+
+.save-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5em 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.save-slot-label {
+  font-size: 12px;
+  color: var(--accent-cyan);
+  font-weight: bold;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.save-slot-summary {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.save-slot-btn {
+  background: var(--bg-dark);
+  color: var(--text-input);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 4px 14px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.save-slot-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+#save-load-close {
+  display: block;
+  margin: 1em auto 0;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 5px 20px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#save-load-close:hover {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+.save-load-error {
+  color: var(--status-red);
+  font-size: 12px;
+  text-align: center;
+  padding: 1em 0;
+}
