@@ -16,17 +16,25 @@ const shipStateSrc = fs.readFileSync(
   "utf-8",
 );
 
-// Strip export keywords so it can run as a plain script in the browser
+// Strip export keywords so it can run as a plain script in the browser.
+// Order matters: we match the full `_internals` block BEFORE we strip
+// the `export ` keyword off every line, because after the strip there's
+// no longer a distinctive marker for the trailing block. The `$`
+// without /m swallows the whole remainder of the string.
 const injectableScript = shipStateSrc
-  .replace(/^export /gm, "")
   .replace(
-    /export const _internals[\s\S]*$/m,
+    /export const _internals[\s\S]*$/,
     "window.__shipState = { initShipState, tickShipState, applyDelta, getShipState, renderShipStateForArgon };",
-  );
+  )
+  .replace(/^export /gm, "");
 
 async function setupShipState(page: any) {
   await page.goto("about:blank");
-  await page.evaluate(injectableScript);
+  // Inject as a <script> tag so top-level function declarations live in the
+  // document scope and the `window.__shipState = {...}` assignment reaches
+  // the real window. `page.evaluate(string)` runs the string as an
+  // expression, which silently drops declarations.
+  await page.addScriptTag({ content: injectableScript });
 }
 
 test.describe("Ship-state canonical arc integration", () => {
