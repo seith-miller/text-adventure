@@ -1,12 +1,12 @@
-# Dev Workflow
+# Dev workflow
 
-How this project moves code from an idea to a stable release.
+How this project moves code from an idea to a stable release. See [naming.md](naming.md) for the full naming spec (branches, issues, PRs, commits, milestones, versions).
 
 ## Branch model
 
 - **`main`** holds stable releases only. Nothing merges into `main` except a release PR from `develop`. Tagged with semver. Linear history required.
 - **`develop`** is the integration branch and the default PR target. CI must pass before anything merges.
-- **`feature/*`, `fix/*`, `docs/*`** branch from `develop`, PR to `develop`, and are deleted after merge.
+- **Feature branches** follow [naming.md](naming.md#branch-names): `m<NN>-i<NNN>-<type>_<snake_slug>` for milestoned work, `i<NNN>-<type>_<snake_slug>` for unmilestoned. Every branch has a filing issue.
 
 ## Feature PR workflow
 
@@ -25,9 +25,11 @@ How this project moves code from an idea to a stable release.
 
 1. When `develop` has landed a shippable body of work, open a release PR from `develop` to `main` titled `Release vX.Y.Z`.
 2. Wait for CI green on the release PR.
-3. Merge with **Squash and merge** so `main` stays one commit per release.
+3. Merge with **Squash and merge** so `main` stays one commit per release tag.
 4. Locally, pull `main`, then tag the merge commit: `git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`.
 5. Create a GitHub release from the tag with release notes.
+
+Note: feature PRs into `develop` use merge commits (to preserve feature history), but release PRs into `main` use squash merges (to keep `main` linear and one-commit-per-tag). This is a deliberate deviation from a pure merge-commit-everywhere flow. See [naming.md](naming.md#project-specific-deviation-from-agent-lab).
 
 ## Hotfix workflow
 
@@ -74,4 +76,4 @@ Neither branch requires reviews, because this project has one maintainer. When t
 
 Semver. The first stable is `v0.1.0`. Minor bumps for feature work on `develop` that lands to `main`. Patch bumps for hotfixes.
 
-The game is pre-1.0 until a full five-act arc is playable end to end (milestone [M4](https://github.com/seith-miller/text-adventure/milestone/4)).
+The game is pre-1.0 until a full five-act arc is playable end to end (milestone [m4](https://github.com/seith-miller/text-adventure/milestone/4)).
