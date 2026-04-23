@@ -49,6 +49,7 @@
         <button id="btn-save" class="sl-btn" title="Save game">Save</button>
         <button id="btn-load" class="sl-btn" title="Load game">Load</button>
         <button id="btn-continue" class="sl-btn" title="Continue from last save">Continue</button>
+        <button id="btn-export" class="sl-btn" title="Export playtest session as JSON (Ctrl+E / Cmd+E)">Export</button>
       </div>
     </div>
 
@@ -96,13 +97,18 @@
 
 </div>
 
-<!-- Hidden gameport for interpreter attachment -->
-<div id="gameport" style="display: none;">
+<!-- Offscreen gameport for Quixe/GlkOte attachment.
+     GlkOte measures DOM metrics during init, so display:none breaks it.
+     We keep it in the layout but move it out of view; ui.js intercepts
+     GlkOte.update() and routes text to the visible story panel. -->
+<div id="gameport" style="position: absolute; left: -10000px; width: 800px; height: 600px; overflow: hidden;">
   <noscript>
     <p style="color: #7ec8e3; padding: 2em;">
       MIR'S END requires JavaScript to play. Please enable JavaScript in your browser.
     </p>
   </noscript>
+  <!-- GlkOte needs a #windowport child inside the gameport by convention. -->
+  <div id="windowport"></div>
 </div>
 
 <!--
@@ -136,17 +142,43 @@
   };
 </script>
 
-<!-- Uncomment and adjust paths for your chosen interpreter:
-
-For Quixe:
+<!-- Quixe interpreter bundle -->
 <link rel="stylesheet" href="lib/glkote.css">
+<link rel="stylesheet" href="lib/dialog.css">
+<script src="lib/jquery-1.12.4.min.js"></script>
 <script src="lib/glkote.min.js"></script>
 <script src="lib/quixe.min.js"></script>
 
-For Parchment:
-<script src="lib/jquery.min.js"></script>
-<script src="lib/parchment.min.js"></script>
--->
+<!-- Boot Quixe after New Game is pressed. ui.js calls MirsEndBoot.start(). -->
+<script>
+  window.MirsEndBoot = {
+    started: false,
+    start: function () {
+      if (this.started) return;
+      if (typeof GiLoad === "undefined" || !GiLoad.load_run) {
+        console.error("[MirsEndBoot] GiLoad is not loaded. Check script order.");
+        return;
+      }
+      this.started = true;
+      /* Fetch the .ulx ourselves and hand GiLoad an array of bytes.
+         GiLoad's string-URL auto-detect misreads short paths. */
+      fetch(defined_game_file)
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status} loading ${defined_game_file}`);
+          return r.arrayBuffer();
+        })
+        .then((buf) => {
+          var bytes = Array.from(new Uint8Array(buf));
+          GiLoad.load_run(null, bytes, "array");
+          console.log("[MirsEndBoot] Quixe started —", bytes.length, "bytes");
+        })
+        .catch((err) => {
+          this.started = false;
+          console.error("[MirsEndBoot] fetch/load failed:", err);
+        });
+    },
+  };
+</script>
 
 <!-- Intro sequence — must load before UI shell -->
 <script src="intro.js"></script>

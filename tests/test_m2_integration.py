@@ -139,9 +139,9 @@ class TestStatusVariables:
         ).read()
 
     def test_status_bar_in_inform7(self, story_source):
-        """Inform 7 has a status bar showing O2 and Morale."""
-        assert "O2:" in story_source
-        assert "Morale:" in story_source
+        """Inform 7 source emits MIRSEND status with oxygen + morale for the UI."""
+        assert "MIRSEND o2=" in story_source
+        assert "morale=" in story_source
 
     def test_state_set_api(self, ui_js):
         """UI setState API can update o2, morale, inventory, currentRoom."""
@@ -314,10 +314,9 @@ class TestM1Regression:
         assert os.path.isdir(os.path.join(ROOT, "game", "inform", "Source"))
         assert os.path.isfile(STORY_NI)
 
-    def test_ink_files_preserved(self):
-        """Original Ink reference files still exist."""
-        assert os.path.isfile(os.path.join(ROOT, "game", "story", "opening.ink"))
-        assert os.path.isfile(os.path.join(ROOT, "game", "story", "main.ink"))
+    def test_ink_directory_retired(self):
+        """The Ink draft was retired; narrative lives in Inform 7."""
+        assert not os.path.isdir(os.path.join(ROOT, "game", "story"))
 
     def test_ascii_art_files_intact(self):
         """All ASCII art files still exist."""
@@ -347,8 +346,9 @@ class TestM1Regression:
         assert "Inform 7" in content or "inform7" in content
 
     def test_gitkeep_files_preserved(self):
-        """All .gitkeep sentinel files still exist."""
-        for d in ["game/tests", "game/assets", "game/src", "world/story"]:
+        """Sentinel .gitkeeps survive. Stub directories were retired in the
+        repo cleanup: game/tests, world/story, generation/."""
+        for d in ["game/assets", "game/src"]:
             gk = os.path.join(ROOT, d, ".gitkeep")
             assert os.path.isfile(gk), f".gitkeep missing in {d}"
 
@@ -360,7 +360,8 @@ class TestM1Regression:
         assert '"MIR\'S END"' in content
         assert "Crew Quarters is a room" in content
         assert "When play begins" in content
-        assert "You wake to nothing" in content
+        # Opening rewritten for the prologue impact ("You wake to a shout")
+        assert "You wake to" in content
 
     @pytest.mark.skipif(
         shutil.which("npx") is None,

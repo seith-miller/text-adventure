@@ -113,6 +113,9 @@
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
 
+    /* Record the playtest session on every change to #story-output. */
+    initSessionRecorder();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -160,6 +163,7 @@
     state.morale = 70;
     state.inventory = [];
     state.gameStarted = true;
+    state.sessionStartedAt = new Date().toISOString();
 
     /* Clear story output */
     storyOutput.innerHTML = "";
@@ -187,7 +191,15 @@
       const recent = window.SaveManager.getMostRecentSave();
       if (recent) {
         window.SaveManager.applyState(recent.data);
+        /* applyState covers o2/morale/inventory/currentRoom but not history;
+           restore those here so the UI matches the inline-SAVE_KEY path. */
+        if (recent.data.commandHistory !== undefined) {
+          state.commandHistory = recent.data.commandHistory;
+          state.historyIndex = state.commandHistory.length;
+        }
         state.gameStarted = true;
+        state.sessionStartedAt =
+          state.sessionStartedAt || new Date().toISOString();
         storyOutput.innerHTML = "";
         hideMenu();
         updateStatus();
@@ -220,6 +232,7 @@
       state.commandHistory = saved.commandHistory;
     state.historyIndex = state.commandHistory.length;
     state.gameStarted = true;
+    state.sessionStartedAt = state.sessionStartedAt || new Date().toISOString();
 
     /* Clear story output and show restored message */
     storyOutput.innerHTML = "";
@@ -241,6 +254,8 @@
     var data;
     try {
       data = {
+        version: 1,
+        timestamp: new Date().toISOString(),
         o2: state.o2,
         morale: state.morale,
         inventory: state.inventory,
@@ -248,6 +263,11 @@
         commandHistory: state.commandHistory,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      /* Mirror to SaveManager's autosave slot so continueGame (which
+         prefers SaveManager) sees the latest data. */
+      if (window.SaveManager?.autoSave) {
+        window.SaveManager.autoSave();
+      }
     } catch (_e) {
       /* localStorage may be unavailable */
     }
@@ -265,6 +285,9 @@
 
       appendPlayerInput(cmd);
       sendToInterpreter(cmd);
+      /* Session persistence is handled by a MutationObserver on
+         #story-output — it fires for any input path, including the
+         Playwright helpers that drive GlkOte's input directly. */
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (state.historyIndex > 0) {
@@ -284,7 +307,29 @@
   }
 
   /* ── Display functions ── */
+  /**
+   * Match the machine-readable status line emitted by the Inform 7 every-turn
+   * rule. Format: [MIRSEND o2=N morale=N inv=a,b,c]  (inv may be empty)
+   */
+  var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
+
+  function parseAndApplyMirsendStatus(text) {
+    var m = text.match(MIRSEND_STATUS_RE);
+    if (!m) return false;
+    var o2 = parseInt(m[1], 10);
+    var morale = parseInt(m[2], 10);
+    var invStr = (m[3] || "").trim();
+    var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
+    state.o2 = o2;
+    state.morale = morale;
+    state.inventory = inventory;
+    updateStatus();
+    return true;
+  }
+
   function appendStoryText(text) {
+    /* Intercept status lines before they reach the DOM. */
+    if (parseAndApplyMirsendStatus(text)) return;
     var span = document.createElement("span");
     span.className = "story-text";
     span.textContent = `${text}\n\n`;
@@ -469,29 +514,17 @@
   function hookGlkOte() {
     state.interpreterReady = true;
 
-    /* Wrap GlkOte.update to intercept output */
-    var originalUpdate = window.GlkOte.update;
-    window.GlkOte.update = (arg) => {
-      if (arg?.content) {
-        for (let i = 0; i < arg.content.length; i++) {
-          const win = arg.content[i];
-          if (win.text) {
-            for (let j = 0; j < win.text.length; j++) {
-              const line = win.text[j];
-              if (line.content) {
-                const fullText = extractGlkText(line.content);
-                if (fullText.trim()) {
-                  appendStoryText(fullText);
-                }
-              }
-            }
-          }
-        }
-      }
-      return originalUpdate.call(window.GlkOte, arg);
-    };
+    /* Observe the offscreen #windowport where GlkOte renders the story.
+       We can't reliably wrap GlkOte.update (Quixe caches an internal
+       reference), so mirror DOM changes instead. */
+    observeWindowport();
 
     appendSystemText("[Interpreter connected.]");
+
+    /* Boot the story now that our hook is installed. */
+    if (window.MirsEndBoot) {
+      window.MirsEndBoot.start();
+    }
   }
 
   function hookParchment() {
@@ -499,6 +532,51 @@
     appendSystemText("[Parchment interpreter connected.]");
   }
 
+  /**
+   * Mirror text from the offscreen GlkOte windowport into our visible
+   * #story-output panel. We deduplicate by tracking seen line indices so
+   * each line is appended exactly once.
+   */
+  function observeWindowport() {
+    var windowport = document.getElementById("windowport");
+    if (!windowport) {
+      console.warn(
+        "[MirsEnd] #windowport not found; Quixe output won't be mirrored.",
+      );
+      return;
+    }
+    var seen = new Set();
+
+    var flush = () => {
+      /* GlkOte creates buffer windows with class .WindowBuffer and within them
+         a sequence of .BufferLine divs. Take each line's text, append if new. */
+      const lines = windowport.querySelectorAll(".BufferLine");
+      for (let i = 0; i < lines.length; i++) {
+        const key = `line-${i}`;
+        if (seen.has(key)) continue;
+        const text = lines[i].textContent || "";
+        /* Skip empty paragraph breaks but honor real content. */
+        if (text.trim().length > 0) {
+          appendStoryText(text);
+        }
+        seen.add(key);
+      }
+    };
+
+    var observer = new MutationObserver(() => {
+      flush();
+    });
+    observer.observe(windowport, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+    /* Initial flush in case content was already painted. */
+    flush();
+  }
+
+  // Kept for reference; unused after we switched to DOM observation.
+  // biome-ignore lint/correctness/noUnusedVariables: retained for future reuse
   function extractGlkText(content) {
     let text = "";
     for (let i = 0; i < content.length; i++) {
@@ -514,20 +592,54 @@
   /**
    * Send player command to the interpreter.
    * If no interpreter is loaded, echo a demo response.
+   *
+   * GlkOte creates an `<input class="Input LineInput">` inside its
+   * current buffer window when a line event is pending. We drive that
+   * input directly — set value, dispatch Enter — which is the same path
+   * a real keyboard user exercises.
    */
   function sendToInterpreter(cmd) {
-    if (state.interpreterReady && typeof window.GlkOte !== "undefined") {
-      /* Feed input to GlkOte */
-      if (window.GlkOte.accept) {
-        window.GlkOte.accept({
-          type: "line",
-          gen: window.GlkOte.generation || 0,
-          value: cmd,
-        });
-      }
-      return;
-    }
+    if (state.interpreterReady) {
+      const glkInput = document.querySelector("#windowport input.LineInput");
+      if (glkInput) {
+        /* GlkOte listens for keydown on the LineInput (bound via jQuery).
+           Set the value, focus, and fire a complete event sequence with
+           both native and jQuery paths to cover either binding style. */
+        glkInput.value = cmd;
+        glkInput.focus();
 
+        const native = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true,
+        });
+        /* keyCode/which are non-writable on native events unless we force them. */
+        Object.defineProperty(native, "keyCode", { value: 13 });
+        Object.defineProperty(native, "which", { value: 13 });
+        glkInput.dispatchEvent(native);
+
+        if (window.jQuery) {
+          const $input = window.jQuery(glkInput);
+          const jqEvt = window.jQuery.Event("keydown", {
+            keyCode: 13,
+            which: 13,
+            key: "Enter",
+          });
+          $input.trigger(jqEvt);
+        }
+
+        /* Return focus to the visible #command-input so the player can
+           keep typing without clicking. Defer slightly: GlkOte may
+           re-focus its own LineInput when it renders the next prompt,
+           so we wait one frame plus a small timeout to win the race. */
+        setTimeout(() => commandInput.focus(), 0);
+        setTimeout(() => commandInput.focus(), 50);
+        return;
+      }
+    }
     /* Standalone shell mode — handle basic commands for demo */
     handleShellCommand(cmd);
   }
@@ -763,6 +875,7 @@
     var saveBtn = document.getElementById("btn-save");
     var loadBtn = document.getElementById("btn-load");
     var continueBtn = document.getElementById("btn-continue");
+    var exportBtn = document.getElementById("btn-export");
 
     if (saveBtn) {
       saveBtn.addEventListener("click", (e) => {
@@ -782,6 +895,94 @@
         continueGame();
       });
     }
+    if (exportBtn) {
+      exportBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        downloadSession();
+      });
+    }
+    /* Ctrl+E / Cmd+E anywhere on the page exports too. */
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        downloadSession();
+      }
+    });
+  }
+
+  /* ── Playtest session recording ── */
+
+  var SESSION_KEY = "mirsend_session";
+  var SESSION_FORMAT_VERSION = 1;
+  var sessionPersistTimer = null;
+
+  /* Persist the session to localStorage on every turn so a page crash or
+     reload doesn't lose the playtest record. */
+  function persistSession() {
+    if (!state.gameStarted) return;
+    try {
+      const session = snapshotSession();
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (_e) {
+      /* localStorage may be unavailable or full — silently ignore. */
+    }
+  }
+
+  /* Observe the story panel for any update (new command echo, new
+     interpreter response) and persist the session. Debounced so a burst
+     of paragraphs from one response produces a single write. */
+  function initSessionRecorder() {
+    if (!storyOutput) return;
+    var observer = new MutationObserver(() => {
+      if (sessionPersistTimer) clearTimeout(sessionPersistTimer);
+      sessionPersistTimer = setTimeout(persistSession, 250);
+    });
+    observer.observe(storyOutput, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  function snapshotSession() {
+    return {
+      version: SESSION_FORMAT_VERSION,
+      startedAt: state.sessionStartedAt || null,
+      exportedAt: new Date().toISOString(),
+      turnCount: state.commandHistory.length,
+      commandHistory: state.commandHistory.slice(),
+      transcript: storyOutput ? storyOutput.textContent || "" : "",
+      finalState: {
+        currentRoom: state.currentRoom,
+        o2: state.o2,
+        morale: state.morale,
+        inventory: state.inventory.slice(),
+        gameStarted: state.gameStarted,
+      },
+    };
+  }
+
+  function exportSession() {
+    return snapshotSession();
+  }
+
+  function downloadSession() {
+    var session = snapshotSession();
+    var json = JSON.stringify(session, null, 2);
+    var blob = new Blob([json], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var stamp = (session.startedAt || new Date().toISOString()).replace(
+      /[:.]/g,
+      "-",
+    );
+    a.href = url;
+    a.download = `mirsend-session-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    appendSystemText("[Session exported.]");
   }
 
   /* ── Public API for interpreter integration ── */
@@ -805,6 +1006,8 @@
     hideMenu: hideMenu,
     saveGame: saveGame,
     startNewGame: startNewGame,
+    exportSession: exportSession,
+    downloadSession: downloadSession,
     showSaveModal: () => showSaveLoadModal("save"),
     showLoadModal: () => showSaveLoadModal("load"),
     quickSave: quickSave,

@@ -93,7 +93,9 @@ def test_readme_exists():
 
 
 def test_gitkeep_files_preserved():
-    """Ensure .gitkeep files were not removed."""
-    for d in ["game/tests", "game/assets", "game/src", "world/story"]:
+    """Sentinel .gitkeeps for directories the toolchain expects to exist.
+    Removed at repo cleanup: game/tests (no node-side tests anymore),
+    world/story (Ink draft retired), generation/ (unused stub)."""
+    for d in ["game/assets", "game/src"]:
         gk = os.path.join(ROOT, d, ".gitkeep")
         assert os.path.isfile(gk), f".gitkeep missing in {d}"

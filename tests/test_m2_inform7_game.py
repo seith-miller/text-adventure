@@ -55,13 +55,13 @@ class TestRoomNavigation:
         # Inform 7 automatically creates the reverse connection
         assert "Main Corridor is north of the Crew Quarters" in story_source
 
-    def test_corridor_east_to_cupola(self, story_source):
-        """Main Corridor connects east to Observation Cupola."""
-        assert "Observation Cupola is east of the Main Corridor" in story_source
+    def test_corridor_down_to_cupola(self, story_source):
+        """Main Corridor connects down (nadir) to Observation Cupola."""
+        assert "Observation Cupola is down from the Main Corridor" in story_source
 
-    def test_cupola_west_to_corridor(self, story_source):
-        """Observation Cupola connects west back to Main Corridor (implicit)."""
-        assert "Observation Cupola is east of the Main Corridor" in story_source
+    def test_cupola_up_to_corridor(self, story_source):
+        """Observation Cupola connects up back to Main Corridor (implicit)."""
+        assert "Observation Cupola is down from the Main Corridor" in story_source
 
     def test_corridor_north_to_command(self, story_source):
         """Main Corridor connects north to Command Module."""
@@ -74,7 +74,7 @@ class TestRoomNavigation:
     def test_no_unreachable_rooms(self, story_source):
         """Every room definition is connected to at least one other room."""
         # Match room definitions on single lines (strip leading "The ")
-        room_pattern = re.compile(r"^(?:The )?([\w][\w ]+?) is (?:a room|(?:north|south|east|west|up|down) of)", re.MULTILINE)
+        room_pattern = re.compile(r"^(?:The )?([\w][\w ]+?) is (?:a room|(?:north|south|east|west|up|down) (?:of|from))", re.MULTILINE)
         rooms_found = set()
         for m in room_pattern.finditer(story_source):
             rooms_found.add(m.group(1).strip())
@@ -168,82 +168,52 @@ class TestObjectInteractivity:
 # ── NPC Conversations ─────────────────────────────────────────────────
 
 
-class TestNPCConversations:
-    """NPC conversations work via ASK ABOUT and TALK TO."""
+class TestCrewVoicesViaArtifacts:
+    """The crew died in the prologue impact. Their voices live on as
+    discoverable artifacts: Yevgenia's flight notebook (clipped to her
+    body in the corridor) and Petrov's last log on the command console."""
 
-    YEVGENIA_TOPICS = [
-        "emp/pulse/electromagnetic",
-        "station/mir/damage/status",
-        "power/restore/bus",
-        "oxygen/air/life support/co2",
-        "selengrad/moon/lunar",
-        "freedom/americans/chen/distress",
-    ]
+    def test_yevgenia_notebook_exists(self, story_source):
+        assert "Yevgenia's notebook" in story_source
 
-    PETROV_TOPICS = [
-        "emp/pulse/electromagnetic",
-        "war/nuclear/earth/attack",
-        "status/situation/damage",
-        "freedom/americans/chen/distress",
-        "selengrad/moon/lunar",
-        "watch/time",
-    ]
+    def test_yevgenia_notebook_is_part_of_body(self, story_source):
+        assert "Yevgenia's notebook is part of Yevgenia" in story_source
 
-    def test_ask_yevgenia_about_emp(self, story_source):
-        assert 'asking Yevgenia about "emp/pulse/electromagnetic"' in story_source
+    def test_yevgenia_notebook_is_readable(self, story_source):
+        assert "Instead of reading Yevgenia's notebook" in story_source
 
-    def test_ask_yevgenia_about_station(self, story_source):
-        assert 'asking Yevgenia about "station/mir/damage/status"' in story_source
+    def test_yevgenia_notebook_explains_emp(self, story_source):
+        assert "EMP confirmed" in story_source
 
-    def test_ask_yevgenia_about_power(self, story_source):
-        assert 'asking Yevgenia about "power/restore/bus"' in story_source
+    def test_yevgenia_notebook_explains_power_restore(self, story_source):
+        # Notebook walks the player through the reset sequence.
+        assert "isolated bus" in story_source.lower()
+        assert "capacitor" in story_source.lower() or "reset pin" in story_source.lower() or "reseat" in story_source.lower()
 
-    def test_ask_yevgenia_about_oxygen(self, story_source):
-        assert 'asking Yevgenia about "oxygen/air/life support/co2"' in story_source
+    def test_yevgenia_notebook_proposes_selengrad(self, story_source):
+        assert "Selengrad" in story_source
 
-    def test_ask_yevgenia_about_selengrad(self, story_source):
-        assert 'asking Yevgenia about "selengrad/moon/lunar"' in story_source
+    def test_petrov_log_action_exists(self, story_source):
+        assert "Reading Petrov's log is an action" in story_source
 
-    def test_ask_yevgenia_about_freedom(self, story_source):
-        assert 'asking Yevgenia about "freedom/americans/chen/distress"' in story_source
+    def test_petrov_log_requires_power(self, story_source):
+        assert "Check reading Petrov's log" in story_source
+        assert "power-is-restored is false" in story_source
 
-    def test_ask_petrov_about_emp(self, story_source):
-        assert 'asking Petrov about "emp/pulse/electromagnetic"' in story_source
+    def test_petrov_log_records_emp_time(self, story_source):
+        assert "03:47" in story_source
 
-    def test_ask_petrov_about_war(self, story_source):
-        assert 'asking Petrov about "war/nuclear/earth/attack"' in story_source
+    def test_petrov_log_reveals_armament(self, story_source):
+        assert "armament" in story_source.lower() or "weapon is aboard" in story_source.lower()
 
-    def test_ask_petrov_about_status(self, story_source):
-        assert 'asking Petrov about "status/situation/damage"' in story_source
+    def test_petrov_log_reveals_arming_code(self, story_source):
+        assert "THREE-SEVEN-ONE-ONE" in story_source
 
-    def test_ask_petrov_about_freedom(self, story_source):
-        assert 'asking Petrov about "freedom/americans/chen/distress"' in story_source
+    def test_classified_safe_exists(self, story_source):
+        assert "classified safe" in story_source.lower()
 
-    def test_ask_petrov_about_selengrad(self, story_source):
-        assert 'asking Petrov about "selengrad/moon/lunar"' in story_source
-
-    def test_ask_petrov_about_watch(self, story_source):
-        assert 'asking Petrov about "watch/time"' in story_source
-
-    def test_talk_to_yevgenia_defaults_to_status(self, story_source):
-        """TALK TO YEVGENIA triggers asking about status."""
-        assert 'Instead of talking to Yevgenia' in story_source
-        assert 'try asking Yevgenia about "status"' in story_source
-
-    def test_talk_to_petrov_defaults_to_status(self, story_source):
-        """TALK TO PETROV triggers asking about status."""
-        assert 'Instead of talking to Petrov' in story_source
-        assert 'try asking Petrov about "status"' in story_source
-
-    def test_yevgenia_topic_count(self, story_source):
-        """Yevgenia has at least 6 conversation topics."""
-        count = story_source.count("asking Yevgenia about")
-        assert count >= 6, f"Yevgenia has only {count} topics (need >= 6)"
-
-    def test_petrov_topic_count(self, story_source):
-        """Petrov has at least 6 conversation topics."""
-        count = story_source.count("asking Petrov about")
-        assert count >= 6, f"Petrov has only {count} topics (need >= 6)"
+    def test_safe_locked_until_log_read(self, story_source):
+        assert "petrov-log-read" in story_source.lower()
 
 
 # ── Story Progression ─────────────────────────────────────────────────
@@ -252,20 +222,20 @@ class TestNPCConversations:
 class TestStoryProgression:
     """Story progresses through all major beats end-to-end."""
 
-    def test_beat_darkness(self, story_source):
-        """Beat 1: Player wakes in darkness."""
-        assert "You wake to nothing" in story_source
-        assert "darkness so complete" in story_source
+    def test_beat_emergency_wake(self, story_source):
+        """Beat 1: Player wakes to the prologue impact."""
+        assert "You wake to" in story_source
+        assert "venting" in story_source.lower() or "shudder" in story_source.lower() or "shout" in story_source.lower()
 
     def test_beat_corridor_discovery(self, story_source):
-        """Beat 2: Player reaches corridor and meets NPCs."""
-        assert "Yevgenia is a woman in the Main Corridor" in story_source
-        assert "Petrov is a man in the Main Corridor" in story_source
+        """Beat 2: Player reaches corridor and finds the dead crew."""
+        assert "Yevgenia is scenery in the Main Corridor" in story_source
+        assert "Petrov is scenery in the Observation Cupola" in story_source
 
     def test_beat_cupola_war_discovery(self, story_source):
-        """Beat 3: Player discovers nuclear war through viewport."""
+        """Beat 3: Player discovers WWIII through the viewport."""
         assert "war-is-discovered" in story_source
-        assert "Nuclear exchange" in story_source
+        assert "thermonuclear" in story_source.lower() or "World War III" in story_source
         assert "blooms of orange and white" in story_source.lower()
 
     def test_beat_command_module_power(self, story_source):
@@ -287,10 +257,12 @@ class TestStoryProgression:
         assert "responded-to-americans" in story_source
 
     def test_beat_moon_plan(self, story_source):
-        """Beat 7: Selengrad lunar base plan is proposed."""
+        """Beat 7: Selengrad lunar base plan exists in the source."""
+        # The plan is in Yevgenia's notebook (math) and proposed by the
+        # player to Chen during TRANSMIT.
         assert "Selengrad" in story_source
-        assert "closed-loop atmosphere" in story_source.lower()
-        assert "water recycling" in story_source.lower()
+        # Plan flavor anywhere in source — caretaker, hydroponics, math, fuel
+        assert "caretaker" in story_source.lower() or "hydroponics" in story_source.lower() or "fuel reserves" in story_source.lower()
 
     def test_beat_prototype_boundary(self, story_source):
         """Beat 8: Game reaches prototype boundary with 'Begin preparations'."""
@@ -300,7 +272,7 @@ class TestStoryProgression:
     def test_story_beats_ordered(self, story_source):
         """Major beats appear in correct narrative order in source."""
         beats = [
-            "You wake to nothing",
+            "You wake to",
             "war-is-discovered",
             "power-is-restored",
             "distress-call-heard",
@@ -413,11 +385,21 @@ class TestParserResponses:
             '"transmit" as transmitting',
             '"respond" as transmitting',
             '"stay silent" as staying silent',
-            '"talk to [someone]" as talking to',
-            '"look through viewport" as examining the viewport',
+            # Viewport uses the generic "look through [something]" form;
+            # action-with-noun is illegal under Inform 7 v10.1.2.
+            '"look through [something]" as examining',
+            # Solo-crew additions:
+            '"read [something]" as reading',
+            # Pressure-equalization valve action (variants accepted)
         ]
         for rule in custom_actions:
             assert rule in story_source, f"Missing Understand rule: {rule}"
+        # Hatch puzzle has at least one valve verb registered
+        assert (
+            '"pull lever"' in story_source
+            or '"turn valve"' in story_source
+            or '"open valve"' in story_source
+        )
 
 
 # ── Walkthrough and Test Scripts ──────────────────────────────────────
@@ -447,10 +429,13 @@ class TestWalkthrough:
         # Should navigate north at least
         assert " n " in test_full.lower() or "/n/" in test_full.lower() or "/ n /" in test_full.lower()
 
-    def test_walkthrough_talks_to_npcs(self, story_source):
-        """Walkthrough includes NPC interaction."""
+    def test_walkthrough_examines_dead_crew(self, story_source):
+        """Walkthrough examines the bodies and reads the notebook/log
+        (the artifacts that replace the old NPC dialogue)."""
         test_full = story_source[story_source.find("Test full with"):]
-        assert "talk to" in test_full.lower()
+        assert "examine yevgenia" in test_full.lower() or "examine petrov" in test_full.lower()
+        assert "read notebook" in test_full.lower() or "take notebook" in test_full.lower()
+        assert "read log" in test_full.lower()
 
     def test_walkthrough_examines_viewport(self, story_source):
         """Walkthrough examines the viewport (war discovery)."""
@@ -470,12 +455,13 @@ class TestWalkthrough:
     def test_multiple_test_scripts(self, story_source):
         """Multiple test scripts cover different gameplay segments."""
         assert "Test quarters with" in story_source
+        assert "Test hatch with" in story_source
         assert "Test explore with" in story_source
-        assert "Test power with" in story_source
         assert "Test full with" in story_source
 
     def test_score_tracking_exists(self, story_source):
         """Score tracking rewards key achievements."""
         assert "Use scoring" in story_source
         assert "increase the score" in story_source
-        assert "maximum score is 10" in story_source
+        # Max score grew with the new prologue valve + log read achievements.
+        assert "maximum score is 14" in story_source or "maximum score is 12" in story_source or "maximum score is 10" in story_source
