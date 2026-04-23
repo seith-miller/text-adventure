@@ -1,0 +1,15 @@
+[Time onboard] Mission clock 03:01 Moscow, moments since the impact.
+[Where we are] Three hundred fifty-two kilometres up. Crossing Russia (Moscow corridor) eastbound. Sunlit side for another 21 minutes.
+[My systems]
+  Reactor: idled. Two coolant pumps still running. One has stopped. Core temperature nominal. Radiation output 0.003 mSv/h.
+  Life support: O2 generator offline. LiOH passive is holding. CO2 is rising slow. The temperature is nominal and falling. Water recycler online.
+  Main power: offline. One isolated bus is live, feeding status_console and comms_array.
+  Comms array: patched to isolated bus. Signal floor: static.
+    Freedom station: distress loop.
+    Selengrad: silent. caretaker mode.
+    Baikonur: assumed lost.
+  Hull: central node breached, sealed. Other modules nominal.
+  Armament: bay hatch unlocked. Fire control offline. 3 shells remaining.
+  Propulsion: 78 percent fuel. Engine cold. 340 m/s delta-v available.
+  Docked: Soyuz nominal. Progress battery intact.
+  Crew: alive self. Dead: Kozlova, Petrov.
