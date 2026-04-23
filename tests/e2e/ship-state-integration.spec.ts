@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { expect, test } from "@playwright/test";
 
 /**
  * Integration tests for lib/ship-state.js
@@ -105,9 +105,7 @@ test.describe("Ship-state canonical arc integration", () => {
     expect(regions).toEqual(secondCycle);
   });
 
-  test("full arc: impact to power restore to cannon fire", async ({
-    page,
-  }) => {
+  test("full arc: impact to power restore to cannon fire", async ({ page }) => {
     await setupShipState(page);
     const result = await page.evaluate(() => {
       const ss = (window as any).__shipState;
