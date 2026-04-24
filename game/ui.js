@@ -165,6 +165,11 @@
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
+    /* Reset Station AI conversation memory for the new session. */
+    if (window.StationAI) {
+      window.StationAI.resetConversation();
+    }
+
     /* Clear story output */
     storyOutput.innerHTML = "";
 
@@ -330,6 +335,16 @@
   function appendStoryText(text) {
     /* Intercept status lines before they reach the DOM. */
     if (parseAndApplyMirsendStatus(text)) return;
+
+    /* Intercept AI-PROMPT tags from Inform 7 and route to Station AI. */
+    if (window.StationAI) {
+      var aiMatch = window.StationAI.matchAiPromptTag(text);
+      if (aiMatch) {
+        window.StationAI.handleAiPrompt(aiMatch);
+        return;
+      }
+    }
+
     var span = document.createElement("span");
     span.className = "story-text";
     span.textContent = `${text}\n\n`;

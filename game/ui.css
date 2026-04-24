@@ -91,6 +91,21 @@ html, body {
   font-style: italic;
 }
 
+/* ── Station AI (Argon-87) speech ── */
+#story-output .argon-speech {
+  margin: 0.5em 0 0.5em 1.5em;
+  padding: 0.3em 0;
+  font-style: italic;
+  color: #c4a35a;
+  white-space: pre-wrap;
+}
+
+#story-output .argon-label {
+  font-weight: bold;
+  font-style: normal;
+  color: #d4b36a;
+}
+
 /* ── Right sidebar ── */
 #sidebar {
   grid-row: 1 / 2;
