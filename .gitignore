@@ -22,3 +22,6 @@ game/inform/*.plist
 game/inform/*.iFiction
 game/inform/*.blurb
 gameinfo.dbg
+
+# LLM bridge transcript logs
+logs/
