@@ -155,12 +155,8 @@ def call_claude(
 
             return result
 
-        except anthropic.RateLimitError:
-            last_error = anthropic.RateLimitError(
-                message="Rate limited",
-                response=None,  # type: ignore[arg-type]
-                body=None,
-            )
+        except anthropic.RateLimitError as exc:
+            last_error = exc
             time.sleep(backoff)
             backoff *= 2
 
