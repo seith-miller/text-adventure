@@ -1,0 +1,36 @@
+name: Guard main
+
+# Refuse PRs to main unless the head branch is develop or hotfix/*.
+# See docs/dev-workflow.md for the release workflow and hotfix workflow.
+# Filed against issue #73 after a wave-1 agent dispatch (#72) accidentally
+# merged a feature branch directly into main.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check head branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "PR head branch: $HEAD_REF"
+          if [[ "$HEAD_REF" == "develop" ]]; then
+            echo "OK: PR comes from develop (release flow)."
+            exit 0
+          fi
+          if [[ "$HEAD_REF" == hotfix/* ]]; then
+            echo "OK: PR comes from a hotfix branch."
+            exit 0
+          fi
+          cat <<EOF
+          FAIL: PRs to main must come from 'develop' (release flow) or a 'hotfix/*' branch.
+          This PR's head branch is: $HEAD_REF
+
+          See docs/dev-workflow.md for the release workflow.
+          Feature branches merge to develop, then develop ships to main via a release PR.
+          EOF
+          exit 1
