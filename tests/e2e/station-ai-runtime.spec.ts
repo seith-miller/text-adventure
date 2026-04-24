@@ -105,9 +105,7 @@ test.describe("station-ai-runtime", () => {
     await page.waitForTimeout(500);
 
     await page.evaluate(() => {
-      (window as any).MirsEnd.appendStoryText(
-        "[AI-PROMPT: text=Hello Argon]",
-      );
+      (window as any).MirsEnd.appendStoryText("[AI-PROMPT: text=Hello Argon]");
     });
 
     await page
@@ -166,10 +164,7 @@ test.describe("station-ai-runtime", () => {
   });
 
   test("conversation history resets on new game", async ({ page }) => {
-    let lastPayload: any = null;
-
     await page.route("**/v1/call", async (route) => {
-      lastPayload = JSON.parse(route.request().postData() || "{}");
       await route.fulfill({
         status: 200,
         contentType: "application/json",

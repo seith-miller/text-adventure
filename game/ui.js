@@ -165,17 +165,14 @@
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
-    /* Reset Station AI conversation memory for the new session. */
-    if (window.StationAI) {
-      window.StationAI.resetConversation();
-    }
-
     /* Clear story output */
     storyOutput.innerHTML = "";
 
     hideMenu();
     updateStatus();
     loadSceneArt("darkness");
+
+    if (window.StationAI) window.StationAI.resetConversation();
 
     /* Play intro sequence if available, then hook the interpreter */
     if (window.MirsEndIntro) {
@@ -318,6 +315,14 @@
    */
   var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
 
+  function interceptAiPrompt(text) {
+    if (!window.StationAI) return false;
+    var match = window.StationAI.matchAiPromptTag(text);
+    if (!match) return false;
+    window.StationAI.handleAiPrompt(match);
+    return true;
+  }
+
   function parseAndApplyMirsendStatus(text) {
     var m = text.match(MIRSEND_STATUS_RE);
     if (!m) return false;
@@ -337,13 +342,7 @@
     if (parseAndApplyMirsendStatus(text)) return;
 
     /* Intercept AI-PROMPT tags from Inform 7 and route to Station AI. */
-    if (window.StationAI) {
-      var aiMatch = window.StationAI.matchAiPromptTag(text);
-      if (aiMatch) {
-        window.StationAI.handleAiPrompt(aiMatch);
-        return;
-      }
-    }
+    if (interceptAiPrompt(text)) return;
 
     var span = document.createElement("span");
     span.className = "story-text";

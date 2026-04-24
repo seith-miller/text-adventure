@@ -16,40 +16,32 @@
 (() => {
   /* ── Constants ── */
 
-  var PROXY_URL = "http://localhost:8787/v1/call";
-  var REQUEST_TIMEOUT_MS = 15000;
-  var MAX_CONVERSATION_HISTORY = 10;
-  var FALLBACK_MESSAGE =
+  const PROXY_URL = "http://localhost:8787/v1/call";
+  const REQUEST_TIMEOUT_MS = 15000;
+  const MAX_CONVERSATION_HISTORY = 10;
+  const FALLBACK_MESSAGE =
     "Argon-87's voice stutters. Static fills the channel. He does not respond.";
 
   /* ── AI-PROMPT tag pattern ──
      Format: [AI-PROMPT: topic=<noun> text=<verbatim player text>]
      The topic and text fields are optional; bare [AI-PROMPT] is valid. */
-  var AI_PROMPT_RE =
+  const AI_PROMPT_RE =
     /\[AI-PROMPT(?::?\s*(?:topic=([^\]]*?)\s*)?(?:text=([^\]]*?))?)?\]/;
-
-  /* ── State-affecting tag patterns ──
-     [AI-SET: key value]
-     [AI-REVEAL: key]
-     [AI-NUDGE: key] */
-  var AI_SET_RE = /\[AI-SET:\s*([a-z0-9_-]+)\s+([^\]]+)\]/gi;
-  var AI_REVEAL_RE = /\[AI-REVEAL:\s*([a-z0-9_-]+)\]/gi;
-  var AI_NUDGE_RE = /\[AI-NUDGE:\s*([a-z0-9_-]+)\]/gi;
 
   /* ── Whitelist for state-affecting tags ──
      Empty for MVP; populated as game features require AI state writes.
      Keys must match exactly. Values are not validated beyond presence. */
-  var STATE_TAG_WHITELIST = {
+  const STATE_TAG_WHITELIST = {
     // "player-trusts-argon": true,
     // "hidden-room-known": true,
     // "restore-power": true,
   };
 
   /* ── Conversation memory (session-scoped) ── */
-  var conversationHistory = [];
+  let conversationHistory = [];
 
   /* ── In-flight request guard ── */
-  var requestInFlight = false;
+  let requestInFlight = false;
 
   /* ── Public API ── */
 
@@ -58,7 +50,7 @@
    * Returns the parsed tag data or null.
    */
   function matchAiPromptTag(text) {
-    var m = text.match(AI_PROMPT_RE);
+    const m = text.match(AI_PROMPT_RE);
     if (!m) return null;
     return {
       topic: (m[1] || "").trim(),
@@ -81,10 +73,10 @@
     requestInFlight = true;
 
     try {
-      var gameState = buildGameState();
-      var playerInput = promptData.text || promptData.topic || "talk";
+      const gameState = buildGameState();
+      const playerInput = promptData.text || promptData.topic || "talk";
 
-      var payload = {
+      const payload = {
         role: "station-ai",
         game_state: gameState,
         player_input: playerInput,
@@ -93,20 +85,17 @@
         ),
       };
 
-      var responseText = await callProxy(payload);
+      const responseText = await callProxy(payload);
 
-      // Parse and apply any state-affecting tags before display
-      var stateEffects = parseStateEffectTags(responseText);
+      const stateEffects = parseStateEffectTags(responseText);
       applyStateEffects(stateEffects);
 
-      // Strip state tags from the display text
-      var displayText = stripStateTags(responseText);
+      const displayText = stripStateTags(responseText);
 
       if (displayText.trim()) {
         appendArgonText(displayText.trim());
       }
 
-      // Record the exchange in conversation memory
       conversationHistory.push({
         role: "player",
         content: playerInput,
@@ -127,10 +116,10 @@
    * Build a game state snapshot for the proxy request.
    */
   function buildGameState() {
-    var mirsEnd = window.MirsEnd;
+    const mirsEnd = window.MirsEnd;
     if (!mirsEnd) return {};
 
-    var state = mirsEnd.getState();
+    const state = mirsEnd.getState();
     return {
       currentRoom: state.currentRoom,
       o2: state.o2,
@@ -145,14 +134,11 @@
    * Throws on timeout, network error, or non-2xx status.
    */
   async function callProxy(payload) {
-    var controller = new AbortController();
-    var timeoutId = setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      var response = await fetch(PROXY_URL, {
+      const response = await fetch(PROXY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -160,10 +146,10 @@
       });
 
       if (!response.ok) {
-        throw new Error("Proxy returned HTTP " + response.status);
+        throw new Error(`Proxy returned HTTP ${response.status}`);
       }
 
-      var data = await response.json();
+      const data = await response.json();
       return data.text || data.response || data.content || "";
     } finally {
       clearTimeout(timeoutId);
@@ -174,20 +160,20 @@
    * Append Argon-87's response to the story panel with distinctive styling.
    */
   function appendArgonText(text) {
-    var mirsEnd = window.MirsEnd;
+    const mirsEnd = window.MirsEnd;
     if (!mirsEnd) return;
 
-    var storyOutput = document.getElementById("story-output");
+    const storyOutput = document.getElementById("story-output");
     if (!storyOutput) return;
 
-    var wrapper = document.createElement("div");
+    const wrapper = document.createElement("div");
     wrapper.className = "argon-speech";
 
-    var label = document.createElement("span");
+    const label = document.createElement("span");
     label.className = "argon-label";
     label.textContent = "ARGON-87: ";
 
-    var content = document.createElement("span");
+    const content = document.createElement("span");
     content.className = "argon-text";
     content.textContent = text;
 
@@ -195,8 +181,7 @@
     wrapper.appendChild(content);
     storyOutput.appendChild(wrapper);
 
-    // Scroll to bottom
-    var panel = document.getElementById("story-panel");
+    const panel = document.getElementById("story-panel");
     if (panel) panel.scrollTop = panel.scrollHeight;
   }
 
@@ -207,22 +192,26 @@
    * Returns an array of { type, key, value } objects.
    */
   function parseStateEffectTags(text) {
-    var effects = [];
-    var m;
+    const effects = [];
 
-    // Reset regex lastIndex for global patterns
-    AI_SET_RE.lastIndex = 0;
-    AI_REVEAL_RE.lastIndex = 0;
-    AI_NUDGE_RE.lastIndex = 0;
+    const setRe = /\[AI-SET:\s*([a-z0-9_-]+)\s+([^\]]+)\]/gi;
+    const revealRe = /\[AI-REVEAL:\s*([a-z0-9_-]+)\]/gi;
+    const nudgeRe = /\[AI-NUDGE:\s*([a-z0-9_-]+)\]/gi;
 
-    while ((m = AI_SET_RE.exec(text)) !== null) {
+    let m = setRe.exec(text);
+    while (m !== null) {
       effects.push({ type: "set", key: m[1], value: m[2].trim() });
+      m = setRe.exec(text);
     }
-    while ((m = AI_REVEAL_RE.exec(text)) !== null) {
+    m = revealRe.exec(text);
+    while (m !== null) {
       effects.push({ type: "reveal", key: m[1], value: true });
+      m = revealRe.exec(text);
     }
-    while ((m = AI_NUDGE_RE.exec(text)) !== null) {
+    m = nudgeRe.exec(text);
+    while (m !== null) {
       effects.push({ type: "nudge", key: m[1], value: true });
+      m = nudgeRe.exec(text);
     }
 
     return effects;
@@ -233,8 +222,8 @@
    * Only whitelisted keys are allowed; others are logged and ignored.
    */
   function applyStateEffects(effects) {
-    for (var i = 0; i < effects.length; i++) {
-      var effect = effects[i];
+    for (let i = 0; i < effects.length; i++) {
+      const effect = effects[i];
       if (!STATE_TAG_WHITELIST[effect.key]) {
         console.log(
           "[StationAI] Ignoring non-whitelisted state tag:",
@@ -243,10 +232,9 @@
         );
         continue;
       }
-      // Apply through the public MirsEnd API
-      var mirsEnd = window.MirsEnd;
-      if (mirsEnd && mirsEnd.setState) {
-        var update = {};
+      const mirsEnd = window.MirsEnd;
+      if (mirsEnd?.setState) {
+        const update = {};
         update[effect.key] = effect.value;
         mirsEnd.setState(update);
         console.log("[StationAI] Applied state effect:", effect);
