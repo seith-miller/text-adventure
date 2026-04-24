@@ -172,6 +172,8 @@
     updateStatus();
     loadSceneArt("darkness");
 
+    if (window.StationAI) window.StationAI.resetConversation();
+
     /* Play intro sequence if available, then hook the interpreter */
     if (window.MirsEndIntro) {
       window.MirsEndIntro.run(() => {
@@ -313,6 +315,14 @@
    */
   var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
 
+  function interceptAiPrompt(text) {
+    if (!window.StationAI) return false;
+    var match = window.StationAI.matchAiPromptTag(text);
+    if (!match) return false;
+    window.StationAI.handleAiPrompt(match);
+    return true;
+  }
+
   function parseAndApplyMirsendStatus(text) {
     var m = text.match(MIRSEND_STATUS_RE);
     if (!m) return false;
@@ -330,6 +340,10 @@
   function appendStoryText(text) {
     /* Intercept status lines before they reach the DOM. */
     if (parseAndApplyMirsendStatus(text)) return;
+
+    /* Intercept AI-PROMPT tags from Inform 7 and route to Station AI. */
+    if (interceptAiPrompt(text)) return;
+
     var span = document.createElement("span");
     span.className = "story-text";
     span.textContent = `${text}\n\n`;
