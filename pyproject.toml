@@ -9,6 +9,7 @@ description = "Shared LLM bridge library for Mir's End"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.39.0",
+    "mcp>=1.0",
 ]
 
 [project.optional-dependencies]
