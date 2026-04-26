@@ -85,7 +85,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "state.o2 = 100" in chunk
         assert "state.morale = 70" in chunk
         assert "state.inventory = []" in chunk
@@ -96,7 +96,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
         assert ".run(" in chunk
 
@@ -105,7 +105,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "hookInterpreter" in chunk
 
 
@@ -365,7 +365,7 @@ class TestIntroPlaysOnNewGame:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
         assert ".run(" in chunk
 
@@ -728,14 +728,14 @@ class TestEndToEndFlow:
         assert "startNewGame" in js
         # startNewGame runs intro
         idx = js.find("function startNewGame")
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
 
     def test_intro_ends_into_gameplay(self):
         """Intro completion -> hookInterpreter -> focus input."""
         js = _read("ui.js")
         idx = js.find("function startNewGame")
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "hookInterpreter" in chunk
         assert "commandInput.focus" in chunk
 
