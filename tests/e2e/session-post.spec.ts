@@ -110,11 +110,11 @@ test.describe("session-post", () => {
       .then((t) => t ?? "");
     expect(storyText.length).toBeGreaterThan(0);
 
-    // Console should contain an error log about the 500
-    const hasErrorLog = consoleLogs.some(
+    // Console should contain a warning log about the 500
+    const hasWarnLog = consoleLogs.some(
       (l) => l.includes("Session POST") && l.includes("500"),
     );
-    expect(hasErrorLog).toBe(true);
+    expect(hasWarnLog).toBe(true);
   });
 
   test("player_kind defaults to 'human' when nothing is set", async ({

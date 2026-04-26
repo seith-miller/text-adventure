@@ -46,23 +46,22 @@
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       return crypto.randomUUID();
     }
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        var r = (Math.random() * 16) | 0;
-        var v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      },
-    );
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      var r = (Math.random() * 16) | 0;
+      var v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 
   function detectPlayerKind() {
     if (typeof window.MIRSEND_PLAYER_KIND === "string") {
       return window.MIRSEND_PLAYER_KIND;
     }
+    var params;
+    var player;
     try {
-      var params = new URLSearchParams(window.location.search);
-      var player = params.get("player");
+      params = new URLSearchParams(window.location.search);
+      player = params.get("player");
       if (player) return player;
     } catch (_e) {
       /* ignore */
@@ -95,21 +94,22 @@
 
   function postSession() {
     if (!sessionId) return;
+    var payload;
     try {
-      var payload = buildSessionPayload();
+      payload = buildSessionPayload();
       fetch(SESSION_INGEST_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-        .then(function (res) {
+        .then((res) => {
           if (res.status >= 400 && res.status < 500) {
-            console.warn("[MirsEnd] Session POST returned " + res.status);
+            console.warn(`[MirsEnd] Session POST returned ${res.status}`);
           } else if (res.status >= 500) {
-            console.error("[MirsEnd] Session POST server error: " + res.status);
+            console.warn(`[MirsEnd] Session POST server error: ${res.status}`);
           }
         })
-        .catch(function (_err) {
+        .catch((_err) => {
           /* Proxy unreachable — swallow silently. */
         });
     } catch (_e) {
