@@ -36,6 +36,100 @@
   /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
 
+  /* ── Session ingest endpoint ── */
+  var SESSION_INGEST_URL = "http://localhost:8787/v1/sessions";
+
+  /* ── Stable session UUID (generated per New Game) ── */
+  var sessionId = null;
+
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        var r = (Math.random() * 16) | 0;
+        var v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      },
+    );
+  }
+
+  function detectPlayerKind() {
+    if (typeof window.MIRSEND_PLAYER_KIND === "string") {
+      return window.MIRSEND_PLAYER_KIND;
+    }
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var player = params.get("player");
+      if (player) return player;
+    } catch (_e) {
+      /* ignore */
+    }
+    return "human";
+  }
+
+  function detectGameVersion() {
+    var meta = document.querySelector('meta[name="game-version"]');
+    return meta ? meta.getAttribute("content") || "unknown" : "unknown";
+  }
+
+  var _gameEndPosted = false;
+
+  function buildSessionPayload() {
+    var session = snapshotSession();
+    return {
+      session_id: sessionId,
+      player_kind: detectPlayerKind(),
+      game_version: detectGameVersion(),
+      started_at: session.startedAt,
+      ended_at: session.exportedAt,
+      status: _gameEndPosted ? "completed" : "in_progress",
+      turns: session.turnCount,
+      command_history: session.commandHistory,
+      transcript: session.transcript,
+      final_state: session.finalState,
+    };
+  }
+
+  function postSession() {
+    if (!sessionId) return;
+    try {
+      var payload = buildSessionPayload();
+      fetch(SESSION_INGEST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(function (res) {
+          if (res.status >= 400 && res.status < 500) {
+            console.warn("[MirsEnd] Session POST returned " + res.status);
+          } else if (res.status >= 500) {
+            console.error("[MirsEnd] Session POST server error: " + res.status);
+          }
+        })
+        .catch(function (_err) {
+          /* Proxy unreachable — swallow silently. */
+        });
+    } catch (_e) {
+      /* Swallow any synchronous errors. */
+    }
+  }
+
+  function checkForGameEnd(text) {
+    if (_gameEndPosted) return;
+    if (
+      typeof text === "string" &&
+      (text.indexOf("[Game ended]") !== -1 ||
+        text.indexOf("suffocate") !== -1 ||
+        text.indexOf("SUFFOCATE") !== -1)
+    ) {
+      _gameEndPosted = true;
+      postSession();
+    }
+  }
+
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
 
@@ -164,6 +258,8 @@
     state.inventory = [];
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
+    sessionId = generateUUID();
+    _gameEndPosted = false;
 
     /* Clear story output */
     storyOutput.innerHTML = "";
@@ -336,6 +432,7 @@
     storyOutput.appendChild(span);
     scrollToBottom();
     detectRoomChange(text);
+    checkForGameEnd(text);
   }
 
   function appendPlayerInput(text) {
@@ -983,6 +1080,7 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     appendSystemText("[Session exported.]");
+    postSession();
   }
 
   /* ── Public API for interpreter integration ── */
