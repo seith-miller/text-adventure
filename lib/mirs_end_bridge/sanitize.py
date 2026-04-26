@@ -47,8 +47,11 @@ _CODE_RE = re.compile(
 # Base64 blobs (40+ chars of base64 alphabet without spaces)
 _BASE64_RE = re.compile(r"[A-Za-z0-9+/=]{40,}")
 
-# Repeated-token spam: same 2+ char token repeated 5+ times
-_REPEAT_RE = re.compile(r"(.{2,}?)\1{4,}")
+# Repeated-token spam: same 2-10 char token repeated 8+ times in a row.
+# The upper bound on token length avoids catastrophic backtracking on long
+# inputs, and the high repeat threshold avoids false positives on natural
+# speech patterns like "no no no" or repeated game commands.
+_REPEAT_RE = re.compile(r"(.{2,10}?)\1{7,}")
 
 # ── Control-character / private-use stripping ───────────────────────────────
 
