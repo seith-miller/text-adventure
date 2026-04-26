@@ -68,3 +68,12 @@
     history, and final state. Clicking Export (or Ctrl/Cmd+E) downloads
     the session as JSON, which can be shared for post-playtest review.
   surfaces: [dom, storage, state]
+
+- id: session-post
+  area: ui
+  demonstrates: >
+    Completed sessions are POSTed to the local ingest endpoint
+    (/v1/sessions) on game end and manual export. Failures are
+    swallowed gracefully. Player kind is detected from init scripts,
+    query params, or defaults to human.
+  surfaces: [dom, state]
