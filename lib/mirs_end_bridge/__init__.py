@@ -20,6 +20,11 @@ claude
     accounting, and typed responses.
 logs
     Append-only JSONL transcript logger for every Claude call.
+sanitize
+    Input sanitization: length cap, control-char stripping, suspicious-
+    pattern rejection, and XML escaping for ``<player_speech>`` blocks.
+guardrails
+    Post-hoc frame-break detection and incident logging.
 types
     ``GameState``, ``Prompt``, ``LLMResponse``, ``CostReport`` type
     definitions.
