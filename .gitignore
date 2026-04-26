@@ -25,3 +25,8 @@ gameinfo.dbg
 
 # LLM bridge transcript logs
 logs/
+
+# Local SQLite playthrough database
+/data/
+/data/*.sqlite
+/data/*.sqlite-journal
