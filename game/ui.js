@@ -25,16 +25,16 @@
   var AI_ENABLED = (function readAiFlag() {
     /* Check the global variable set in play.html (mirrors the
        MIRSEND_AI_ENABLED env-var / config entry). */
-    var raw = typeof window.MIRSEND_AI_ENABLED !== "undefined"
-      ? window.MIRSEND_AI_ENABLED
-      : 0;
+    var raw =
+      typeof window.MIRSEND_AI_ENABLED !== "undefined"
+        ? window.MIRSEND_AI_ENABLED
+        : 0;
     return raw === 1 || raw === "1" || raw === true || raw === "true";
   })();
 
   var AI_PROXY_URL = "http://localhost:8787";
   var AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
-  var AI_CANNED_LINE =
-    "The AI channel is dead. Argon-87's console is dark.";
+  var AI_CANNED_LINE = "The AI channel is dead. Argon-87's console is dark.";
 
   /* ── State ── */
   var state = {
@@ -295,7 +295,8 @@
   }
 
   /* ── Argon-87 AI command detection ── */
-  var ARGON_CMD_RE = /^(talk\s+to|speak\s+to|speak\s+with|ask)\s+argon(-?\s*87)?$/i;
+  var ARGON_CMD_RE =
+    /^(talk\s+to|speak\s+to|speak\s+with|ask)\s+argon(-?\s*87)?$/i;
 
   function isArgonCommand(cmd) {
     return ARGON_CMD_RE.test(cmd.trim());
@@ -307,8 +308,8 @@
    */
   function checkProxy() {
     return fetch(AI_PROXY_URL, { method: "HEAD", mode: "no-cors" })
-      .then(function () { return true; })
-      .catch(function () { return false; });
+      .then(() => true)
+      .catch(() => false);
   }
 
   /**
@@ -316,18 +317,18 @@
    * Checks proxy reachability and falls back to the canned line on failure.
    */
   function handleArgonCommand() {
-    checkProxy().then(function (reachable) {
+    checkProxy().then((reachable) => {
       if (!reachable) {
-        console.warn("[MirsEnd] AI proxy unreachable — falling back to canned line.");
+        console.warn(
+          "[MirsEnd] AI proxy unreachable — falling back to canned line.",
+        );
         appendStoryText(AI_CANNED_LINE);
         return;
       }
       /* Proxy is reachable — the actual runtime (#62) will handle the
          conversation. For now, surface a placeholder until the runtime
          is integrated. */
-      appendStoryText(
-        "Argon-87's console flickers. A cursor blinks, waiting."
-      );
+      appendStoryText("Argon-87's console flickers. A cursor blinks, waiting.");
     });
   }
 
@@ -336,7 +337,9 @@
     var seen = false;
     try {
       seen = localStorage.getItem(AI_ONBOARDING_KEY) === "1";
-    } catch (_e) { /* localStorage unavailable */ }
+    } catch (_e) {
+      /* localStorage unavailable */
+    }
     if (seen) return;
 
     var overlay = document.createElement("div");
@@ -346,25 +349,29 @@
     modal.id = "ai-onboarding-modal";
 
     modal.innerHTML =
-      '<h2>Argon-87 AI Features</h2>' +
-      '<p>This session has <strong>warm AI</strong> enabled. ' +
-      'You can speak with <strong>Argon-87</strong>, the station\'s dormant AI, ' +
-      'using commands like <code>TALK TO ARGON</code>.</p>' +
-      '<p>AI responses are generated via a local proxy server and may incur ' +
-      'API usage costs. You can disable this feature at any time by setting ' +
-      '<code>MIRSEND_AI_ENABLED=0</code> in the game configuration.</p>' +
-      '<p>The core story is fully playable without AI features.</p>' +
+      "<h2>Argon-87 AI Features</h2>" +
+      "<p>This session has <strong>warm AI</strong> enabled. " +
+      "You can speak with <strong>Argon-87</strong>, the station's dormant AI, " +
+      "using commands like <code>TALK TO ARGON</code>.</p>" +
+      "<p>AI responses are generated via a local proxy server and may incur " +
+      "API usage costs. You can disable this feature at any time by setting " +
+      "<code>MIRSEND_AI_ENABLED=0</code> in the game configuration.</p>" +
+      "<p>The core story is fully playable without AI features.</p>" +
       '<button id="ai-onboarding-dismiss">Understood</button>';
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    document.getElementById("ai-onboarding-dismiss").addEventListener("click", function () {
-      overlay.remove();
-      try {
-        localStorage.setItem(AI_ONBOARDING_KEY, "1");
-      } catch (_e) { /* ignore */ }
-    });
+    document
+      .getElementById("ai-onboarding-dismiss")
+      .addEventListener("click", () => {
+        overlay.remove();
+        try {
+          localStorage.setItem(AI_ONBOARDING_KEY, "1");
+        } catch (_e) {
+          /* ignore */
+        }
+      });
   }
 
   /* ── AI online badge ── */

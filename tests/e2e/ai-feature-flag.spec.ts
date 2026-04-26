@@ -66,9 +66,7 @@ test.describe("ai-feature-flag — flag OFF (default)", () => {
   test("config.aiEnabled is false by default", async ({ page }) => {
     await startNewGame(page);
 
-    const config = await page.evaluate(
-      () => (window as any).MirsEnd.config,
-    );
+    const config = await page.evaluate(() => (window as any).MirsEnd.config);
     expect(config.aiEnabled).toBe(false);
   });
 });
