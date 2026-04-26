@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.39.0",
     "mcp>=1.0",
+    "pykeepass>=4.0",
 ]
 
 [project.optional-dependencies]
