@@ -1,0 +1,11 @@
+# Mir's End — AI cost-cap configuration
+#
+# All values in USD. Override any value with environment variables:
+#   MIRSEND_CAP_PER_CALL   (float, e.g. "0.02")
+#   MIRSEND_CAP_PER_SESSION (float, e.g. "0.25")
+#   MIRSEND_CAP_PER_DAY     (float, e.g. "5.00")
+
+[caps]
+per_call    = 0.02    # Max USD for a single Claude call
+per_session = 0.25    # Max USD within one playthrough
+per_day     = 5.00    # Max USD across all sessions in a rolling 24-hour window
