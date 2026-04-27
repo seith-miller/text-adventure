@@ -149,6 +149,110 @@ def test_render_report_with_data(tmp_path):
     assert "Sessions that called Argon: 1 / 2" in report
 
 
+def test_format_session_markdown_renders_turns():
+    session = {
+        "id": "abc-123",
+        "started_at": "2026-04-26T12:00:00+00:00",
+        "status": "completed",
+        "ending_type": "transmit",
+        "player_kind": "agent:claude-sonnet-4-5",
+        "final_score": 14,
+        "final_o2": 80,
+        "final_morale": 72,
+        "metadata": {
+            "estimated_cost_usd": "0.42",
+            "bailout_reason": "ending",
+        },
+        "turns": [
+            {"turn_number": 1, "command": "look",
+             "response": "You see a locker.", "current_room": "Sleeping Bay"},
+            {"turn_number": 2, "command": "open locker",
+             "response": "Empty.", "current_room": "Sleeping Bay"},
+        ],
+    }
+    md = pool.format_session_markdown(session)
+    assert "# Playthrough abc-123" in md
+    assert "agent:claude-sonnet-4-5" in md
+    assert "## Turn 1: `look`" in md
+    assert "You see a locker." in md
+    assert "## Turn 2: `open locker`" in md
+    assert "_room: Sleeping Bay_" in md
+    assert "$0.42" in md
+
+
+def test_format_session_markdown_renders_stuck_moments():
+    session = {
+        "id": "stuck-1",
+        "started_at": "2026-04-26T12:00:00+00:00",
+        "status": "stuck",
+        "ending_type": None,
+        "player_kind": "agent:claude-sonnet-4-5",
+        "metadata": {
+            "stuck_moments": json.dumps([
+                {"turn_start": 5, "turn_end": 14,
+                 "room": "Crew Quarters", "window": 10}
+            ]),
+        },
+        "turns": [],
+    }
+    md = pool.format_session_markdown(session)
+    assert "Stuck moments" in md
+    assert "turns 5-14 in Crew Quarters" in md
+
+
+def test_dump_sessions_writes_one_file_per_session(tmp_path):
+    db = tmp_path / "dump.sqlite"
+    out = tmp_path / "runs"
+    from lib.playthrough_db import write_session  # noqa: PLC0415
+
+    for sid in ("a", "b"):
+        write_session({
+            "session_id": sid,
+            "started_at": "2026-04-26T12:00:00+00:00",
+            "status": "completed",
+            "ending_type": "transmit",
+            "player_kind": "agent:claude-sonnet-4-5",
+            "turns": [{"turn_number": 1, "command": "look",
+                       "response": "...", "current_room": "Sleeping Bay"}],
+            "metadata": {"estimated_cost_usd": "0.10"},
+        }, db_path=db)
+
+    written = pool.dump_sessions(out_dir=out, db_path=db)
+    assert len(written) == 2
+    for path in written:
+        text = path.read_text()
+        assert "# Playthrough" in text
+        assert "## Turn 1: `look`" in text
+
+
+def test_dump_sessions_by_id(tmp_path):
+    db = tmp_path / "dump-id.sqlite"
+    out = tmp_path / "runs"
+    from lib.playthrough_db import write_session  # noqa: PLC0415
+
+    write_session({
+        "session_id": "only",
+        "started_at": "2026-04-26T12:00:00+00:00",
+        "status": "completed",
+        "ending_type": "transmit",
+        "player_kind": "agent:claude-sonnet-4-5",
+        "turns": [],
+        "metadata": {},
+    }, db_path=db)
+
+    written = pool.dump_sessions(out_dir=out, session_id="only", db_path=db)
+    assert len(written) == 1
+    assert "only" in written[0].name
+
+
+def test_dump_sessions_returns_empty_when_no_match(tmp_path):
+    db = tmp_path / "empty-dump.sqlite"
+    from lib.playthrough_db import init_db  # noqa: PLC0415
+    init_db(db)
+    written = pool.dump_sessions(out_dir=tmp_path / "runs", db_path=db)
+    assert written == []
+
+
 def test_render_report_filters_by_player_kind(tmp_path):
     db = tmp_path / "filter.sqlite"
     from lib.playthrough_db import write_session  # noqa: PLC0415

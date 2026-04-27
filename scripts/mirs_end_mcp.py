@@ -39,6 +39,7 @@ class Session:
     page: Any = None          # playwright Page (set after launch)
     context: Any = None       # browser context
     _last_state: dict = field(default_factory=dict)
+    _scrollback_len: int = 0  # chars of #story-output already consumed
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +127,7 @@ class PlaywrightBackend:
 
         opening = await self._get_story_text(session.page)
         session.transcript.append(opening)
+        session._scrollback_len = len(opening)
         session._last_state = await self._read_state(session.page)
         return session
 
@@ -145,13 +147,19 @@ class PlaywrightBackend:
         # Wait for new output to appear
         await page.wait_for_timeout(500)
 
-        text = await self._get_story_text(page)
+        # #story-output is cumulative (the whole scrollback). Slice off
+        # the prefix we've already returned so the per-turn response
+        # contains only the new content.
+        full_text = await self._get_story_text(page)
+        new_text = full_text[session._scrollback_len:].strip()
+        session._scrollback_len = len(full_text)
+
         session.turn_count += 1
         session.command_history.append(command)
         session.transcript.append(f"> {command}")
-        session.transcript.append(text)
+        session.transcript.append(new_text)
         session._last_state = await self._read_state(page)
-        return text
+        return new_text
 
     async def read_state(self, session: Session) -> dict:
         session._last_state = await self._read_state(session.page)
@@ -173,6 +181,7 @@ class PlaywrightBackend:
         session.command_history.clear()
         session.transcript.clear()
         session.transcript.append(opening)
+        session._scrollback_len = len(opening)
         session._last_state = await self._read_state(page)
         return opening
 

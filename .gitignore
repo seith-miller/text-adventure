@@ -33,3 +33,6 @@ logs/
 
 # Local-only API key file (written by scripts/extract_key.py)
 .env.playtest
+
+# Per-run transcript dumps from scripts/playtest-pool.py dump
+docs/playtests/runs/
