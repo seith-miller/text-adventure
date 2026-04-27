@@ -141,6 +141,11 @@
     lib_path: "lib/",
     proxy_url: ""
   };
+
+  // Warm AI feature flag — off by default.
+  // Set to 1 (or "1" / "true") to enable AI-powered Argon-87 conversations.
+  // When enabled, the proxy server at localhost:8787 must be running.
+  var MIRSEND_AI_ENABLED = 0;
 </script>
 
 <!-- Quixe interpreter bundle -->

@@ -60,6 +60,15 @@
     logic (ui.js sendToInterpreter) silently stops driving GlkOte.
   surfaces: [dom, interpreter]
 
+- id: ai-feature-flag
+  area: gameplay
+  demonstrates: >
+    The warm AI feature flag (MIRSEND_AI_ENABLED) is off by default.
+    TALK TO ARGON prints a canned in-fiction line when disabled, shows
+    an AI-online badge and first-run onboarding modal when enabled,
+    and falls back to the canned line when the proxy is unreachable.
+  surfaces: [dom, state, storage]
+
 - id: session-export
   area: ui
   demonstrates: >
