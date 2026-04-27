@@ -172,6 +172,49 @@ Carry out resting:
 Report resting:
 	say "You drift in the harness. Eyes closed. Eight breaths. Sixteen. The hammering behind your forehead settles into something duller. The cold pulls at the edge of you, but you let it. When you open your eyes, the room is still black, but you can hold its shape in your mind now.[paragraph break][bracket]You feel steadier. Time has passed.[close bracket]"
 
+[Status check: prints the player's vitals and inventory in the prose
+ stream. Useful for shell-mode play, but more importantly the LLM
+ player has no UI bars; STATUS is how the agent reads its own state.]
+Checking status is an action applying to nothing.
+Understand "status" or "stats" or "vitals" or "check status" or "check stats" or "check vitals" or "condition" as checking status.
+
+Carry out checking status:
+	say "[bracket]STATUS[close bracket][line break]";
+	say "  Location: [printed name of the location of the player][line break]";
+	say "  O2: [oxygen-level]%[line break]";
+	say "  Morale: [morale-level]%[line break]";
+	say "  Score: [the score][line break]";
+	if the number of things carried by the player > 0:
+		say "  Carrying: ";
+		let counter be 0;
+		repeat with item running through things carried by the player:
+			if counter > 0:
+				say ", ";
+			say "[printed name of item]";
+			increment counter;
+		say "[line break]";
+	otherwise:
+		say "  Carrying: nothing[line break]".
+
+[Help: a quick verb reference. Lower bar to discovery for the LLM
+ player and for any new human player.]
+Asking-for-help is an action applying to nothing.
+Understand "help" or "verbs" or "commands" as asking-for-help.
+
+Carry out asking-for-help:
+	say "Common commands:[line break]";
+	say "  LOOK            see your surroundings[line break]";
+	say "  EXAMINE [bracket]thing[close bracket]  look at something closely[line break]";
+	say "  INVENTORY (I)   list what you carry[line break]";
+	say "  STATUS          show O2, morale, score, inventory[line break]";
+	say "  TAKE [bracket]thing[close bracket]    pick something up[line break]";
+	say "  OPEN [bracket]thing[close bracket]    open a container or hatch[line break]";
+	say "  EAT [bracket]thing[close bracket]     consume food, restores morale[line break]";
+	say "  REST or SLEEP   recover morale, costs O2 (Crew Quarters only)[line break]";
+	say "  PULL [bracket]thing[close bracket]    operate a lever or valve[line break]";
+	say "  Movement        N S E W (or fore aft port starboard), UP / DOWN[line break]";
+	say "  SAVE / LOAD     save or load progress[line break]".
+
 Chapter 2 - The Sealed Hatch
 
 [The hatch north is held shut by a pressure differential: the corridor
@@ -722,7 +765,7 @@ Carry out showing the map:
 
 
 When play begins:
-	say "You wake to a shout. Not a voice. A physical shout. The station hitting you through your harness. Something enormous has struck Mir-3.[paragraph break]The lights are out. The air is wrong. Thinner. Colder. Your ears ring from a pressure change you do not consciously remember. Alarms that must have been going a moment ago have already died. Through the bulkhead you hear the long whistle of venting atmosphere. Slowing. Stopping.[paragraph break]Then nothing. The absolute nothing of a station that is not running.[paragraph break]You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. You tear yourself free of the straps. You have no idea what just happened. You are certain it was not small."
+	say "You wake to a shout. Not a voice. A physical shout. The station hitting you through your harness. Something enormous has struck Mir-3.[paragraph break]The lights are out. The air is wrong. Thinner. Colder. Your ears ring from a pressure change you do not consciously remember. Alarms that must have been going a moment ago have already died. Through the bulkhead you hear the long whistle of venting atmosphere. Slowing. Stopping.[paragraph break]Then nothing. The absolute nothing of a station that is not running.[paragraph break]You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. You tear yourself free of the straps. You have no idea what just happened. You are certain it was not small.[paragraph break][bracket]New here? Type HELP for a list of commands. STATUS shows your vitals. LOOK describes the room. EXAMINE [bracket]thing[close bracket] inspects an object.[close bracket]"
 
 Part 5 - Listening
 
