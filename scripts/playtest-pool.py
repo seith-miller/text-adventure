@@ -201,6 +201,12 @@ def run_pool(
                         f"  [{completed}/{runs}] FAIL: {summary.get('error')}",
                         flush=True,
                     )
+                    stderr_tail = (summary.get("stderr") or "").rstrip()
+                    if stderr_tail:
+                        print("    --- driver stderr (tail) ---", flush=True)
+                        for line in stderr_tail.splitlines()[-40:]:
+                            print(f"    {line}", flush=True)
+                        print("    ----------------------------", flush=True)
                     continue
 
                 cost = float(summary.get("estimated_cost_usd", 0.0) or 0.0)

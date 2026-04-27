@@ -30,3 +30,6 @@ logs/
 /data/
 /data/*.sqlite
 /data/*.sqlite-journal
+
+# Local-only API key file (written by scripts/extract_key.py)
+.env.playtest

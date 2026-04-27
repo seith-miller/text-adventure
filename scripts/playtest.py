@@ -117,12 +117,15 @@ TOOLS_SCHEMA = [
 
 def _load_mcp_module():
     """Import scripts/mirs_end_mcp.py as a module so we can use its backend."""
+    if "mirs_end_mcp" in sys.modules:
+        return sys.modules["mirs_end_mcp"]
     spec = importlib.util.spec_from_file_location(
         "mirs_end_mcp", str(REPO_ROOT / "scripts" / "mirs_end_mcp.py")
     )
     if spec is None or spec.loader is None:
         raise RuntimeError("could not load mirs_end_mcp module")
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod  # required by Python 3.14 dataclass lookup
     spec.loader.exec_module(mod)
     return mod
 
@@ -192,6 +195,7 @@ class GameBridge:
         async def _run() -> None:
             for session in self._sessions.values():
                 await self._backend.close_session(session)
+            await self._backend.shutdown()
 
         try:
             self._loop.run_until_complete(_run())
@@ -226,6 +230,65 @@ def _state_signature(state: dict) -> str:
         state.get("turn", ""),
     ]
     return "|".join(str(p) for p in parts)
+
+
+_CACHE_CONTROL = {"type": "ephemeral"}
+
+
+def _strip_cache_control(messages: list[dict]) -> list[dict]:
+    """Return messages with any cache_control markers removed."""
+    cleaned = []
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            new_content = []
+            for block in content:
+                if isinstance(block, dict) and "cache_control" in block:
+                    block = {k: v for k, v in block.items() if k != "cache_control"}
+                new_content.append(block)
+            cleaned.append({**msg, "content": new_content})
+        else:
+            cleaned.append(msg)
+    return cleaned
+
+
+def _with_cache_breakpoint(messages: list[dict]) -> list[dict]:
+    """
+    Drop any prior cache_control markers and add one to the last block of
+    the last message. This caches the conversation prefix as it grows so
+    subsequent turns pay 0.1x for re-sent context.
+    """
+    cleaned = _strip_cache_control(messages)
+    if not cleaned:
+        return cleaned
+    last = cleaned[-1]
+    content = last["content"]
+    if isinstance(content, str):
+        new_content = [
+            {"type": "text", "text": content, "cache_control": _CACHE_CONTROL}
+        ]
+    else:
+        new_content = list(content)
+        for i in range(len(new_content) - 1, -1, -1):
+            block = new_content[i]
+            if isinstance(block, dict):
+                new_content[i] = {**block, "cache_control": _CACHE_CONTROL}
+                break
+    cleaned[-1] = {**last, "content": new_content}
+    return cleaned
+
+
+def _tools_with_cache(tools: list[dict]) -> list[dict]:
+    """Return tools with cache_control on the last entry to lock the static prefix."""
+    if not tools:
+        return tools
+    out = [dict(t) for t in tools]
+    out[-1] = {**out[-1], "cache_control": _CACHE_CONTROL}
+    return out
+
+
+def _system_with_cache(prompt: str) -> list[dict]:
+    return [{"type": "text", "text": prompt, "cache_control": _CACHE_CONTROL}]
 
 
 def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
@@ -300,6 +363,8 @@ def run_playtest(
     game_turn = 0  # counts only mirs_end_send_command turns
     total_input_tokens = 0
     total_output_tokens = 0
+    total_cache_creation_tokens = 0
+    total_cache_read_tokens = 0
     current_session_id: str | None = None
     last_response_text = ""
     final_state: dict | None = None
@@ -317,13 +382,19 @@ def run_playtest(
             response = client.messages.create(
                 model=model,
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS_SCHEMA,
-                messages=messages,
+                system=_system_with_cache(SYSTEM_PROMPT),
+                tools=_tools_with_cache(TOOLS_SCHEMA),
+                messages=_with_cache_breakpoint(messages),
             )
 
             total_input_tokens += response.usage.input_tokens
             total_output_tokens += response.usage.output_tokens
+            total_cache_creation_tokens += getattr(
+                response.usage, "cache_creation_input_tokens", 0
+            ) or 0
+            total_cache_read_tokens += getattr(
+                response.usage, "cache_read_input_tokens", 0
+            ) or 0
 
             tool_uses = [b for b in response.content if b.type == "tool_use"]
             if not tool_uses:
@@ -434,8 +505,12 @@ def run_playtest(
     final_score = (final_state or {}).get("score")
     final_o2 = (final_state or {}).get("o2")
     final_morale = (final_state or {}).get("morale")
+    # Sonnet 4.5 pricing: input $3/Mtok, cache write $3.75/Mtok (1.25x),
+    # cache read $0.30/Mtok (0.1x), output $15/Mtok.
     estimated_cost_usd = (
         total_input_tokens * 3 / 1_000_000
+        + total_cache_creation_tokens * 3.75 / 1_000_000
+        + total_cache_read_tokens * 0.30 / 1_000_000
         + total_output_tokens * 15 / 1_000_000
     )
 
@@ -449,6 +524,8 @@ def run_playtest(
         "bailout_reason": bailout_reason,
         "input_tokens": str(total_input_tokens),
         "output_tokens": str(total_output_tokens),
+        "cache_creation_tokens": str(total_cache_creation_tokens),
+        "cache_read_tokens": str(total_cache_read_tokens),
         "estimated_cost_usd": f"{estimated_cost_usd:.4f}",
         "model": model,
     }
@@ -469,6 +546,8 @@ def run_playtest(
         "final_morale": final_morale,
         "input_tokens": total_input_tokens,
         "output_tokens": total_output_tokens,
+        "cache_creation_tokens": total_cache_creation_tokens,
+        "cache_read_tokens": total_cache_read_tokens,
         "estimated_cost_usd": round(estimated_cost_usd, 4),
         "command_history": command_history,
         "transcript": transcript,

@@ -50,14 +50,54 @@ class PlaywrightBackend:
 
     def __init__(self, game_url: str | None = None):
         repo_root = Path(__file__).resolve().parent.parent
-        self._game_url = game_url or f"file://{repo_root / 'game' / 'play.html'}"
+        self._repo_root = repo_root
+        self._explicit_url = game_url
+        self._game_url = game_url  # set in ensure_browser if not explicit
         self._browser: Any = None
         self._playwright: Any = None
+        self._http_server: Any = None
+        self._http_thread: Any = None
+
+    def _start_local_http(self) -> str:
+        """
+        Serve game/ over HTTP on a free local port.
+
+        Chromium blocks `fetch` on file:// origins, which the game uses
+        to load story.ulx and assets. Spinning up a tiny in-process HTTP
+        server gives the page an http:// origin without requiring the
+        caller to manage a separate web server.
+        """
+        import http.server
+        import socketserver
+        import threading
+
+        game_dir = str(self._repo_root / "game")
+
+        class _Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=game_dir, **kwargs)
+
+            def log_message(self, *args, **kwargs):
+                pass  # silence per-request logging
+
+        class _Server(socketserver.ThreadingTCPServer):
+            allow_reuse_address = True
+            daemon_threads = True
+
+        self._http_server = _Server(("127.0.0.1", 0), _Handler)
+        port = self._http_server.server_address[1]
+        self._http_thread = threading.Thread(
+            target=self._http_server.serve_forever, daemon=True
+        )
+        self._http_thread.start()
+        return f"http://127.0.0.1:{port}/play.html"
 
     async def ensure_browser(self) -> None:
         if self._browser is not None:
             return
         from playwright.async_api import async_playwright
+        if self._game_url is None:
+            self._game_url = self._start_local_http()
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.launch(headless=True)
 
@@ -147,6 +187,10 @@ class PlaywrightBackend:
             await self._browser.close()
         if self._playwright:
             await self._playwright.stop()
+        if self._http_server is not None:
+            self._http_server.shutdown()
+            self._http_server.server_close()
+            self._http_server = None
 
     # -- internal helpers --------------------------------------------------
 
