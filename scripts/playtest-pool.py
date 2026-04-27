@@ -53,6 +53,8 @@ sys.path.insert(0, str(REPO_ROOT))
 from lib.playthrough_db import (  # noqa: E402
     commands_attempted,
     ending_distribution,
+    get_session,
+    list_sessions,
     session_summaries,
     stuck_moments,
     turns_to_first_argon_call,
@@ -201,6 +203,12 @@ def run_pool(
                         f"  [{completed}/{runs}] FAIL: {summary.get('error')}",
                         flush=True,
                     )
+                    stderr_tail = (summary.get("stderr") or "").rstrip()
+                    if stderr_tail:
+                        print("    --- driver stderr (tail) ---", flush=True)
+                        for line in stderr_tail.splitlines()[-40:]:
+                            print(f"    {line}", flush=True)
+                        print("    ----------------------------", flush=True)
                     continue
 
                 cost = float(summary.get("estimated_cost_usd", 0.0) or 0.0)
@@ -320,6 +328,139 @@ def render_report(
     return "\n".join(lines)
 
 
+def format_session_markdown(session: dict) -> str:
+    """
+    Render a session row + its turns as a human-readable markdown
+    transcript. Intended for skim review when iterating on the prose.
+    """
+    sid = session.get("id") or session.get("session_id") or "(no id)"
+    meta = session.get("metadata") or {}
+    if isinstance(meta, list):
+        meta = {entry.get("key"): entry.get("value") for entry in meta if entry}
+
+    cost = meta.get("estimated_cost_usd", "?")
+    bailout = meta.get("bailout_reason", session.get("status", "?"))
+    turns = session.get("turns") or []
+    player_kind = session.get("player_kind") or "(unknown)"
+    ending = session.get("ending_type") or "(none)"
+    started = session.get("started_at") or "?"
+    score = session.get("final_score")
+    o2 = session.get("final_o2")
+    morale = session.get("final_morale")
+
+    lines: list[str] = []
+    lines.append(f"# Playthrough {sid} - {player_kind}")
+    lines.append("")
+    lines.append(
+        f"started: {started} · turns: {len(turns)} · "
+        f"status: {session.get('status', '?')} · ending: {ending} · "
+        f"cost: ${cost}"
+    )
+    lines.append(
+        f"final score: {score} · O2: {o2} · morale: {morale} · bailout: {bailout}"
+    )
+
+    stuck_meta = meta.get("stuck_moments")
+    if stuck_meta:
+        try:
+            stuck_entries = json.loads(stuck_meta)
+        except (ValueError, TypeError):
+            stuck_entries = []
+        if stuck_entries:
+            lines.append("")
+            lines.append("**Stuck moments:**")
+            for entry in stuck_entries:
+                lines.append(
+                    f"- turns {entry.get('turn_start')}-{entry.get('turn_end')} "
+                    f"in {entry.get('room', 'unknown')}"
+                )
+
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    for turn in turns:
+        n = turn.get("turn_number", "?")
+        cmd = (turn.get("command") or "").strip() or "(empty)"
+        room = turn.get("current_room") or "?"
+        resp = (turn.get("response") or "").strip() or "(no response)"
+        lines.append(f"## Turn {n}: `{cmd}`")
+        lines.append(f"_room: {room}_")
+        lines.append("")
+        lines.append(resp)
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def dump_sessions(
+    *,
+    out_dir: pathlib.Path,
+    player_kind: Optional[str] = None,
+    since: Optional[str] = None,
+    session_id: Optional[str] = None,
+    limit: int = 100,
+    db_path: Optional[pathlib.Path] = None,
+) -> list[pathlib.Path]:
+    """
+    Write one markdown file per matching session to ``out_dir``.
+
+    Returns the list of files written.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written: list[pathlib.Path] = []
+
+    if session_id:
+        session = get_session(session_id, db_path=db_path)
+        if session is None:
+            return written
+        sessions = [session]
+    else:
+        rows = list_sessions(
+            limit=limit,
+            player_kind=player_kind,
+            since=since,
+            db_path=db_path,
+        )
+        sessions = [
+            get_session(r["id"], db_path=db_path)
+            for r in rows
+        ]
+        sessions = [s for s in sessions if s is not None]
+
+    for session in sessions:
+        sid = session.get("id") or session.get("session_id")
+        date_part = (session.get("started_at") or "")[:10] or "undated"
+        slug = f"{date_part}-{sid}.md"
+        path = out_dir / slug
+        path.write_text(format_session_markdown(session))
+        written.append(path)
+
+    return written
+
+
+def cmd_dump(args: argparse.Namespace) -> int:
+    out = pathlib.Path(args.out).expanduser()
+    db_path = pathlib.Path(args.db).expanduser() if args.db else None
+    written = dump_sessions(
+        out_dir=out,
+        player_kind=args.player_kind,
+        since=args.since,
+        session_id=args.session_id,
+        limit=args.limit,
+        db_path=db_path,
+    )
+    if not written:
+        print("No matching sessions.", flush=True)
+        return 0
+    print(f"Wrote {len(written)} transcript(s) to {out}/", flush=True)
+    for p in written[:20]:
+        print(f"  {p.name}", flush=True)
+    if len(written) > 20:
+        print(f"  ...and {len(written) - 20} more", flush=True)
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     budget_env = os.environ.get("MIRSEND_QA_BUDGET_USD")
     budget_usd: Optional[float] = float(budget_env) if budget_env else None
@@ -387,6 +528,27 @@ def main() -> int:
     p_rep.add_argument("--output", default=None, help="Write report to file.")
     p_rep.add_argument("--db", default=None, help="Override DB path.")
     p_rep.set_defaults(func=cmd_report)
+
+    p_dump = sub.add_parser(
+        "dump",
+        help="Write per-session markdown transcripts for human review.",
+    )
+    p_dump.add_argument(
+        "--out", default=str(REPO_ROOT / "docs" / "playtests" / "runs"),
+        help="Output directory (default: docs/playtests/runs/)",
+    )
+    p_dump.add_argument("--player-kind", default=None)
+    p_dump.add_argument("--since", default=None, help="ISO 8601 timestamp.")
+    p_dump.add_argument(
+        "--session-id", default=None,
+        help="Dump just this one session.",
+    )
+    p_dump.add_argument(
+        "--limit", type=int, default=100,
+        help="Max sessions to dump when not filtering by id (default: 100).",
+    )
+    p_dump.add_argument("--db", default=None, help="Override DB path.")
+    p_dump.set_defaults(func=cmd_dump)
 
     args = parser.parse_args()
     return args.func(args)

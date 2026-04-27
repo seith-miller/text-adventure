@@ -132,7 +132,12 @@ def _text_block(text):
 def _make_response(content, input_tokens=10, output_tokens=20):
     resp = MagicMock()
     resp.content = content
-    resp.usage = MagicMock(input_tokens=input_tokens, output_tokens=output_tokens)
+    resp.usage = MagicMock(
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cache_creation_input_tokens=0,
+        cache_read_input_tokens=0,
+    )
     return resp
 
 
@@ -215,7 +220,13 @@ def test_happy_path_loop_terminates_on_ending(monkeypatch):
         "mirs_end_get_state",
         "mirs_end_export_transcript",
     ]
-    assert first_call["system"] == playtest_mod.SYSTEM_PROMPT
+    # System is passed as a list of content blocks so we can attach a
+    # cache_control marker to enable prompt caching.
+    assert first_call["system"][0]["text"] == playtest_mod.SYSTEM_PROMPT
+    assert first_call["system"][0]["cache_control"] == {"type": "ephemeral"}
+    # Tools list is also marked: cache_control on the last tool extends
+    # the cached prefix through the entire static section.
+    assert first_call["tools"][-1]["cache_control"] == {"type": "ephemeral"}
 
 
 def test_stuck_loop_bailout_fires_after_n_turns(monkeypatch):
