@@ -10,8 +10,32 @@ import { clearStorage } from "./helpers";
  */
 test.describe("station-ai-runtime", () => {
   test.beforeEach(async ({ page }) => {
+    // Enable warm AI before play.html loads so the runtime path runs
+    // instead of the feature-flag canned-line fallback.
+    await page.addInitScript(() => {
+      (window as Window & { MIRSEND_AI_ENABLED?: number }).MIRSEND_AI_ENABLED =
+        1;
+      // Suppress the first-run AI onboarding modal so it does not
+      // intercept clicks on the menu.
+      try {
+        localStorage.setItem("mirsend_ai_onboarding_seen", "1");
+      } catch (_e) {
+        /* storage may be locked before page load; harmless. */
+      }
+    });
     await page.goto("/play.html");
+    await page.evaluate(() => {
+      try {
+        localStorage.setItem("mirsend_ai_onboarding_seen", "1");
+      } catch (_e) {
+        /* ignore */
+      }
+    });
     await clearStorage(page);
+    // Re-set after clearStorage in case it wiped this key.
+    await page.evaluate(() => {
+      localStorage.setItem("mirsend_ai_onboarding_seen", "1");
+    });
   });
 
   test("AI-PROMPT tag is intercepted and triggers proxy call", async ({
