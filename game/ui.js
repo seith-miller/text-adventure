@@ -445,6 +445,12 @@
     if (!window.StationAI) return false;
     var match = window.StationAI.matchAiPromptTag(text);
     if (!match) return false;
+    /* Feature flag gate: if warm AI is disabled, print the canned line
+       instead of calling the proxy. */
+    if (!AI_ENABLED) {
+      appendStoryText(AI_CANNED_LINE);
+      return true;
+    }
     window.StationAI.handleAiPrompt(match);
     return true;
   }

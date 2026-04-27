@@ -845,6 +845,25 @@ Instead of taking the manual pressure gauges:
 Instead of taking the sleeping harness:
 	say "The sleeping harness is bolted to the bulkhead."
 
+Part 9B - Argon-87 grammar (m8 in-game runtime)
+
+[The player addresses the Station AI through a small set of commands.
+ Each emits an [AI-PROMPT: topic=...] tag that ui.js intercepts and
+ routes to either the warm AI runtime or the canned offline line,
+ depending on the MIRSEND_AI_ENABLED feature flag.]
+
+Talking to argon is an action applying to nothing.
+Understand "talk to argon" or "talk to station ai" or "speak to argon" or "speak to ship" or "call argon" or "call station ai" as talking to argon.
+
+Asking argon about is an action applying to one topic.
+Understand "ask argon about [text]" or "ask station ai about [text]" as asking argon about.
+
+Carry out talking to argon:
+	say "[bracket]AI-PROMPT: topic=general[close bracket]".
+
+Carry out asking argon about:
+	say "[bracket]AI-PROMPT: topic=[the topic understood][close bracket]".
+
 Part 10 - Score Tracking
 
 Chapter 1 - Achievements
