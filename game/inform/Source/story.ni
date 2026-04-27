@@ -137,6 +137,42 @@ Instead of eating the borscht:
 
 The bunk status panel is scenery in the Crew Quarters. The description of the bunk status panel is "Dead black. Not even the emergency indicators are lit."
 
+The chocolate bar is an edible thing in the Crew Quarters. The printed name of the chocolate bar is "chocolate bar". Understand "chocolate" or "shokolad" or "shoko" or "bar" or "ration bar" or "ration" as the chocolate bar. The description of the chocolate bar is "A small dark Soviet ration bar. Foil-wrapped, slightly crushed. Аленка on the label. Probably stale. Probably the only thing within reach that is not trying to kill you."
+
+After eating the chocolate bar:
+	if morale-level + 12 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 12;
+	say "You unwrap the bar. It tastes like dust and cocoa and something faintly like the past. You eat it slowly because you have nothing else.[paragraph break][bracket]You feel a little less broken.[close bracket]"
+
+[Resting in the bunk: lets the player trade O2 for morale. The harness
+ is in Crew Quarters; resting only works there. Each rest costs 4 O2
+ above the per-turn baseline tick and pays back 10 morale.]
+Resting is an action applying to nothing.
+[Inform 7 binds "sleep" to its built-in Sleeping action by default. Clear
+ it so our resting action gets the verb.]
+Understand the command "sleep" as something new.
+Understand "sleep" or "rest" or "nap" or "doze" or "lie down" or "sleep in harness" or "rest in harness" or "go to sleep" or "close eyes" as resting.
+
+Check resting:
+	if the location of the player is not the Crew Quarters:
+		say "There is no good place to rest here. Not without the harness in the bay.";
+		stop the action;
+	if oxygen-level < 8:
+		say "You start to drift, then jerk back. The air is too thin to slow your breathing now. Not without help.";
+		stop the action.
+
+Carry out resting:
+	now oxygen-level is oxygen-level - 4;
+	if morale-level + 10 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 10.
+
+Report resting:
+	say "You drift in the harness. Eyes closed. Eight breaths. Sixteen. The hammering behind your forehead settles into something duller. The cold pulls at the edge of you, but you let it. When you open your eyes, the room is still black, but you can hold its shape in your mind now.[paragraph break][bracket]You feel steadier. Time has passed.[close bracket]"
+
 Chapter 2 - The Sealed Hatch
 
 [The hatch north is held shut by a pressure differential: the corridor
