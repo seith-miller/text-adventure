@@ -13,6 +13,7 @@ Chapter 1 - Resource Variables
 
 Oxygen-level is a number that varies. Oxygen-level is 100.
 Morale-level is a number that varies. Morale-level is 50.
+Dose-level is a number that varies. Dose-level is 0.
 
 Chapter 2 - Status Bar
 
@@ -686,7 +687,10 @@ Carry out showing the map:
 
 
 When play begins:
-	say "You wake to a shout. Not a voice. A physical shout. The station hitting you through your harness. Something enormous has struck Mir-3.[paragraph break]The lights are out. The air is wrong. Thinner. Colder. Your ears ring from a pressure change you do not consciously remember. Alarms that must have been going a moment ago have already died. Through the bulkhead you hear the long whistle of venting atmosphere. Slowing. Stopping.[paragraph break]Then nothing. The absolute nothing of a station that is not running.[paragraph break]You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. You tear yourself free of the straps. You have no idea what just happened. You are certain it was not small."
+	now oxygen-level is a random number between 75 and 95;
+	now morale-level is a random number between 30 and 55;
+	now dose-level is a random number between 0 and 3;
+	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small."
 
 Part 5 - Listening
 
