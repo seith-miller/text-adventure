@@ -165,6 +165,10 @@
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
+    /* Reset playthrough-db session tracking (m11). */
+    sessionId = generateUUID();
+    _gameEndPosted = false;
+
     /* Clear story output */
     storyOutput.innerHTML = "";
 
@@ -350,6 +354,96 @@
     storyOutput.appendChild(span);
     scrollToBottom();
     detectRoomChange(text);
+    checkForGameEnd(text);
+  }
+
+  /* ── Session ingest (m11) ── */
+
+  var SESSION_INGEST_URL = "http://localhost:8787/v1/sessions";
+  var sessionId = null;
+  var _gameEndPosted = false;
+
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      var r = (Math.random() * 16) | 0;
+      var v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function detectPlayerKind() {
+    if (typeof window.MIRSEND_PLAYER_KIND === "string") {
+      return window.MIRSEND_PLAYER_KIND;
+    }
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const player = params.get("player");
+      if (player) return player;
+    } catch (_e) {
+      /* ignore */
+    }
+    return "human";
+  }
+
+  function detectGameVersion() {
+    const meta = document.querySelector('meta[name="game-version"]');
+    return meta ? meta.getAttribute("content") || "unknown" : "unknown";
+  }
+
+  function buildSessionPayload() {
+    const session = snapshotSession();
+    return {
+      session_id: sessionId,
+      player_kind: detectPlayerKind(),
+      game_version: detectGameVersion(),
+      started_at: session.startedAt,
+      ended_at: session.exportedAt,
+      status: _gameEndPosted ? "completed" : "in_progress",
+      turns: session.turnCount,
+      command_history: session.commandHistory,
+      transcript: session.transcript,
+      final_state: session.finalState,
+    };
+  }
+
+  function postSession() {
+    if (!sessionId) return;
+    try {
+      const payload = buildSessionPayload();
+      fetch(SESSION_INGEST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => {
+          if (res.status >= 400 && res.status < 500) {
+            console.warn(`[MirsEnd] Session POST returned ${res.status}`);
+          } else if (res.status >= 500) {
+            console.warn(`[MirsEnd] Session POST server error: ${res.status}`);
+          }
+        })
+        .catch((_err) => {
+          /* Proxy unreachable - swallow silently. */
+        });
+    } catch (_e) {
+      /* Swallow any synchronous errors. */
+    }
+  }
+
+  function checkForGameEnd(text) {
+    if (_gameEndPosted) return;
+    if (
+      typeof text === "string" &&
+      (text.indexOf("[Game ended]") !== -1 ||
+        text.indexOf("suffocate") !== -1 ||
+        text.indexOf("SUFFOCATE") !== -1)
+    ) {
+      _gameEndPosted = true;
+      postSession();
+    }
   }
 
   function appendPlayerInput(text) {
@@ -982,6 +1076,8 @@
 
   function downloadSession() {
     var session = snapshotSession();
+    /* Also POST to the playthrough-db ingest endpoint (m11). */
+    postSession();
     var json = JSON.stringify(session, null, 2);
     var blob = new Blob([json], { type: "application/json" });
     var url = URL.createObjectURL(blob);
