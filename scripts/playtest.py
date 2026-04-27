@@ -297,6 +297,7 @@ def run_playtest(
 
     state_history: list[str] = []
     turn = 0
+    game_turn = 0  # counts only mirs_end_send_command turns
     total_input_tokens = 0
     total_output_tokens = 0
     current_session_id: str | None = None
@@ -307,6 +308,8 @@ def run_playtest(
 
     transcript = ""
     command_history: list[str] = []
+    turns_log: list[dict] = []
+    stuck_moments: list[dict] = []
 
     try:
         while turn < max_turns:
@@ -350,6 +353,20 @@ def run_playtest(
                     last_response_text = result.get("response_text", "")
                     final_state = result.get("state")
                     cmd = tool_input.get("command", "")
+                    game_turn += 1
+                    state_for_log = final_state or {}
+                    turns_log.append(
+                        {
+                            "turn_number": game_turn,
+                            "command": cmd,
+                            "response": last_response_text,
+                            "current_room": state_for_log.get("currentRoom"),
+                            "inventory": state_for_log.get("inventory") or [],
+                            "o2": state_for_log.get("o2"),
+                            "morale": state_for_log.get("morale"),
+                            "truth_states": None,
+                        }
+                    )
                     print(f"[turn {turn}] send_command: {cmd!r}", flush=True)
                 elif tool_name == "mirs_end_get_state":
                     result = bridge.get_state(tool_input.get("session_id", ""))
@@ -378,6 +395,15 @@ def run_playtest(
             if len(state_history) >= stuck_window:
                 recent = state_history[-stuck_window:]
                 if len(set(recent)) == 1:
+                    room = (final_state or {}).get("currentRoom") or "unknown"
+                    stuck_moments.append(
+                        {
+                            "turn_start": max(1, game_turn - stuck_window + 1),
+                            "turn_end": game_turn,
+                            "room": room,
+                            "window": stuck_window,
+                        }
+                    )
                     bailout_reason = "stuck-loop"
                     break
 
@@ -413,16 +439,31 @@ def run_playtest(
         + total_output_tokens * 15 / 1_000_000
     )
 
+    status = (
+        "completed" if bailout_reason == "ending"
+        else "stuck" if bailout_reason == "stuck-loop"
+        else "abandoned"
+    )
+
+    metadata = {
+        "bailout_reason": bailout_reason,
+        "input_tokens": str(total_input_tokens),
+        "output_tokens": str(total_output_tokens),
+        "estimated_cost_usd": f"{estimated_cost_usd:.4f}",
+        "model": model,
+    }
+    if stuck_moments:
+        metadata["stuck_moments"] = json.dumps(stuck_moments)
+
     summary = {
         "session_id": play_session_id,
         "started_at": started_at,
+        "ended_at": datetime.now(timezone.utc).isoformat(),
         "model": model,
-        "turns": turn,
+        "turns_count": turn,
         "bailout_reason": bailout_reason,
         "ending_type": ending_type,
-        "status": "completed" if bailout_reason == "ending" else "stuck"
-        if bailout_reason == "stuck-loop"
-        else "abandoned",
+        "status": status,
         "final_score": final_score,
         "final_o2": final_o2,
         "final_morale": final_morale,
@@ -431,6 +472,11 @@ def run_playtest(
         "estimated_cost_usd": round(estimated_cost_usd, 4),
         "command_history": command_history,
         "transcript": transcript,
+        "turns": turns_log,
+        "stuck_moments": stuck_moments,
+        "metadata": metadata,
+        "player_kind": f"agent:{model}",
+        "game_version": "develop",
     }
 
     print(flush=True)

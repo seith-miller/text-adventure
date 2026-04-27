@@ -202,7 +202,7 @@ def test_happy_path_loop_terminates_on_ending(monkeypatch):
     assert summary["bailout_reason"] == "ending"
     assert summary["ending_type"] == "transmit"
     assert summary["status"] == "completed"
-    assert summary["turns"] == 3
+    assert summary["turns_count"] == 3
     assert summary["input_tokens"] == 30
     assert summary["output_tokens"] == 60
     # 30 * 3/1M + 60 * 15/1M = 0.00099, rounded to 4 places.
@@ -256,7 +256,7 @@ def test_stuck_loop_bailout_fires_after_n_turns(monkeypatch):
     assert summary["bailout_reason"] == "stuck-loop"
     assert summary["status"] == "stuck"
     # Should bail out around turn 5 (window=5 with constant state).
-    assert summary["turns"] <= 7
+    assert summary["turns_count"] <= 7
 
 
 def test_missing_api_key_exits_cleanly(monkeypatch):
@@ -278,7 +278,7 @@ def test_no_tool_call_bails_out(monkeypatch):
 
     summary = playtest_mod.run_playtest(no_ingest=True, max_turns=20)
     assert summary["bailout_reason"] == "no-tool-call"
-    assert summary["turns"] == 1
+    assert summary["turns_count"] == 1
 
 
 def test_state_signature_changes_with_room():
@@ -344,4 +344,4 @@ def test_max_turns_caps_loop(monkeypatch):
         no_ingest=True, max_turns=3, stuck_window=10
     )
     assert summary["bailout_reason"] == "max-turns"
-    assert summary["turns"] == 3
+    assert summary["turns_count"] == 3
