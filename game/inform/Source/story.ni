@@ -173,6 +173,49 @@ Carry out resting:
 Report resting:
 	say "You drift in the harness. Eyes closed. Eight breaths. Sixteen. The hammering behind your forehead settles into something duller. The cold pulls at the edge of you, but you let it. When you open your eyes, the room is still black, but you can hold its shape in your mind now.[paragraph break][bracket]You feel steadier. Time has passed.[close bracket]"
 
+[Status check: prints the player's vitals and inventory in the prose
+ stream. Useful for shell-mode play, but more importantly the LLM
+ player has no UI bars; STATUS is how the agent reads its own state.]
+Checking status is an action applying to nothing.
+Understand "status" or "stats" or "vitals" or "check status" or "check stats" or "check vitals" or "condition" as checking status.
+
+Carry out checking status:
+	say "[bracket]STATUS[close bracket][line break]";
+	say "  Location: [printed name of the location of the player][line break]";
+	say "  O2: [oxygen-level]%[line break]";
+	say "  Morale: [morale-level]%[line break]";
+	say "  Score: [the score][line break]";
+	if the number of things carried by the player > 0:
+		say "  Carrying: ";
+		let counter be 0;
+		repeat with item running through things carried by the player:
+			if counter > 0:
+				say ", ";
+			say "[printed name of item]";
+			increment counter;
+		say "[line break]";
+	otherwise:
+		say "  Carrying: nothing[line break]".
+
+[Help: a quick verb reference. Lower bar to discovery for the LLM
+ player and for any new human player.]
+Asking-for-help is an action applying to nothing.
+Understand "help" or "verbs" or "commands" as asking-for-help.
+
+Carry out asking-for-help:
+	say "Common commands:[line break]";
+	say "  LOOK            see your surroundings[line break]";
+	say "  EXAMINE [bracket]thing[close bracket]  look at something closely[line break]";
+	say "  INVENTORY (I)   list what you carry[line break]";
+	say "  STATUS          show O2, morale, score, inventory[line break]";
+	say "  TAKE [bracket]thing[close bracket]    pick something up[line break]";
+	say "  OPEN [bracket]thing[close bracket]    open a container or hatch[line break]";
+	say "  EAT [bracket]thing[close bracket]     consume food, restores morale[line break]";
+	say "  REST or SLEEP   recover morale, costs O2 (Crew Quarters only)[line break]";
+	say "  PULL [bracket]thing[close bracket]    operate a lever or valve[line break]";
+	say "  Movement        N S E W (or fore aft port starboard), UP / DOWN[line break]";
+	say "  SAVE / LOAD     save or load progress[line break]".
+
 Chapter 2 - The Sealed Hatch
 
 [The hatch north is held shut by a pressure differential: the corridor
@@ -726,7 +769,7 @@ When play begins:
 	now oxygen-level is a random number between 75 and 95;
 	now morale-level is a random number between 30 and 55;
 	now dose-level is a random number between 0 and 3;
-	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small."
+	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small.[paragraph break][bracket]New here? Type HELP for a list of commands. STATUS shows your vitals. LOOK describes the room. EXAMINE [bracket]thing[close bracket] inspects an object.[close bracket]"
 
 Part 5 - Listening
 
