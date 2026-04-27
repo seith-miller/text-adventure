@@ -122,7 +122,7 @@ class PlaywrightBackend:
 
         # Wait for first narrative
         await session.page.locator("#story-output").filter(
-            has_text="You wake to"
+            has_text="Crew Quarters"
         ).wait_for(timeout=15_000)
 
         opening = await self._get_story_text(session.page)
@@ -173,7 +173,7 @@ class PlaywrightBackend:
         await page.wait_for_timeout(300)
         await page.keyboard.press("Escape")
         await page.locator("#story-output").filter(
-            has_text="You wake to"
+            has_text="Crew Quarters"
         ).wait_for(timeout=15_000)
 
         opening = await self._get_story_text(page)

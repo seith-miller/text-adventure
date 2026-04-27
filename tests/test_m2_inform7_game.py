@@ -223,9 +223,9 @@ class TestStoryProgression:
     """Story progresses through all major beats end-to-end."""
 
     def test_beat_emergency_wake(self, story_source):
-        """Beat 1: Player wakes to the prologue impact."""
-        assert "You wake to" in story_source
-        assert "venting" in story_source.lower() or "shudder" in story_source.lower() or "shout" in story_source.lower()
+        """Beat 1: Player asleep in bunk, struck violently, comes to bleeding."""
+        assert "You were sleeping" in story_source
+        assert "bleeding" in story_source.lower()
 
     def test_beat_corridor_discovery(self, story_source):
         """Beat 2: Player reaches corridor and finds the dead crew."""
@@ -272,7 +272,7 @@ class TestStoryProgression:
     def test_story_beats_ordered(self, story_source):
         """Major beats appear in correct narrative order in source."""
         beats = [
-            "You wake to",
+            "You were sleeping",
             "war-is-discovered",
             "power-is-restored",
             "distress-call-heard",
