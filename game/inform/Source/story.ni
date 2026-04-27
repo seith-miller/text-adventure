@@ -137,6 +137,23 @@ Instead of eating the borscht:
 
 The bunk status panel is scenery in the Crew Quarters. The description of the bunk status panel is "Dead black. Not even the emergency indicators are lit."
 
+[Backdrops for prose-mentioned scenery players reach for. Without these
+ the parser says "You can't see any such thing" on bunks/vent and breaks
+ trust in the prose. Each gives a one-line description that fits the
+ voice without inventing new mechanics.]
+The bunks are scenery in the Crew Quarters. Understand "bunk" or "bunks" or "first bunk" or "second bunk" or "third bunk" or "fourth bunk" as the bunks. The description of the bunks is "Four bunks in their slots. Three are empty harnesses. The fourth was yours."
+
+The reading light is scenery in the Crew Quarters. Understand "reading light" or "lamp" or "overhead light" as the reading light. The description of the reading light is "A small dome lamp clipped above your bunk. Dead, like everything else not running on batteries."
+
+The air vent is scenery in the Crew Quarters. Understand "vent" or "air vent" or "ventilation" or "duct" as the air vent. The description of the air vent is "An air vent overhead. The fan behind it is silent. Without circulation, the bay's air is going to settle in layers."
+
+The reactor warning triangle is scenery in the Crew Quarters. Understand "trefoil" or "warning" or "triangle" or "warning triangle" or "reactor warning" or "radiation symbol" as the reactor warning triangle. The description of the reactor warning triangle is "The trefoil radiation symbol painted on the aft bulkhead. Just past the hatch is the Reactor Module. The trefoil exists for this exact moment."
+
+[The two named hatches in Crew Quarters: the parser accepts "aft hatch"
+ and "forward hatch" as synonyms for the existing sealed hatch, so the
+ LLM player's natural phrasing doesn't get rewritten to "examine south".]
+Understand "aft hatch" or "forward hatch" or "fore hatch" or "fwd hatch" as the sealed hatch.
+
 The chocolate bar is an edible thing in the Crew Quarters. The printed name of the chocolate bar is "chocolate bar". Understand "chocolate" or "shokolad" or "shoko" or "bar" or "ration bar" or "ration" as the chocolate bar. The description of the chocolate bar is "A small dark Soviet ration bar. Foil-wrapped, slightly crushed. Аленка on the label. Probably stale. Probably the only thing within reach that is not trying to kill you."
 
 After eating the chocolate bar:
@@ -195,7 +212,11 @@ Carry out checking status:
 			increment counter;
 		say "[line break]";
 	otherwise:
-		say "  Carrying: nothing[line break]".
+		say "  Carrying: nothing[line break]";
+	if morale-level <= 50:
+		say "  [bracket]Tip: REST or SLEEP recovers morale (costs O2). EAT something for a smaller boost.[close bracket][line break]";
+	if oxygen-level <= 50:
+		say "  [bracket]Tip: O2 is dropping. Avoid wasting turns; restoring power and life support is the long-term answer.[close bracket][line break]".
 
 [Help: a quick verb reference. Lower bar to discovery for the LLM
  player and for any new human player.]
