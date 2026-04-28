@@ -8,31 +8,78 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 from typing import Any
 
 import anthropic
 
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib  # type: ignore[no-redef]
+
 from .logs import log_call
 from .types import CostReport, LLMResponse, Prompt
 
-# ── Cost tables (USD per token, as of 2025) ─────────────────────────────────
+# ── Cost tables (USD per token) ─────────────────────────────────────────────
 
 _COST_PER_INPUT_TOKEN: dict[str, float] = {
+    "claude-opus-4-7": 15.0 / 1_000_000,
+    "claude-sonnet-4-6": 3.0 / 1_000_000,
     "claude-sonnet-4-5": 3.0 / 1_000_000,
     "claude-sonnet-4-5-20250514": 3.0 / 1_000_000,
+    "claude-haiku-4-5": 1.0 / 1_000_000,
+    "claude-haiku-4-5-20251001": 1.0 / 1_000_000,
     "claude-haiku-3-5": 0.80 / 1_000_000,
     "claude-haiku-3-5-20241022": 0.80 / 1_000_000,
 }
 _COST_PER_OUTPUT_TOKEN: dict[str, float] = {
+    "claude-opus-4-7": 75.0 / 1_000_000,
+    "claude-sonnet-4-6": 15.0 / 1_000_000,
     "claude-sonnet-4-5": 15.0 / 1_000_000,
     "claude-sonnet-4-5-20250514": 15.0 / 1_000_000,
+    "claude-haiku-4-5": 5.0 / 1_000_000,
+    "claude-haiku-4-5-20251001": 5.0 / 1_000_000,
     "claude-haiku-3-5": 4.0 / 1_000_000,
     "claude-haiku-3-5-20241022": 4.0 / 1_000_000,
 }
 
-# Fallback for unknown models.
+# Fallback for unknown models. Conservative (assumes Sonnet-class pricing).
 _DEFAULT_INPUT_COST = 3.0 / 1_000_000
 _DEFAULT_OUTPUT_COST = 15.0 / 1_000_000
+
+# ── Model resolution ────────────────────────────────────────────────────────
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+_DEFAULT_CONFIG_PATH = _PROJECT_ROOT / "config" / "ai.toml"
+_FALLBACK_MODEL = "claude-haiku-4-5"
+
+
+def resolve_model(config_path: Path | None = None) -> str:
+    """
+    Return the configured Claude model.
+
+    Resolution precedence (most specific wins):
+      1. ``MIRSEND_MODEL`` environment variable
+      2. ``[model] default`` in ``config/ai.toml``
+      3. Hardcoded fallback ``claude-haiku-4-5``
+    """
+    env = os.environ.get("MIRSEND_MODEL")
+    if env:
+        return env
+
+    path = config_path or _DEFAULT_CONFIG_PATH
+    if path.exists():
+        try:
+            with open(path, "rb") as f:
+                data = tomllib.load(f)
+            model = (data.get("model") or {}).get("default")
+            if isinstance(model, str) and model.strip():
+                return model.strip()
+        except (OSError, tomllib.TOMLDecodeError):
+            pass
+
+    return _FALLBACK_MODEL
 
 # ── Retry configuration ─────────────────────────────────────────────────────
 
@@ -73,7 +120,7 @@ def _estimate_cost(
 
 def call_claude(
     prompt: Prompt,
-    model: str = "claude-sonnet-4-5",
+    model: str | None = None,
     max_tokens: int = 1024,
     *,
     _client: Any | None = None,
@@ -85,7 +132,9 @@ def call_claude(
     prompt:
         A Prompt dict with ``system`` and ``messages`` keys.
     model:
-        Anthropic model identifier.
+        Anthropic model identifier. If ``None`` (the default), resolves
+        from ``MIRSEND_MODEL`` env var, then ``config/ai.toml``, then the
+        hardcoded ``claude-haiku-4-5`` fallback. See :func:`resolve_model`.
     max_tokens:
         Maximum tokens in the response.
     _client:
@@ -98,6 +147,9 @@ def call_claude(
     BridgeAPIError
         If the API call fails after retries.
     """
+    if model is None:
+        model = resolve_model()
+
     if _client is None:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
