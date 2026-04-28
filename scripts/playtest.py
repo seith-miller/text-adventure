@@ -361,6 +361,7 @@ def run_playtest(
     state_history: list[str] = []
     turn = 0
     game_turn = 0  # counts only mirs_end_send_command turns
+    consecutive_no_tool = 0
     total_input_tokens = 0
     total_output_tokens = 0
     total_cache_creation_tokens = 0
@@ -398,10 +399,21 @@ def run_playtest(
 
             tool_uses = [b for b in response.content if b.type == "tool_use"]
             if not tool_uses:
-                # Model emitted only text, no tool call. End the run; the
-                # game cannot continue without a tool invocation.
-                bailout_reason = "no-tool-call"
-                break
+                # Model emitted only text. Sampling variance: sometimes
+                # the model "thinks out loud" before its next tool call.
+                # Append the text and a nudge, give it a few chances.
+                consecutive_no_tool += 1
+                if consecutive_no_tool >= 3:
+                    bailout_reason = "no-tool-call"
+                    break
+                messages.append({"role": "assistant", "content": response.content})
+                messages.append({
+                    "role": "user",
+                    "content": "Continue playing the game by calling one of the available tools.",
+                })
+                print(f"[turn {turn}] text-only response; nudging", flush=True)
+                continue
+            consecutive_no_tool = 0
 
             messages.append({"role": "assistant", "content": response.content})
 

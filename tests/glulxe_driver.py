@@ -8,11 +8,14 @@ strips the ANSI/curses control codes so tests can make plain-text assertions.
 
 from __future__ import annotations
 
+import fcntl
 import os
 import pty
 import re
 import select
 import shutil
+import struct
+import termios
 import time
 
 # Match the various escape sequences glktermw emits
@@ -77,6 +80,14 @@ def run_glulxe(
             os.execvp("glulxe", ["glulxe", story_path])
         except Exception:
             os._exit(127)
+
+    # Resize the pty so glktermw doesn't paginate the opening prose with
+    # MORE prompts that would consume queued input characters.
+    try:
+        winsize = struct.pack("HHHH", 500, 200, 0, 0)
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+    except OSError:
+        pass
 
     # Parent: write the input, then read until the child exits or we time out
     try:

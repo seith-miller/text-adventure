@@ -13,6 +13,7 @@ Chapter 1 - Resource Variables
 
 Oxygen-level is a number that varies. Oxygen-level is 100.
 Morale-level is a number that varies. Morale-level is 50.
+Dose-level is a number that varies. Dose-level is 0.
 
 Chapter 2 - Status Bar
 
@@ -135,6 +136,106 @@ Instead of eating the borscht:
 	say "Not now."
 
 The bunk status panel is scenery in the Crew Quarters. The description of the bunk status panel is "Dead black. Not even the emergency indicators are lit."
+
+[Backdrops for prose-mentioned scenery players reach for. Without these
+ the parser says "You can't see any such thing" on bunks/vent and breaks
+ trust in the prose. Each gives a one-line description that fits the
+ voice without inventing new mechanics.]
+The bunks are scenery in the Crew Quarters. Understand "bunk" or "bunks" or "first bunk" or "second bunk" or "third bunk" or "fourth bunk" as the bunks. The description of the bunks is "Four bunks in their slots. Three are empty harnesses. The fourth was yours."
+
+The reading light is scenery in the Crew Quarters. Understand "reading light" or "lamp" or "overhead light" as the reading light. The description of the reading light is "A small dome lamp clipped above your bunk. Dead, like everything else not running on batteries."
+
+The air vent is scenery in the Crew Quarters. Understand "vent" or "air vent" or "ventilation" or "duct" as the air vent. The description of the air vent is "An air vent overhead. The fan behind it is silent. Without circulation, the bay's air is going to settle in layers."
+
+The reactor warning triangle is scenery in the Crew Quarters. Understand "trefoil" or "warning" or "triangle" or "warning triangle" or "reactor warning" or "radiation symbol" as the reactor warning triangle. The description of the reactor warning triangle is "The trefoil radiation symbol painted on the aft bulkhead. Just past the hatch is the Reactor Module. The trefoil exists for this exact moment."
+
+[The two named hatches in Crew Quarters: the parser accepts "aft hatch"
+ and "forward hatch" as synonyms for the existing sealed hatch, so the
+ LLM player's natural phrasing doesn't get rewritten to "examine south".]
+Understand "aft hatch" or "forward hatch" or "fore hatch" or "fwd hatch" as the sealed hatch.
+
+The chocolate bar is an edible thing in the Crew Quarters. The printed name of the chocolate bar is "chocolate bar". Understand "chocolate" or "shokolad" or "shoko" or "bar" or "ration bar" or "ration" as the chocolate bar. The description of the chocolate bar is "A small dark Soviet ration bar. Foil-wrapped, slightly crushed. Аленка on the label. Probably stale. Probably the only thing within reach that is not trying to kill you."
+
+After eating the chocolate bar:
+	if morale-level + 12 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 12;
+	say "You unwrap the bar. It tastes like dust and cocoa and something faintly like the past. You eat it slowly because you have nothing else.[paragraph break][bracket]You feel a little less broken.[close bracket]"
+
+[Resting in the bunk: lets the player trade O2 for morale. The harness
+ is in Crew Quarters; resting only works there. Each rest costs 4 O2
+ above the per-turn baseline tick and pays back 10 morale.]
+Resting is an action applying to nothing.
+[Inform 7 binds "sleep" to its built-in Sleeping action by default. Clear
+ it so our resting action gets the verb.]
+Understand the command "sleep" as something new.
+Understand "sleep" or "rest" or "nap" or "doze" or "lie down" or "sleep in harness" or "rest in harness" or "go to sleep" or "close eyes" as resting.
+
+Check resting:
+	if the location of the player is not the Crew Quarters:
+		say "There is no good place to rest here. Not without the harness in the bay.";
+		stop the action;
+	if oxygen-level < 8:
+		say "You start to drift, then jerk back. The air is too thin to slow your breathing now. Not without help.";
+		stop the action.
+
+Carry out resting:
+	now oxygen-level is oxygen-level - 4;
+	if morale-level + 10 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 10.
+
+Report resting:
+	say "You drift in the harness. Eyes closed. Eight breaths. Sixteen. The hammering behind your forehead settles into something duller. The cold pulls at the edge of you, but you let it. When you open your eyes, the room is still black, but you can hold its shape in your mind now.[paragraph break][bracket]You feel steadier. Time has passed.[close bracket]"
+
+[Status check: prints the player's vitals and inventory in the prose
+ stream. Useful for shell-mode play, but more importantly the LLM
+ player has no UI bars; STATUS is how the agent reads its own state.]
+Checking status is an action applying to nothing.
+Understand "status" or "stats" or "vitals" or "check status" or "check stats" or "check vitals" or "condition" as checking status.
+
+Carry out checking status:
+	say "[bracket]STATUS[close bracket][line break]";
+	say "  Location: [printed name of the location of the player][line break]";
+	say "  O2: [oxygen-level]%[line break]";
+	say "  Morale: [morale-level]%[line break]";
+	say "  Score: [the score][line break]";
+	if the number of things carried by the player > 0:
+		say "  Carrying: ";
+		let counter be 0;
+		repeat with item running through things carried by the player:
+			if counter > 0:
+				say ", ";
+			say "[printed name of item]";
+			increment counter;
+		say "[line break]";
+	otherwise:
+		say "  Carrying: nothing[line break]";
+	if morale-level <= 50:
+		say "  [bracket]Tip: REST or SLEEP recovers morale (costs O2). EAT something for a smaller boost.[close bracket][line break]";
+	if oxygen-level <= 50:
+		say "  [bracket]Tip: O2 is dropping. Avoid wasting turns; restoring power and life support is the long-term answer.[close bracket][line break]".
+
+[Help: a quick verb reference. Lower bar to discovery for the LLM
+ player and for any new human player.]
+Asking-for-help is an action applying to nothing.
+Understand "help" or "verbs" or "commands" as asking-for-help.
+
+Carry out asking-for-help:
+	say "Common commands:[line break]";
+	say "  LOOK            see your surroundings[line break]";
+	say "  EXAMINE [bracket]thing[close bracket]  look at something closely[line break]";
+	say "  INVENTORY (I)   list what you carry[line break]";
+	say "  STATUS          show O2, morale, score, inventory[line break]";
+	say "  TAKE [bracket]thing[close bracket]    pick something up[line break]";
+	say "  OPEN [bracket]thing[close bracket]    open a container or hatch[line break]";
+	say "  EAT [bracket]thing[close bracket]     consume food, restores morale[line break]";
+	say "  REST or SLEEP   recover morale, costs O2 (Crew Quarters only)[line break]";
+	say "  PULL [bracket]thing[close bracket]    operate a lever or valve[line break]";
+	say "  Movement        N S E W (or fore aft port starboard), UP / DOWN[line break]";
+	say "  SAVE / LOAD     save or load progress[line break]".
 
 Chapter 2 - The Sealed Hatch
 
@@ -686,7 +787,10 @@ Carry out showing the map:
 
 
 When play begins:
-	say "You wake to a shout. Not a voice. A physical shout. The station hitting you through your harness. Something enormous has struck Mir-3.[paragraph break]The lights are out. The air is wrong. Thinner. Colder. Your ears ring from a pressure change you do not consciously remember. Alarms that must have been going a moment ago have already died. Through the bulkhead you hear the long whistle of venting atmosphere. Slowing. Stopping.[paragraph break]Then nothing. The absolute nothing of a station that is not running.[paragraph break]You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. You tear yourself free of the straps. You have no idea what just happened. You are certain it was not small."
+	now oxygen-level is a random number between 75 and 95;
+	now morale-level is a random number between 30 and 55;
+	now dose-level is a random number between 0 and 3;
+	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small.[paragraph break][bracket]New here? Type HELP for a list of commands. STATUS shows your vitals. LOOK describes the room. EXAMINE [bracket]thing[close bracket] inspects an object.[close bracket]"
 
 Part 5 - Listening
 

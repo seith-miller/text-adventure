@@ -277,19 +277,55 @@ def test_missing_api_key_exits_cleanly(monkeypatch):
     assert exc.value.code == 2
 
 
-def test_no_tool_call_bails_out(monkeypatch):
-    """If the model emits only text and no tool_use, the loop ends."""
+def test_no_tool_call_bails_out_after_three_in_a_row(monkeypatch):
+    """Three consecutive text-only responses end the run; one is tolerated."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
 
     bridge = FakeBridge(states=[{}])
     monkeypatch.setattr(playtest_mod, "GameBridge", lambda: bridge)
 
-    scripted = [_make_response([_text_block("I am thinking.")])]
+    scripted = [
+        _make_response([_text_block("Thinking...")]),
+        _make_response([_text_block("Still thinking...")]),
+        _make_response([_text_block("Yeah no tool.")]),
+    ]
     _install_anthropic_stub(monkeypatch, FakeAnthropic(scripted))
 
     summary = playtest_mod.run_playtest(no_ingest=True, max_turns=20)
     assert summary["bailout_reason"] == "no-tool-call"
-    assert summary["turns_count"] == 1
+    assert summary["turns_count"] == 3
+
+
+def test_single_text_only_response_does_not_bail(monkeypatch):
+    """A single text-only response is tolerated; the next tool_use proceeds."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+    bridge = FakeBridge(
+        send_command_responses=["Looking..."],
+        states=[
+            {"currentRoom": "X", "inventory": [], "score": 0, "o2": 100, "morale": 80},
+            {"currentRoom": "X", "inventory": [], "score": 0, "o2": 99, "morale": 80},
+        ],
+    )
+    monkeypatch.setattr(playtest_mod, "GameBridge", lambda: bridge)
+
+    scripted = [
+        _make_response([_text_block("Let me think.")]),
+        _make_response([_tool_use_block("c1", "mirs_end_start_game")]),
+        _make_response([
+            _tool_use_block(
+                "c2", "mirs_end_send_command",
+                session_id=bridge.session_id, command="look",
+            )
+        ]),
+    ]
+    _install_anthropic_stub(monkeypatch, FakeAnthropic(scripted))
+
+    summary = playtest_mod.run_playtest(no_ingest=True, max_turns=3)
+    # Bailout should be max-turns, not no-tool-call: the single
+    # text-only response was tolerated, then tool calls continued.
+    assert summary["bailout_reason"] == "max-turns"
+    assert summary["turns_count"] == 3
 
 
 def test_state_signature_changes_with_room():

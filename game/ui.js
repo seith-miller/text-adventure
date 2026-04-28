@@ -899,7 +899,7 @@
     } else if (lower === "look" || lower === "l") {
       if (!state.currentRoom || state.currentRoom === "darkness") {
         appendStoryText(
-          "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
+          "You are coming to. Your face is wet. Your head hurts. The dark is absolute.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
         );
       } else {
         appendStoryText(`You look around ${state.currentRoom}.`);

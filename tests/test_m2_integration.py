@@ -360,8 +360,8 @@ class TestM1Regression:
         assert '"MIR\'S END"' in content
         assert "Crew Quarters is a room" in content
         assert "When play begins" in content
-        # Opening rewritten for the prologue impact ("You wake to a shout")
-        assert "You wake to" in content
+        # Opening: violent EMP, player asleep in bunk, head injury.
+        assert "You were sleeping" in content
 
     @pytest.mark.skipif(
         shutil.which("npx") is None,
