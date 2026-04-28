@@ -26,11 +26,12 @@ test.describe("ui-status-mirrors-game", () => {
   test("morale jumps when lighting the flashlight", async ({ page }) => {
     await startNewGame(page);
     /* Let at least one status line land so baseline reflects the Inform-side
-       value (which is 50, not the ui.js default of 70). */
+       value (randomized per playthrough between 30 and 55) rather than the
+       ui.js default of 70. */
     await sendCommand(page, "look");
     await expect
       .poll(async () => (await asMirsEnd(page)).morale, { timeout: 3_000 })
-      .toBe(50);
+      .toBeLessThanOrEqual(55);
 
     const baseline = (await asMirsEnd(page)).morale;
     await sendCommand(page, "open emergency locker");
