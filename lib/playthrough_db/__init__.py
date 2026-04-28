@@ -45,12 +45,30 @@ from .core import (
     list_sessions,
     write_session,
 )
+from .queries import (
+    commands_attempted,
+    ending_distribution,
+    fastest_path_to_ending,
+    session_summaries,
+    stuck_moments,
+    stuck_moments_for_session,
+    turns_to_first_argon_call,
+    unrecognized_commands,
+)
 
 __all__ = [
     "DEFAULT_DB_PATH",
+    "commands_attempted",
     "delete_session",
+    "ending_distribution",
+    "fastest_path_to_ending",
     "get_session",
     "init_db",
     "list_sessions",
+    "session_summaries",
+    "stuck_moments",
+    "stuck_moments_for_session",
+    "turns_to_first_argon_call",
+    "unrecognized_commands",
     "write_session",
 ]

@@ -190,10 +190,11 @@ class TestStoryBeats:
     """All major story beats from the Ink version are preserved."""
 
     def test_wake_in_emergency(self, story_source):
-        # Opening rewritten for the prologue ASAT impact — player wakes to
-        # the strike, not to the silence of an aftermath.
-        assert "You wake to" in story_source
-        assert "venting" in story_source.lower() or "shudder" in story_source.lower() or "shout" in story_source.lower()
+        # Opening: violent EMP. Player asleep in bunk, struck, knocked out,
+        # comes to bleeding and floating in pitch dark.
+        assert "You were sleeping" in story_source
+        assert "bleeding" in story_source.lower()
+        assert "harness" in story_source.lower()
 
     def test_emp_reference(self, story_source):
         assert "electromagnetic pulse" in story_source.lower() or "emp" in story_source.lower()
@@ -274,8 +275,9 @@ class TestProseQuality:
     """The prose is substantial and atmospheric."""
 
     def test_opening_text_atmospheric(self, story_source):
-        # New opening: ASAT shock + lights out + venting fading. Action-led.
-        assert "venting" in story_source.lower() or "shout" in story_source.lower()
+        # Opening: violent EMP. Player asleep, struck, head injury, comes
+        # to bleeding in pitch dark.
+        assert "bleeding" in story_source.lower()
         assert "sleeping harness" in story_source.lower()
 
     def test_viewport_discovery_dramatic(self, story_source):
