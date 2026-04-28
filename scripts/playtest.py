@@ -321,6 +321,9 @@ def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
         return False
 
 
+DEFAULT_DUMP_DIR = REPO_ROOT / "docs" / "playtests" / "runs"
+
+
 def run_playtest(
     *,
     model: str = DEFAULT_MODEL,
@@ -329,6 +332,7 @@ def run_playtest(
     no_ingest: bool = False,
     proxy_url: str = DEFAULT_PROXY_URL,
     output_path: pathlib.Path | None = None,
+    dump_dir: pathlib.Path | None = DEFAULT_DUMP_DIR,
 ) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -582,6 +586,18 @@ def run_playtest(
         output_path.write_text(json.dumps(summary, indent=2))
         print(f"Transcript saved to {output_path}", flush=True)
 
+    if dump_dir is not None:
+        try:
+            sys.path.insert(0, str(REPO_ROOT))
+            from lib.playthrough_db import format_session_markdown  # noqa: PLC0415
+            dump_dir.mkdir(parents=True, exist_ok=True)
+            date_part = (summary.get("started_at") or "")[:10] or "undated"
+            md_path = dump_dir / f"{date_part}-{play_session_id}.md"
+            md_path.write_text(format_session_markdown(summary))
+            print(f"Markdown transcript: {md_path}", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"Markdown dump failed (non-fatal): {exc}\n")
+
     if not no_ingest:
         ok = _post_session(summary, proxy_url, f"agent:{model}")
         if ok:
@@ -600,6 +616,15 @@ def main() -> int:
     parser.add_argument("--no-ingest", action="store_true")
     parser.add_argument("--proxy-url", default=DEFAULT_PROXY_URL)
     parser.add_argument("--output", type=pathlib.Path, default=None)
+    parser.add_argument(
+        "--dump-dir", type=pathlib.Path, default=DEFAULT_DUMP_DIR,
+        help="Directory for the auto-dumped markdown transcript "
+             "(default: docs/playtests/runs/).",
+    )
+    parser.add_argument(
+        "--no-dump", action="store_true",
+        help="Suppress the markdown auto-dump entirely.",
+    )
     args = parser.parse_args()
 
     run_playtest(
@@ -607,6 +632,7 @@ def main() -> int:
         max_turns=args.max_turns,
         stuck_window=args.stuck_window,
         no_ingest=args.no_ingest,
+        dump_dir=None if args.no_dump else args.dump_dir,
         proxy_url=args.proxy_url,
         output_path=args.output,
     )
