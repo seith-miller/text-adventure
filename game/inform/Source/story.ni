@@ -843,7 +843,7 @@ Check code-entering it on:
 	if N < 1 or N > 9999:
 		say "The keypad accepts four-digit codes only." instead.
 
-Instead of code-entering it on the classified safe:
+Instead of code-entering a number on the classified safe:
 	let N be the number understood;
 	if armament-bay-unlocked is true:
 		say "The safe's green light is still on. The armament bay is open.";
