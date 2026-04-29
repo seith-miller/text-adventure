@@ -125,7 +125,7 @@ def _start_proxy(api_key: str, port: int) -> subprocess.Popen:
     a one-line placeholder if it does not exist.
     """
     env = {**os.environ, "ANTHROPIC_API_KEY": api_key, "PORT": str(port)}
-    canonical = REPO_ROOT / "scripts" / "ai_proxy.py"
+    canonical = REPO_ROOT / "scripts" / "ai-proxy.py"
     if canonical.is_file():
         cmd = [sys.executable, str(canonical)]
     else:
