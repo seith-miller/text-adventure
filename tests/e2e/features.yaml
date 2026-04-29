@@ -69,6 +69,15 @@
     and falls back to the canned line when the proxy is unreachable.
   surfaces: [dom, state, storage]
 
+- id: act2-gate
+  area: story
+  demonstrates: >
+    Climax actions (TRANSMIT, DEORBIT, FIRE CANNON) are soft-blocked
+    until the player completes at least 3 beats in either the B1
+    (engineer) or B2 (witness) Act 2 path. A full B1 run allows
+    TRANSMIT to fire normally.
+  surfaces: [dom, interpreter]
+
 - id: session-export
   area: ui
   demonstrates: >
