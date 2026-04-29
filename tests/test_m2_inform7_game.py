@@ -493,8 +493,11 @@ class TestParserResponses:
         assert "Instead of pushing the status console" in story_source
 
     def test_switch_on_console_without_power(self, story_source):
-        """Switching on console without power has a response."""
-        assert "switching on the status console when power-is-restored is false" in story_source
+        """Switching on console without power has a response (via operating action)."""
+        # switching on the status console now redirects to the operating
+        # action (issue #117), which handles the unpowered refusal.
+        assert "switching on the status console" in story_source
+        assert "operating the status console when power-is-restored is false" in story_source
 
     def test_custom_actions_have_understand_rules(self, story_source):
         """All custom actions have Understand rules."""
