@@ -143,6 +143,9 @@ The bunk status panel is scenery in the Crew Quarters. The description of the bu
  voice without inventing new mechanics.]
 The bunks are scenery in the Crew Quarters. Understand "bunk" or "bunks" or "first bunk" or "second bunk" or "third bunk" or "fourth bunk" as the bunks. The description of the bunks is "Four bunks in their slots. Three are empty harnesses. The fourth was yours."
 
+Instead of taking the bunks:
+	say "The bunks are bolted to the hull. They are not going anywhere."
+
 The reading light is scenery in the Crew Quarters. Understand "reading light" or "lamp" or "overhead light" as the reading light. The description of the reading light is "A small dome lamp clipped above your bunk. Dead, like everything else not running on batteries."
 
 The air vent is scenery in the Crew Quarters. Understand "vent" or "air vent" or "ventilation" or "duct" as the air vent. The description of the air vent is "An air vent overhead. The fan behind it is silent. Without circulation, the bay's air is going to settle in layers."
@@ -275,6 +278,26 @@ The frost is scenery in the Main Corridor. The description of the frost is "Thic
 
 The maintenance panel is scenery in the Main Corridor. The description of the maintenance panel is "An open panel. A tangle of loose cables and blown circuit breakers. Whatever hit the station punched through every system at once."
 
+The drifting clipboard is scenery in the Main Corridor. Understand "clipboard" as the drifting clipboard. The printed name of the drifting clipboard is "clipboard". The description of the drifting clipboard is "A clipboard with the day's flight plan. The handwriting is Yevgenia's. It tumbles by, useless."
+
+Instead of taking the drifting clipboard:
+	say "You leave the clipboard floating. No more entries to make."
+
+The drifting flight manual is scenery in the Main Corridor. Understand "flight manual" or "manual" or "book" as the drifting flight manual. The printed name of the drifting flight manual is "flight manual". The description of the drifting flight manual is "A flight manual open to the page on emergency repressurization. The author had not finished reading it."
+
+Instead of taking the drifting flight manual:
+	say "The manual drifts past. You know its contents by heart."
+
+The drifting mug is scenery in the Main Corridor. Understand "mug" or "cup" or "drinking bulb" or "bulb" as the drifting mug. The printed name of the drifting mug is "mug". The description of the drifting mug is "A drinking bulb. Half-full of cold tea. It rotates slowly past you."
+
+Instead of taking the drifting mug:
+	say "You let the mug drift. The tea inside is long cold."
+
+The loose cables are scenery in the Main Corridor. Understand "cables" or "cable" or "cabling" or "wires" or "wire" as the loose cables. The description of the loose cables is "A tangle of cabling. The blown breakers are obvious. The rest is too thick to trace by hand."
+
+Instead of taking the loose cables:
+	say "You tug at one. It holds fast. The rest disappears into conduit you cannot reach."
+
 [Yevgenia's body: was an NPC, now scenery. Keep the Inform object
  name for save-state compatibility.]
 Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g. Her face is calm. She probably never registered what happened. A thin film of frost on her eyelashes.[if Yevgenia's notebook is part of Yevgenia] Her flight notebook is still clipped to the chest of her suit.[otherwise] The clip where her flight notebook was is empty. You have the notebook.[end if] The hand nearest the maintenance panel holds a screwdriver she will never put down."
@@ -288,6 +311,11 @@ Instead of taking Yevgenia:
 
 Instead of attacking Yevgenia:
 	say "She is beyond anything you could do."
+
+The held screwdriver is scenery in the Main Corridor. Understand "screwdriver" or "tool" as the held screwdriver. The printed name of the held screwdriver is "screwdriver". The description of the held screwdriver is "She holds it the way you hold a tool when you have one second to decide if it goes in the panel or not."
+
+Instead of taking the held screwdriver:
+	say "You would have to pry it from her hand. You will not do that."
 
 Yevgenia's notebook is a thing. Understand "notebook" or "book" or "journal" or "notes" or "her notebook" as Yevgenia's notebook. The printed name of Yevgenia's notebook is "Yevgenia's flight notebook". The description of Yevgenia's notebook is "A water-stained field notebook. Half in Cyrillic shorthand. Half in numbers. Yevgenia's handwriting. The last entries fill most of a page and are dated tonight. You could read it."
 
@@ -322,7 +350,7 @@ Chapter 4 - Observation Cupola
 
 The Observation Cupola is down from the Main Corridor. "The observation cupola is a blister of reinforced glass on the station's nadir side. Commander Petrov is here. He did not make it inside.[paragraph break][if war-is-discovered is true]Through the viewport, the Earth below. Fresh nuclear flashes keep blooming across the nightside. A constellation of deaths.[otherwise]Through the viewport, the Earth below. Something is wrong with the nightside.[end if][paragraph break]The hatch back to the central node is above you (zenith)."
 
-The viewport is scenery in the Observation Cupola.
+The viewport is scenery in the Observation Cupola. Understand "earth" or "nightside" or "world" or "planet" or "window" as the viewport.
 
 War-is-discovered is a truth state that varies. War-is-discovered is false.
 
@@ -363,7 +391,7 @@ The Command Module is north of the Main Corridor. "The command module. Cramped. 
 Power-is-restored is a truth state that varies. Power-is-restored is false.
 Armament-bay-unlocked is a truth state that varies. Armament-bay-unlocked is false.
 
-The control panels are scenery in the Command Module. The description of the control panels is "[if power-is-restored is true]Most panels remain dead. The working console on the main bus flickers with partial life.[otherwise]Row upon row of switches. Dials. Screens. All dark. The electromagnetic pulse killed every system at once.[end if]"
+The control panels are scenery in the Command Module. Understand "panels" or "panel" or "switches" or "dials" or "screens" as the control panels. The description of the control panels is "[if power-is-restored is true]Most panels remain dead. The working console on the main bus flickers with partial life.[otherwise]Every panel is dead. Status panels, navigation, comms. Without main power there is nothing to read here.[end if]"
 
 The emergency toolkit is a closed openable container in the Command Module. The emergency toolkit is fixed in place. The description of the emergency toolkit is "A toolkit magnetically latched to the wall. Essential repair instruments inside."
 
