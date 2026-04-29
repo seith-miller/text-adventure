@@ -135,7 +135,7 @@ def _ingest_summary(summary: dict, db_path: Optional[pathlib.Path]) -> bool:
         "final_o2": summary.get("final_o2"),
         "final_morale": summary.get("final_morale"),
         "player_kind": summary.get("player_kind", f"agent:{summary.get('model', 'unknown')}"),
-        "game_version": summary.get("game_version", "develop"),
+        "game_version": summary.get("game_version", "unknown"),
         "turns": summary.get("turns") or [],
         "metadata": summary.get("metadata") or {},
     }

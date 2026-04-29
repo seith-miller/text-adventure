@@ -291,6 +291,23 @@ def _system_with_cache(prompt: str) -> list[dict]:
     return [{"type": "text", "text": prompt, "cache_control": _CACHE_CONTROL}]
 
 
+def _read_game_version() -> str:
+    """
+    Return the version descriptor produced by scripts/make_version.py.
+
+    Falls back to "unknown" if the file is missing or unreadable.
+    """
+    path = REPO_ROOT / "game" / "dist" / "version.json"
+    try:
+        data = json.loads(path.read_text())
+        v = data.get("version_string")
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    except (OSError, ValueError):
+        pass
+    return "unknown"
+
+
 def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
     payload = {
         "session_id": session["session_id"],
@@ -302,7 +319,7 @@ def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
         "final_o2": session.get("final_o2"),
         "final_morale": session.get("final_morale"),
         "player_kind": player_kind,
-        "game_version": "develop",
+        "game_version": session.get("game_version") or _read_game_version(),
         "command_history": session["command_history"],
         "transcript": session["transcript"],
     }
@@ -571,7 +588,7 @@ def run_playtest(
         "stuck_moments": stuck_moments,
         "metadata": metadata,
         "player_kind": f"agent:{model}",
-        "game_version": "develop",
+        "game_version": _read_game_version(),
     }
 
     print(flush=True)

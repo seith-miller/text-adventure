@@ -131,6 +131,10 @@
     /* Record the playtest session on every change to #story-output. */
     initSessionRecorder();
 
+    /* Fetch the version descriptor produced by scripts/make_version.py
+       so session payloads can carry the exact code state. */
+    loadVersionJson();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -516,9 +520,30 @@
     return "human";
   }
 
+  /* Set by the version.json fetch in init(); falls back to the
+     <meta name="game-version"> tag if the fetch fails (e.g. for
+     anyone running an older build whose dist/ doesn't have one). */
+  var _versionString = null;
+
   function detectGameVersion() {
+    if (_versionString) return _versionString;
     const meta = document.querySelector('meta[name="game-version"]');
     return meta ? meta.getAttribute("content") || "unknown" : "unknown";
+  }
+
+  function loadVersionJson() {
+    fetch("dist/version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && typeof data.version_string === "string") {
+          _versionString = data.version_string;
+          const meta = document.querySelector('meta[name="game-version"]');
+          if (meta) meta.setAttribute("content", _versionString);
+        }
+      })
+      .catch(() => {
+        /* Ignore: detectGameVersion() falls back to the meta tag. */
+      });
   }
 
   function buildSessionPayload() {
