@@ -965,8 +965,7 @@ Instead of pushing the control panels:
 Instead of pushing the status console when power-is-restored is false:
 	say "The console is dead. No amount of pressing buttons will change that without power."
 
-Instead of switching on the status console when power-is-restored is false:
-	say "The console has no power. You need to restore the isolated power bus first."
+[switching on the status console now redirects to operating (Part 9B).]
 
 Instead of taking the communications array:
 	say "The communications array is built into the station's infrastructure. It is not going anywhere."
@@ -995,6 +994,58 @@ Carry out talking to argon:
 
 Carry out asking argon about:
 	say "[bracket]AI-PROMPT: topic=[the topic understood][close bracket]".
+
+Part 9C - Console Interaction Verbs
+
+[Issue #117. Playtest agents find the consoles, try every verb in the
+ dictionary, and bounce off unhelpful default refusals. This action
+ catches USE / ACTIVATE / TURN ON / POWER ON / INTERACT WITH when
+ applied to a console and branches on the power state.]
+
+Chapter 1 - Operating Console Action
+
+Operating is an action applying to one thing.
+Understand "use [something]" as operating.
+Understand "activate [something]" as operating.
+Understand "interact with [something]" as operating.
+Understand "power on [something]" as operating.
+Understand the command "power" as something new.
+Understand "power on [something]" as operating.
+Understand "power [something]" as operating.
+
+[TURN ON already maps to switching on in the Standard Rules. Redirect
+ switching on for consoles to operating so all verbs share one path.]
+
+Instead of switching on the deorbit console:
+	try operating the deorbit console.
+
+Instead of switching on the status console:
+	try operating the status console.
+
+Instead of switching on the fire-control console:
+	try operating the fire-control console.
+
+Chapter 2 - Unpowered Console Refusals
+
+Instead of operating the deorbit console when power-is-restored is false:
+	say "The console is dark. No power reaches the Command Module bus. Even if it had power, the de-orbit sequence requires an authorization that has not yet come from the Command Module status loop. You will need power on this side of the station first."
+
+Instead of operating the status console when power-is-restored is false:
+	say "The status console is dead. None of these panels will tell you anything until something puts power back into the bus."
+
+Instead of operating the fire-control console when the fire-control console is unpowered:
+	say "The fire-control console is dark. It is not on the isolated bus. Whatever feeds its armored power line is not live tonight."
+
+Chapter 3 - Powered Console Responses
+
+Instead of operating the status console when power-is-restored is true:
+	say "The screen flickers. Status readouts scroll. Most of them bad. Hull integrity compromised. Life support offline. Oxygen reserves critical.[if petrov-log-read is false] The console holds Commander Petrov's last log entry, flagged for review.[end if]"
+
+Instead of operating the deorbit console when power-is-restored is true:
+	say "The console lights respond to your touch. The Soyuz guidance loop is live. Its own battery held through the pulse. The de-orbit initiation sequence waits behind a final confirmation you are not ready to give. Not yet."
+
+Instead of operating the fire-control console when the fire-control console is powered:
+	say "The targeting console hums. Radar sweep. Aim vector. The trigger guard is still locked. The weapon is ready but the decision is not yours alone."
 
 Part 10 - Score Tracking
 
