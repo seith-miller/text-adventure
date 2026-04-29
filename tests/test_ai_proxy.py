@@ -400,3 +400,137 @@ class TestCostCap:
     def test_cost_cap_returns_402(self, client):
         """Once #67 lands, exceeding the cost cap should return 402."""
         pass
+
+
+# ── /v1/sessions ingest ─────────────────────────────────────────────────────
+
+
+class TestSessionIngest:
+    """The /v1/sessions endpoint persists playthroughs to the SQLite DB."""
+
+    @pytest.fixture()
+    def session_db(self, tmp_path, monkeypatch):
+        db = tmp_path / "playthroughs.sqlite"
+        monkeypatch.setenv("MIRSEND_DB_PATH", str(db))
+        return db
+
+    def _payload(self, **overrides) -> dict:
+        base = {
+            "session_id": "abc-123",
+            "started_at": "2026-04-28T12:00:00+00:00",
+            "ended_at": "2026-04-28T12:30:00+00:00",
+            "status": "completed",
+            "ending_type": "transmit",
+            "final_score": 14,
+            "final_o2": 80,
+            "final_morale": 72,
+            "player_kind": "human",
+            "game_version": "develop",
+            "command_history": ["look", "open locker"],
+            "transcript": "...",
+        }
+        base.update(overrides)
+        return base
+
+    def test_browser_shape_writes_session(self, client, session_db):
+        """Browser sends turns as int + final_state dict + command_history."""
+        payload = self._payload(
+            turns=2,
+            final_state={"score": 14, "o2": 80, "morale": 72},
+        )
+        resp = client.post(
+            "/v1/sessions",
+            json=payload,
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ok"] is True
+        assert body["counts"]["sessions"] == 1
+        # Two turns reconstructed from command_history.
+        assert body["counts"]["turns"] == 2
+
+        from playthrough_db import get_session  # noqa: PLC0415
+        row = get_session("abc-123", db_path=session_db)
+        assert row is not None
+        assert row["status"] == "completed"
+        assert row["ending_type"] == "transmit"
+        assert row["final_o2"] == 80
+
+    def test_driver_shape_with_flat_finals(self, client, session_db):
+        payload = self._payload(
+            command_history=["look", "n", "transmit"],
+        )
+        resp = client.post(
+            "/v1/sessions",
+            json=payload,
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        assert resp.status_code == 200
+        from playthrough_db import get_session  # noqa: PLC0415
+        row = get_session("abc-123", db_path=session_db)
+        assert row is not None
+        assert len(row["turns"]) == 3
+
+    def test_pool_shape_with_full_turn_dicts(self, client, session_db):
+        """Pool worker sends full per-turn dicts."""
+        payload = self._payload(
+            turns=[
+                {"turn_number": 1, "command": "look",
+                 "response": "You see...", "current_room": "Crew Quarters"},
+                {"turn_number": 2, "command": "open locker",
+                 "response": "Open.", "current_room": "Crew Quarters"},
+            ],
+        )
+        resp = client.post(
+            "/v1/sessions",
+            json=payload,
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        assert resp.status_code == 200
+        from playthrough_db import get_session  # noqa: PLC0415
+        row = get_session("abc-123", db_path=session_db)
+        assert row["turns"][0]["response"] == "You see..."
+        assert row["turns"][0]["current_room"] == "Crew Quarters"
+
+    def test_idempotent_on_session_id(self, client, session_db):
+        """Re-POSTing the same session_id replaces, doesn't duplicate."""
+        client.post(
+            "/v1/sessions",
+            json=self._payload(turns=2),
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        resp = client.post(
+            "/v1/sessions",
+            json=self._payload(turns=5, command_history=["a", "b", "c", "d", "e"]),
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        assert resp.status_code == 200
+
+        from playthrough_db import list_sessions  # noqa: PLC0415
+        sessions = list_sessions(db_path=session_db)
+        assert len(sessions) == 1  # still one session row, not two
+        assert sessions[0]["id"] == "abc-123"
+
+    def test_missing_session_id_returns_400(self, client, session_db):
+        resp = client.post(
+            "/v1/sessions",
+            json={"started_at": "2026-04-28T12:00:00+00:00"},
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        assert resp.status_code == 400
+        assert "session_id" in resp.json()["detail"]
+
+    def test_metadata_is_persisted(self, client, session_db):
+        payload = self._payload(
+            metadata={"bailout_reason": "ending", "estimated_cost_usd": "0.42"},
+        )
+        client.post(
+            "/v1/sessions",
+            json=payload,
+            headers={"Origin": GOOD_ORIGIN},
+        )
+        from playthrough_db import get_session  # noqa: PLC0415
+        row = get_session("abc-123", db_path=session_db)
+        assert row["metadata"]["bailout_reason"] == "ending"
+        assert row["metadata"]["estimated_cost_usd"] == "0.42"
