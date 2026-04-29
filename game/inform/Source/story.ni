@@ -804,7 +804,7 @@ Instead of examining down when the location is the Progress Ferry:
 
 Part 3 - Classified Armament Reveal
 
-The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" as the classified safe.
+The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" or "keypad" as the classified safe.
 
 The classified safe has a number called the safe-code. The safe-code of the classified safe is 0.
 
@@ -819,6 +819,40 @@ To say (N - a number) as spoken digits:
 	let D2 be T / 10;
 	let D1 be T - (D2 * 10);
 	say "[D4]-[D3]-[D2]-[D1]".
+
+Chapter 2 - Code Entry Action
+
+[Generic keypad code-entry action. Works for the classified safe and any
+ future keypad-locked object (e.g. armament bay door). The grammar accepts
+ "enter NNNN on <thing>", "type NNNN on <thing>", and "enter code NNNN".]
+
+Code-entering it on is an action applying to one number and one thing.
+Understand "enter [number] on [something]" as code-entering it on.
+Understand "type [number] on [something]" as code-entering it on.
+Understand "enter code [number] on [something]" as code-entering it on.
+Understand "type code [number] on [something]" as code-entering it on.
+
+[Bare "enter code NNNN" targets the classified safe when in the Command Module.]
+Code-entering it on the safe is an action applying to one number.
+Understand "enter code [number]" as code-entering it on the safe.
+Understand "enter [number]" as code-entering it on the safe.
+Understand "type [number]" as code-entering it on the safe.
+
+Check code-entering it on:
+	let N be the number understood;
+	if N < 1 or N > 9999:
+		say "The keypad accepts four-digit codes only." instead.
+
+Instead of code-entering it on the classified safe:
+	let N be the number understood;
+	if armament-bay-unlocked is true:
+		say "The safe's green light is still on. The armament bay is open.";
+	otherwise if N is the safe-code of the classified safe:
+		now armament-bay-unlocked is true;
+		increase the score by 2;
+		say "You enter [safe-code of the classified safe as spoken digits]. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now.";
+	otherwise:
+		say "The keypad blinks once. Wrong code."
 
 Instead of opening the classified safe:
 	if notebook-read is false:
