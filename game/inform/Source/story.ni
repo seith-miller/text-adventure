@@ -315,8 +315,33 @@ Instead of talking to something:
 Reading is an action applying to one thing.
 Understand "read [something]" as reading.
 
+Notebook-read is a truth state that varies. Notebook-read is false.
+
 Instead of reading Yevgenia's notebook:
-	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad. Yes. Caretaker for two years but closed-loop atmosphere and hydroponics should still be functional. Combined fuel reserves from Mir-3 and one American could reach it. One station alone cannot. The Moon is a delta-v problem.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
+	now notebook-read is true;
+	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it. The Moon is a delta-v problem.[line break]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[line break]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
+
+Consulting it about is an action applying to one thing and one topic.
+Understand "consult [something] about [text]" as consulting it about.
+Understand "look up [text] in [something]" as consulting it about (with nouns reversed).
+
+Instead of consulting Yevgenia's notebook about a topic listed in the Table of Notebook Topics:
+	now notebook-read is true;
+	say "[response entry][paragraph break]".
+
+Instead of consulting Yevgenia's notebook about:
+	say "Yevgenia did not write about that. Her last entries cover the EMP damage, the Selengrad burn, the safe code for КАТАЛОГ ВМФ-07, and ARGON-87."
+
+Table of Notebook Topics
+topic	response
+"safe" or "code" or "каталог" or "vmf" or "combination" or "keypad"	"[italic type]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[roman type]"
+"burn" or "selengrad" or "moon" or "delta-v" or "trajectory" or "fuel" or "window"	"[italic type]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it.[roman type][line break]The margin math fills half the page. Orbital mechanics in a dead woman's shorthand."
+"argon" or "argon-87" or "ai" or "telemetry" or "backup"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type]"
+"transmit" or "radio" or "comms" or "communications" or "distress" or "freedom" or "americans"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type][line break][italic type]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree.[roman type]"
+"emp" or "pulse" or "damage" or "power" or "bus" or "capacitor"	"[italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence.[roman type]"
+"de-orbit" or "deorbit" or "re-entry" or "reentry" or "tonight"	"[italic type]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[roman type][line break][italic type]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h.[roman type][line break]The numbers do not leave room for argument. Move or die."
+"oxygen" or "air" or "life support" or "co2" or "lioh"	"[italic type]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[roman type]"
+"reset" or "multimeter" or "hard-reset" or "sequence" or "repair"	"[italic type]Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[roman type]"
 
 Chapter 4 - Observation Cupola
 
@@ -400,7 +425,7 @@ Carry out reading Petrov's log:
 	now petrov-log-read is true.
 
 Report reading Petrov's log:
-	say "You pull up Petrov's last log entry. He dictated it to the console. Timestamped minutes after the EMP. Minutes before the impact.[paragraph break][italic type]Commander Vasili Petrov, Mir-3. Time is 03:52 Moscow. Status: EMP event confirmed at 03:47. All systems offline. Kozlova believes the isolated bus in this module is recoverable. We are assembling tools.[line break]Sensor scrape suggests a second object inbound. I do not know what it is. I do not recognize the profile. If this station survives the next hour, whoever is listening will need to know. The armament bay on this module is intact. The arming sequence is THREE-SEVEN-ONE-ONE. Use it if you have to. The weapon is aboard for a reason. We may not have been told all of them.[line break]If you are reading this and I am not still talking. Do what you can. Make it worth something.[roman type][paragraph break]The log ends. The console shows the timestamp of its last write. 03:53. One minute before the impact."
+	say "You pull up Petrov's last log entry. He dictated it to the console. Timestamped minutes after the EMP. Minutes before the impact.[paragraph break][italic type]Commander Vasili Petrov, Mir-3. Time is 03:52 Moscow. Status: EMP event confirmed at 03:47. All systems offline. Kozlova believes the isolated bus in this module is recoverable. We are assembling tools.[line break]Sensor scrape suggests a second object inbound. I do not know what it is. I do not recognize the profile. If this station survives the next hour, whoever is listening will need to know. The armament bay on this module is intact. Kozlova has the access code. Use it if you have to. The weapon is aboard for a reason. We may not have been told all of them.[line break]If you are reading this and I am not still talking. Do what you can. Make it worth something.[roman type][paragraph break]The log ends. The console shows the timestamp of its last write. 03:53. One minute before the impact."
 
 Chapter 6 - Hydroponics Lab
 
@@ -750,17 +775,31 @@ Instead of examining down when the location is the Progress Ferry:
 
 Part 3 - Classified Armament Reveal
 
-The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" as the classified safe. The description of the classified safe is "A wall-mounted safe. Four-digit keypad. Above it, a stenciled Cyrillic placard reads КАТАЛОГ ВМФ-07. A military cataloging prefix. You did not know this was here before tonight.[if petrov-log-read is true] Petrov's log gave you an arming sequence. Three-seven-one-one.[end if]"
+The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" as the classified safe.
+
+The classified safe has a number called the safe-code. The safe-code of the classified safe is 0.
+
+The description of the classified safe is "A wall-mounted safe. Four-digit keypad. Above it, a stenciled Cyrillic placard reads КАТАЛОГ ВМФ-07. A military cataloging prefix. You did not know this was here before tonight.[if notebook-read is true] Yevgenia's notebook had the code. [safe-code of the classified safe].[end if]"
+
+To say (N - a number) as spoken digits:
+	let T be N;
+	let D4 be T / 1000;
+	let T be T - (D4 * 1000);
+	let D3 be T / 100;
+	let T be T - (D3 * 100);
+	let D2 be T / 10;
+	let D1 be T - (D2 * 10);
+	say "[D4]-[D3]-[D2]-[D1]".
 
 Instead of opening the classified safe:
-	if petrov-log-read is false:
+	if notebook-read is false:
 		say "The safe is keypad-locked. You do not have the code.";
 	otherwise if armament-bay-unlocked is true:
 		say "The safe's green light is still on. The armament bay is open.";
 	otherwise:
 		now armament-bay-unlocked is true;
 		increase the score by 2;
-		say "You enter three-seven-one-one. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now."
+		say "You enter [safe-code of the classified safe as spoken digits]. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now."
 
 Part 3B - Map Command
 
@@ -790,6 +829,7 @@ When play begins:
 	now oxygen-level is a random number between 75 and 95;
 	now morale-level is a random number between 30 and 55;
 	now dose-level is a random number between 0 and 3;
+	now the safe-code of the classified safe is a random number from 1000 to 9999;
 	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small.[paragraph break][bracket]New here? Type HELP for a list of commands. STATUS shows your vitals. LOOK describes the room. EXAMINE [bracket]thing[close bracket] inspects an object.[close bracket]"
 
 Part 5 - Listening
