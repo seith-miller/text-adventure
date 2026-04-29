@@ -133,7 +133,7 @@ class TestNPCs:
         assert "Petrov" in story_source and "log" in story_source.lower()
         assert "Reading Petrov's log is an action" in story_source
         assert "03:47" in story_source
-        assert "THREE-SEVEN-ONE-ONE" in story_source or "3-7-1-1" in story_source
+        assert "Kozlova has the code" in story_source or "Kozlova has the access code" in story_source
 
 
 # ── Resource Tracking ──────────────────────────────────────────────────

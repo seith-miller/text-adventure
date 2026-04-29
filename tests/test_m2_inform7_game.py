@@ -206,14 +206,132 @@ class TestCrewVoicesViaArtifacts:
     def test_petrov_log_reveals_armament(self, story_source):
         assert "armament" in story_source.lower() or "weapon is aboard" in story_source.lower()
 
-    def test_petrov_log_reveals_arming_code(self, story_source):
-        assert "THREE-SEVEN-ONE-ONE" in story_source
+    def test_petrov_log_reveals_armament_location(self, story_source):
+        assert "Kozlova has the access code" in story_source or "Kozlova has the code" in story_source
 
     def test_classified_safe_exists(self, story_source):
         assert "classified safe" in story_source.lower()
 
-    def test_safe_locked_until_log_read(self, story_source):
-        assert "petrov-log-read" in story_source.lower()
+    def test_safe_locked_until_notebook_read(self, story_source):
+        assert "notebook-read" in story_source.lower()
+
+
+# ── Notebook Read & Consult Grammar ──────────────────────────────────
+
+
+class TestNotebookReadAndConsult:
+    """The notebook supports read, consult about, and look up grammar.
+    Reading reveals the safe code, burn calculation, and Argon-87 cue.
+    The safe code is randomized per playthrough (1000-9999)."""
+
+    def test_notebook_reading_sets_notebook_read_flag(self, story_source):
+        assert "now notebook-read is true" in story_source
+
+    def test_notebook_read_reveals_safe_code(self, story_source):
+        """Reading the notebook interpolates the live safe-code value."""
+        assert "safe-code of the classified safe" in story_source
+
+    def test_notebook_read_mentions_katalog(self, story_source):
+        """The notebook entry references КАТАЛОГ ВМФ-07."""
+        read_section = story_source[
+            story_source.find("Instead of reading Yevgenia's notebook"):
+        ]
+        assert "КАТАЛОГ ВМФ-07" in read_section
+
+    def test_notebook_read_mentions_argon87(self, story_source):
+        """The notebook entry cues the player to ARGON-87."""
+        read_section = story_source[
+            story_source.find("Instead of reading Yevgenia's notebook"):
+        ]
+        assert "ARGON-87" in read_section
+
+    def test_notebook_read_mentions_burn_calc(self, story_source):
+        """The notebook entry references the Selengrad burn calculation."""
+        read_section = story_source[
+            story_source.find("Instead of reading Yevgenia's notebook"):
+        ]
+        assert "delta-v" in read_section.lower() or "burn" in read_section.lower()
+
+    def test_consult_grammar(self, story_source):
+        """The 'consulting it about' action is wired to the notebook.
+        I7 defines the action in the standard rules; we only need a rule
+        that responds when the player consults Yevgenia's notebook."""
+        assert "consulting Yevgenia's notebook about" in story_source
+
+    def test_look_up_grammar(self, story_source):
+        """'look up [text] in [something]' is a synonym for consult."""
+        assert 'look up [text] in [something]' in story_source
+
+    def test_notebook_topics_table_exists(self, story_source):
+        assert "Table of Notebook Topics" in story_source
+
+    def test_consult_covers_safe_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"safe"' in table_section or "'safe'" in table_section
+
+    def test_consult_covers_burn_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"burn"' in table_section or "'burn'" in table_section
+
+    def test_consult_covers_selengrad_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"selengrad"' in table_section.lower()
+
+    def test_consult_covers_argon_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"argon"' in table_section.lower()
+
+    def test_consult_covers_transmit_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"transmit"' in table_section.lower()
+
+    def test_consult_covers_deorbit_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"de-orbit"' in table_section.lower() or '"deorbit"' in table_section.lower()
+
+    def test_consult_covers_tonight_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"tonight"' in table_section.lower()
+
+    def test_consult_covers_code_topic(self, story_source):
+        table_section = story_source[
+            story_source.find("Table of Notebook Topics"):
+        ]
+        assert '"code"' in table_section.lower()
+
+    def test_safe_code_randomized(self, story_source):
+        """The safe code is generated randomly at game start."""
+        assert "random number from 1000 to 9999" in story_source
+
+    def test_safe_code_property_exists(self, story_source):
+        """The classified safe has a safe-code number property."""
+        assert "safe-code" in story_source
+
+    def test_safe_opening_uses_dynamic_code(self, story_source):
+        """The safe opening message uses the dynamic safe-code, not a hardcoded value."""
+        open_section = story_source[
+            story_source.find("Instead of opening the classified safe"):
+        ]
+        assert "safe-code of the classified safe" in open_section
+        assert "three-seven-one-one" not in open_section.lower()
+
+    def test_notebook_consult_fallback(self, story_source):
+        """Consulting the notebook about an unlisted topic gives a helpful fallback."""
+        assert "Yevgenia did not write about that" in story_source
 
 
 # ── Story Progression ─────────────────────────────────────────────────

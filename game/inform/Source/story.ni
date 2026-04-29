@@ -321,8 +321,9 @@ Instead of reading Yevgenia's notebook:
 	now notebook-read is true;
 	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it. The Moon is a delta-v problem.[line break]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[line break]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
 
-Consulting it about is an action applying to one thing and one topic.
-Understand "consult [something] about [text]" as consulting it about.
+[Inform 7's standard rules already define "consulting it about" with
+ grammar "consult [something] about [text]". Just add a synonym for the
+ common "look up X in Y" phrasing.]
 Understand "look up [text] in [something]" as consulting it about (with nouns reversed).
 
 Instead of consulting Yevgenia's notebook about a topic listed in the Table of Notebook Topics:
@@ -334,7 +335,7 @@ Instead of consulting Yevgenia's notebook about:
 
 Table of Notebook Topics
 topic	response
-"safe" or "code" or "каталог" or "vmf" or "combination" or "keypad"	"[italic type]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[roman type]"
+"safe" or "code" or "vmf" or "combination" or "keypad"	"[italic type]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[roman type]"
 "burn" or "selengrad" or "moon" or "delta-v" or "trajectory" or "fuel" or "window"	"[italic type]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it.[roman type][line break]The margin math fills half the page. Orbital mechanics in a dead woman's shorthand."
 "argon" or "argon-87" or "ai" or "telemetry" or "backup"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type]"
 "transmit" or "radio" or "comms" or "communications" or "distress" or "freedom" or "americans"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type][line break][italic type]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree.[roman type]"
