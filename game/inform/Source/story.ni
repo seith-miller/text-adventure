@@ -353,6 +353,9 @@ Instead of talking to Petrov:
 Instead of talking to something:
 	say "There is no one here to speak with."
 
+[Inform 7's standard rules bind "read" as a synonym for examining; clear
+ it first so our Reading action gets the verb.]
+Understand the command "read" as something new.
 Reading is an action applying to one thing.
 Understand "read [something]" as reading.
 

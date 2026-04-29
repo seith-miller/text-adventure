@@ -50,7 +50,7 @@ async function fullB1Path(page: import("@playwright/test").Page) {
   await waitForStoryText(page, /console flickers|sparks/i);
   // Read log (B1 beat 3)
   await sendCommand(page, "read log");
-  await waitForStoryText(page, /three-seven-one-one|arming sequence/i);
+  await waitForStoryText(page, /Commander Vasili Petrov|EMP event confirmed/i);
   // Open safe (B1 beat 4)
   await sendCommand(page, "open safe");
   await waitForStoryText(page, /green light|armament bay/i);
@@ -62,9 +62,7 @@ test.describe("act2-gate", () => {
     await clearStorage(page);
   });
 
-  test("TRANSMIT before any Act 2 beat gets soft-blocked", async ({
-    page,
-  }) => {
+  test("TRANSMIT before any Act 2 beat gets soft-blocked", async ({ page }) => {
     await minimalAct1(page);
     // Go straight to Command Module without doing any B1/B2 beats
     await sendCommand(page, "n");
