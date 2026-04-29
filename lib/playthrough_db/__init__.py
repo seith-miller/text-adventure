@@ -45,6 +45,7 @@ from .core import (
     list_sessions,
     write_session,
 )
+from .formatting import format_session_markdown
 from .queries import (
     commands_attempted,
     ending_distribution,
@@ -62,6 +63,7 @@ __all__ = [
     "delete_session",
     "ending_distribution",
     "fastest_path_to_ending",
+    "format_session_markdown",
     "get_session",
     "init_db",
     "list_sessions",
