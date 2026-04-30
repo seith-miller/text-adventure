@@ -47,17 +47,45 @@ Chapter 2 - Status Bar
  compiler we use doesn't recognize "fill status bar with ...", and
  we don't need an in-game bar since the Web UI covers it.]
 
-Chapter 3 - Oxygen Timer
+Chapter 3 - Climax Commitment
 
-[Oxygen timer halts when an active arc is in progress (Selengrad
- preparation, or Soyuz descent). The arc's own ending takes over.]
-Every turn when selengrad-prep-begun is false and chose-descent is false:
-	decrease oxygen-level by 1;
+[Tracks whether the player has locked into any Act 4/5 arc.
+ Set by C1 (transmit), C2 (de-orbit), or C3 (cannon). When true,
+ passive-timer deaths yield to the scripted denouement.]
+Chose-descent is a truth state that varies. Chose-descent is false.
+Cannon-fired is a truth state that varies. Cannon-fired is false.
+
+To decide whether player has committed climax:
+	if responded-to-americans is true, decide yes;
+	if chose-descent is true, decide yes;
+	if cannon-fired is true, decide yes;
+	decide no.
+
+Chapter 4 - Oxygen Timer
+
+Every turn:
+	if player has committed climax:
+		do nothing;
+	otherwise:
+		decrease oxygen-level by 1;
+		if oxygen-level <= 0:
+			try e5 dispatching.
+
+Chapter 5 - E5 Passive-Failure Dispatcher
+
+[When a passive timer expires and the player has not committed to a
+ climax, this dispatcher selects the correct sub-variant and ends
+ the game. Only the oxygen hook is wired today; CO2, freeze, and
+ radiation plug in here when their timers are wired.]
+
+E5 dispatching is an action applying to nothing.
+
+Carry out e5 dispatching:
 	if oxygen-level <= 0:
-		say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
+		say "[bracket]TODO prose: #60 — e5-suffocate[close bracket]";
 		end the story saying "You have suffocated".
 
-Chapter 4 - UI Status Bridge
+Chapter 6 - UI Status Bridge
 
 [Emit a machine-readable status line every turn so the Web UI can mirror
  oxygen-level / morale-level / inventory into window.MirsEnd.setState.

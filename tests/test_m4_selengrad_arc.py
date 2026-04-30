@@ -86,18 +86,29 @@ class TestOxygenTimerGuard:
     """The oxygen timer must not fire suffocation after TRANSMIT."""
 
     def test_oxygen_timer_guarded(self, story_source):
-        """The oxygen every-turn rule's `when` clause halts during arcs."""
-        # Find the oxygen timer rule (decrease oxygen-level).
+        """The oxygen every-turn rule must not fire when a climax is
+        committed. After #46 the guard is centralized in the
+        `player has committed climax` predicate, which checks
+        responded-to-americans, chose-descent, and cannon-fired."""
         idx = story_source.find("decrease oxygen-level by 1")
         assert idx != -1, "Oxygen decrement rule not found"
-        # The guard should appear in the `Every turn when ...:` clause
-        # immediately before the decrement.
-        block_start = story_source.rfind("Every turn when ", 0, idx)
+        block_start = story_source.rfind("Every turn", 0, idx)
         assert block_start != -1
         guard_block = story_source[block_start:idx]
-        assert "selengrad-prep-begun is false" in guard_block, (
-            "Oxygen timer must be guarded by selengrad-prep-begun check"
-        )
+        # Either the legacy `Every turn when X is false` form OR the
+        # current `if player has committed climax: do nothing` predicate.
+        assert (
+            "selengrad-prep-begun is false" in guard_block
+            or "player has committed climax" in guard_block
+        ), "Oxygen timer must be guarded against active climaxes"
+        # The predicate itself must check the three climax flags.
+        if "player has committed climax" in story_source:
+            pred_idx = story_source.find("To decide whether player has committed climax")
+            assert pred_idx != -1, "Predicate definition not found"
+            pred_block = story_source[pred_idx:pred_idx + 600]
+            assert "responded-to-americans is true" in pred_block
+            assert "chose-descent is true" in pred_block
+            assert "cannon-fired is true" in pred_block
 
 
 # ── D1 Action: Prepare Selengrad ─────────────────────────────────────
