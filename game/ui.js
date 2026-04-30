@@ -295,7 +295,14 @@
        Also keep the hidden #command-input in sync for test compatibility. */
     document.addEventListener("keydown", handleGlobalKeyDown);
 
-    /* Also listen on #command-input for tests that fill() + press() on it. */
+    /* Sync inputBuffer from #command-input whenever its value changes.
+       This covers Playwright's fill() (which fires 'input') and normal typing. */
+    commandInput.addEventListener("input", function() {
+      inputBuffer = commandInput.value;
+      render();
+    });
+
+    /* Also listen on #command-input for Enter key from tests that press() on it. */
     commandInput.addEventListener("keydown", handleCommandInputKeyDown);
 
     /* Menu button handlers */
@@ -371,9 +378,17 @@
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     if (e.key === "Enter") {
+      /* If the target is #command-input, let handleCommandInputKeyDown
+         handle it to avoid double-submit. */
+      if (e.target === commandInput) return;
+      /* Sync from #command-input.value in case it was set programmatically. */
+      if (commandInput.value && commandInput.value !== inputBuffer) {
+        inputBuffer = commandInput.value;
+      }
       submitCommand();
       e.preventDefault();
     } else if (e.key === "Backspace") {
+      if (e.target === commandInput) return; // let 'input' event handle it
       if (inputBuffer.length > 0) {
         inputBuffer = inputBuffer.slice(0, -1);
         commandInput.value = inputBuffer;
@@ -381,15 +396,14 @@
       }
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
-      e.preventDefault();
       if (state.historyIndex > 0) {
         state.historyIndex--;
         inputBuffer = state.commandHistory[state.historyIndex];
         commandInput.value = inputBuffer;
         render();
       }
-    } else if (e.key === "ArrowDown") {
       e.preventDefault();
+    } else if (e.key === "ArrowDown") {
       if (state.historyIndex < state.commandHistory.length - 1) {
         state.historyIndex++;
         inputBuffer = state.commandHistory[state.historyIndex];
@@ -401,11 +415,14 @@
         commandInput.value = "";
         render();
       }
+      e.preventDefault();
     } else if (e.key.length === 1) {
+      /* If the event target is #command-input, the 'input' event handler
+         will sync inputBuffer from .value — don't double-add here. */
+      if (e.target === commandInput) return;
       inputBuffer += e.key;
       commandInput.value = inputBuffer;
       render();
-      e.preventDefault();
     }
   }
 
@@ -1062,9 +1079,38 @@
     }
   }
 
-  /* ── Wire up sidebar save/load buttons ── */
+  /* ── Wire up save/load/export buttons ── */
   function initSaveLoadButtons() {
-    /* Ctrl+E / Cmd+E anywhere on the page exports. */
+    var saveBtn = document.getElementById("btn-save");
+    var loadBtn = document.getElementById("btn-load");
+    var continueBtn = document.getElementById("btn-continue");
+    var exportBtn = document.getElementById("btn-export");
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        showSaveLoadModal("save");
+      });
+    }
+    if (loadBtn) {
+      loadBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        showSaveLoadModal("load");
+      });
+    }
+    if (continueBtn) {
+      continueBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        continueGame();
+      });
+    }
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        downloadSession();
+      });
+    }
+    /* Ctrl+E / Cmd+E anywhere on the page exports too. */
     document.addEventListener("keydown", function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
         e.preventDefault();

@@ -75,15 +75,26 @@
   <!-- Menu button — visible during gameplay -->
   <button id="ingame-menu-btn" title="Menu (ESC)">☰ MENU</button>
 
-  <!-- Hidden elements that preserve the DOM contract for ui.js and tests -->
+  <!-- Hidden story output (preserves test contract — tests read #story-output) -->
   <div id="story-output" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;"></div>
+
+  <!-- Command input: overlays the terminal bottom. Transparent text so the
+       <pre> cursor renders instead, but Playwright can still fill()/type(). -->
   <input
     type="text"
     id="command-input"
     autocomplete="off"
     spellcheck="false"
-    style="position:absolute;left:-10000px;width:1px;opacity:0;"
+    aria-label="Command input"
+    placeholder=""
   >
+  <!-- Save/load/export buttons (hidden, wired by ui.js for keyboard/test access) -->
+  <div style="position:absolute;left:-10000px;">
+    <button id="btn-save">Save</button>
+    <button id="btn-load">Load</button>
+    <button id="btn-continue">Continue</button>
+    <button id="btn-export">Export</button>
+  </div>
 
 </div>
 
