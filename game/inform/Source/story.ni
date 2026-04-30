@@ -36,10 +36,11 @@ Chapter 2 - Status Bar
 Chapter 3 - Oxygen Timer
 
 Every turn:
-	decrease oxygen-level by 1;
-	if oxygen-level <= 0:
-		say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
-		end the story saying "You have suffocated".
+	if selengrad-prep-begun is false:
+		decrease oxygen-level by 1;
+		if oxygen-level <= 0:
+			say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
+			end the story saying "You have suffocated".
 
 Chapter 4 - UI Status Bridge
 
@@ -990,6 +991,7 @@ Part 8 - Responding to the Distress Call
 
 Responded-to-americans is a truth state that varies. Responded-to-americans is false.
 Chose-silence is a truth state that varies. Chose-silence is false.
+Selengrad-prep-begun is a truth state that varies. Selengrad-prep-begun is false.
 
 Transmitting is an action applying to nothing.
 Understand "transmit" as transmitting.
@@ -1016,6 +1018,7 @@ Check transmitting:
 
 Carry out transmitting:
 	now responded-to-americans is true;
+	now selengrad-prep-begun is true;
 	increase morale-level by 8;
 	if b1-beats-completed >= b2-beats-completed:
 		now dominant-act2-path is "engineer";
@@ -1047,7 +1050,89 @@ Carry out staying silent:
 Report staying silent:
 	say "You listen to the loop. You do not key the microphone.[paragraph break]The first time it plays, you almost answer. The second time, you almost answer. The third time, you catch yourself already reaching for the mic. You pull your hand back.[paragraph break]Chen's voice fades. Maybe her battery failed. Maybe she gave up. Maybe she is still talking and the signal is too weak to reach you. Whichever it is, the channel is gone.[paragraph break]You sit alone with the static and with the math in Yevgenia's notebook. Alone, you cannot make Selengrad. The combined fuel is not optional. It is arithmetic.[paragraph break]You tell yourself you chose this for good reasons. You are not sure you believe yourself."
 
-Part 8B - De-orbiting
+Part 8B - Selengrad Arc (D1 / E1 / E2)
+
+Chapter 1 - D1 Fuel Choice State
+
+Chose-split-fuel is a truth state that varies. Chose-split-fuel is false.
+Chose-martyr is a truth state that varies. Chose-martyr is false.
+Fuel-choice-made is a truth state that varies. Fuel-choice-made is false.
+D1-counter is a number that varies. D1-counter is 0.
+
+Chapter 2 - D1 Trigger: Prepare Selengrad
+
+Preparing selengrad is an action applying to nothing.
+Understand "prepare selengrad" as preparing selengrad.
+Understand "prepare for selengrad" as preparing selengrad.
+Understand "begin preparations" as preparing selengrad.
+Understand "coordinate" as preparing selengrad.
+Understand "prepare" as preparing selengrad.
+
+Check preparing selengrad:
+	if the player is not in the Command Module:
+		say "You would need to be at the command module to coordinate preparations." instead;
+	if selengrad-prep-begun is false:
+		say "There is nothing to prepare for yet." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has been made. There is nothing left to do but wait." instead.
+
+Report preparing selengrad:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]Chen's voice crackles through the static. The Selengrad plan requires a decision about fuel allocation. You must choose.[paragraph break]You can SPLIT FUEL between the two stations for a shared burn, or GIVE FUEL — sacrifice Mir-3's reserves entirely so Freedom Station can make the transit alone."
+
+Chapter 3 - D1 Sub-Choice: Split Fuel
+
+Splitting fuel is an action applying to nothing.
+Understand "split fuel" as splitting fuel.
+Understand "split the fuel" as splitting fuel.
+Understand "share fuel" as splitting fuel.
+
+Check splitting fuel:
+	if selengrad-prep-begun is false:
+		say "That does not make sense right now." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has already been made." instead.
+
+Carry out splitting fuel:
+	now chose-split-fuel is true;
+	now fuel-choice-made is true.
+
+Report splitting fuel:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. Split burn. Both stations commit their reserves. The math is tight but it works. Selengrad or nothing, together."
+
+Chapter 4 - D1 Sub-Choice: Give Fuel (Martyr)
+
+Giving fuel is an action applying to nothing.
+Understand "give fuel" as giving fuel.
+Understand "give the fuel" as giving fuel.
+Understand "sacrifice fuel" as giving fuel.
+Understand "sacrifice" as giving fuel.
+
+Check giving fuel:
+	if selengrad-prep-begun is false:
+		say "That does not make sense right now." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has already been made." instead.
+
+Carry out giving fuel:
+	now chose-martyr is true;
+	now fuel-choice-made is true.
+
+Report giving fuel:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. All of Mir-3's fuel. Every drop. Freedom Station will make Selengrad alone. You will remain in orbit. You know what that means."
+
+Chapter 5 - E1 / E2 Dispatch
+
+Every turn when fuel-choice-made is true:
+	increase D1-counter by 1;
+	if D1-counter >= 3:
+		if chose-split-fuel is true:
+			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]The burn sequence completes. Both stations arc toward the Moon. Selengrad's beacon answers. The caretaker systems wake. Against all odds, you are going to live.[paragraph break][italic type]End of the Selengrad arc — E1: Arrival.[roman type]";
+			end the story saying "You have reached Selengrad";
+		if chose-martyr is true:
+			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]Freedom Station's engines fire on Mir-3's fuel. You watch from the cupola as Chen's station pulls away toward the Moon. Your orbit is stable. For now. The oxygen will not last. But they will make it.[paragraph break][italic type]End of the Selengrad arc — E2: Martyr.[roman type]";
+			end the story saying "You gave them the Moon".
+
+Part 8C - De-orbiting (C2 gate stub; full action lands in #43)
 
 Deorbiting is an action applying to nothing.
 Understand "deorbit" as deorbiting.
@@ -1067,7 +1152,7 @@ Check deorbiting:
 Report deorbiting:
 	say "The de-orbit sequence is not yet available. The console waits."
 
-Part 8C - Firing the Cannon
+Part 8D - Firing the Cannon (C3 gate stub; full action lands via m14)
 
 Firing the cannon is an action applying to nothing.
 Understand "fire cannon" as firing the cannon.
@@ -1243,3 +1328,5 @@ Test quarters with "open locker / take flashlight / switch on flashlight / exami
 Test hatch with "open locker / take flashlight / switch on flashlight / examine hatch / pull lever / n".
 Test explore with "open locker / take flashlight / switch on flashlight / pull lever / n / e / examine viewport / w / n / open toolkit / take multimeter".
 Test full with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit".
+Test selengrad-e1 with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit / prepare selengrad / split fuel / z / z / z".
+Test selengrad-e2 with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit / prepare selengrad / give fuel / z / z / z".
