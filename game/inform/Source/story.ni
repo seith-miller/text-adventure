@@ -15,6 +15,16 @@ Oxygen-level is a number that varies. Oxygen-level is 100.
 Morale-level is a number that varies. Morale-level is 50.
 Dose-level is a number that varies. Dose-level is 0.
 
+B1-beats-completed is a number that varies. B1-beats-completed is 0.
+B2-beats-completed is a number that varies. B2-beats-completed is 0.
+Dominant-act2-path is text that varies. Dominant-act2-path is "none".
+
+[Beat-counting guards — each beat increments its path counter once.]
+Notebook-beat-counted is a truth state that varies. Notebook-beat-counted is false.
+Yevgenia-beat-counted is a truth state that varies. Yevgenia-beat-counted is false.
+Petrov-beat-counted is a truth state that varies. Petrov-beat-counted is false.
+Dosimeter-beat-counted is a truth state that varies. Dosimeter-beat-counted is false.
+
 Chapter 2 - Status Bar
 
 [In-story status bar intentionally omitted. The Web UI renders
@@ -47,7 +57,7 @@ To say mirsend-inventory-list:
 		increment counter.
 
 Every turn:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list][close bracket][line break]".
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
 
 Part 1B - Direction Synonyms
 
@@ -304,6 +314,9 @@ Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name 
 
 After examining Yevgenia:
 	now the prior named object is Yevgenia;
+	if yevgenia-beat-counted is false:
+		now yevgenia-beat-counted is true;
+		increase b2-beats-completed by 1;
 	continue the action.
 
 Instead of taking Yevgenia:
@@ -340,6 +353,9 @@ Instead of talking to Petrov:
 Instead of talking to something:
 	say "There is no one here to speak with."
 
+[Inform 7's standard rules bind "read" as a synonym for examining; clear
+ it first so our Reading action gets the verb.]
+Understand the command "read" as something new.
 Reading is an action applying to one thing.
 Understand "read [something]" as reading.
 
@@ -347,6 +363,9 @@ Notebook-read is a truth state that varies. Notebook-read is false.
 
 Instead of reading Yevgenia's notebook:
 	now notebook-read is true;
+	if notebook-beat-counted is false:
+		now notebook-beat-counted is true;
+		increase b1-beats-completed by 1;
 	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it. The Moon is a delta-v problem.[line break]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[line break]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
 
 [Inform 7's standard rules already define "consulting it about" with
@@ -356,6 +375,9 @@ Understand "look up [text] in [something]" as consulting it about (with nouns re
 
 Instead of consulting Yevgenia's notebook about a topic listed in the Table of Notebook Topics:
 	now notebook-read is true;
+	if notebook-beat-counted is false:
+		now notebook-beat-counted is true;
+		increase b1-beats-completed by 1;
 	say "[response entry][paragraph break]".
 
 Instead of consulting Yevgenia's notebook about:
@@ -383,6 +405,7 @@ War-is-discovered is a truth state that varies. War-is-discovered is false.
 Instead of examining the viewport:
 	if war-is-discovered is false:
 		now war-is-discovered is true;
+		increase b2-beats-completed by 1;
 		decrease morale-level by 15;
 		say "You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire. Point fire. Hundreds of points. Blooms of orange and white. Some already fading. Some still expanding in slow-motion circles. Fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. From three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
 	otherwise:
@@ -397,6 +420,9 @@ Petrov is a man. Petrov is scenery in the Observation Cupola. The printed name o
 
 After examining Petrov:
 	now the prior named object is Petrov;
+	if petrov-beat-counted is false:
+		now petrov-beat-counted is true;
+		increase b2-beats-completed by 1;
 	continue the action.
 
 Instead of taking Petrov:
@@ -451,7 +477,8 @@ Check reading Petrov's log:
 		say "The console is dead. No power to read anything." instead.
 
 Carry out reading Petrov's log:
-	now petrov-log-read is true.
+	now petrov-log-read is true;
+	increase b1-beats-completed by 1.
 
 Report reading Petrov's log:
 	say "You pull up Petrov's last log entry. He dictated it to the console. Timestamped minutes after the EMP. Minutes before the impact.[paragraph break][italic type]Commander Vasili Petrov, Mir-3. Time is 03:52 Moscow. Status: EMP event confirmed at 03:47. All systems offline. Kozlova believes the isolated bus in this module is recoverable. We are assembling tools.[line break]Sensor scrape suggests a second object inbound. I do not know what it is. I do not recognize the profile. If this station survives the next hour, whoever is listening will need to know. The armament bay on this module is intact. Kozlova has the access code. Use it if you have to. The weapon is aboard for a reason. We may not have been told all of them.[line break]If you are reading this and I am not still talking. Do what you can. Make it worth something.[roman type][paragraph break]The log ends. The console shows the timestamp of its last write. 03:53. One minute before the impact."
@@ -481,6 +508,12 @@ The CO2 scrubbers are scenery in the Life Support Module. Understand "co2" or "s
 The radiation sensor panel is scenery in the Life Support Module. Understand "panel" or "sensor panel" or "radiation panel" or "radiation sensor" or "sensors" as the radiation sensor panel. The description of the radiation sensor panel is "A small display glows faintly on the starboard wall. Ambient: 0.0018 mSv/h. Normal for low Earth orbit. Clipped into the panel is a personal pocket dosimeter. The kind you wear for a reactor walk."
 
 The dosimeter is a thing in the Life Support Module. Understand "pocket dosimeter" or "meter" or "dosimeter panel" as the dosimeter. The description of the dosimeter is "A Soviet pocket dosimeter. A pen-sized ionization chamber with a tiny scale. Mechanical. EMP-proof. Reads accumulated dose. Essential for any walk past the reactor shield."
+
+After taking the dosimeter:
+	if dosimeter-beat-counted is false:
+		now dosimeter-beat-counted is true;
+		increase b2-beats-completed by 1;
+	continue the action.
 
 The EVA airlock is scenery in the Life Support Module. Understand "airlock" or "eva" or "eva airlock" as the EVA airlock. The description of the EVA airlock is "An emergency EVA airlock at zenith. Dogged shut. Without a suit and a reason, that hatch does not open tonight."
 
@@ -862,6 +895,7 @@ Instead of opening the classified safe:
 	otherwise:
 		now armament-bay-unlocked is true;
 		increase the score by 2;
+		increase b1-beats-completed by 1;
 		say "You enter [safe-code of the classified safe as spoken digits]. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now."
 
 Part 3B - Map Command
@@ -937,7 +971,8 @@ Check restoring power:
 Carry out restoring power:
 	now power-is-restored is true;
 	now the status console is switched on;
-	increase morale-level by 10.
+	increase morale-level by 10;
+	increase b1-beats-completed by 1.
 
 Report restoring power:
 	say "You work alone. Yevgenia's notebook wedged open beside the console with a bent clip.[paragraph break]Her handwriting walks you through it. Test the capacitor bank first. Green. Short the reset pin to ground for three seconds. You count under your breath. Reseat the isolation relay. You are not an engineer. You follow the instructions of a dead woman as carefully as anyone has ever followed anything.[paragraph break]With a sharp crack and a brief flash, the status console flickers to life.[paragraph break]Her notes have a short margin comment at this point. [italic type]if it sparks here, you did it right[roman type]. You let yourself breathe.[paragraph break]The screen is dim. Half the pixels are dead. But it works. Status readouts begin scrolling. Most of them bad."
@@ -972,6 +1007,8 @@ Check transmitting:
 		say "The communications array has no power." instead;
 	if distress-call-heard is false:
 		say "You turn on the radio but hear only static. Perhaps you should listen more carefully first." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "You reach for the microphone but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to answer." instead;
 	if responded-to-americans is true:
 		say "You are already in contact with Freedom Station. Commander Chen's crew is standing by." instead;
 	if chose-silence is true:
@@ -979,7 +1016,11 @@ Check transmitting:
 
 Carry out transmitting:
 	now responded-to-americans is true;
-	increase morale-level by 8.
+	increase morale-level by 8;
+	if b1-beats-completed >= b2-beats-completed:
+		now dominant-act2-path is "engineer";
+	otherwise:
+		now dominant-act2-path is "witness".
 
 Report transmitting:
 	say "You key the microphone yourself. There is no one else to key it for you.[paragraph break][italic type]Freedom Station, this is Mir-3. We read your distress call. Say your status. Over.[roman type][paragraph break]The loop cuts. A pause. Long enough that you think the signal is gone. Then a new voice. Live. Shaking with relief and surprise.[paragraph break][italic type]Mir-3... oh my God. This is Commander Diane Chen, Freedom Station. We... we did not expect anyone to answer.[roman type][paragraph break]You trade damage reports with a stranger. Five crew on her side. Two injured. One on yours. No injured. You skip over the word [italic type]alive[roman type]. She skips over it too.[paragraph break]You open Yevgenia's notebook. You tell Chen about Selengrad.[paragraph break]A pause. Then her voice again. Quieter. [italic type]You are proposing we fly to the Moon.[roman type][paragraph break][italic type]I am proposing we try. It is that or a slow death in orbit.[roman type][paragraph break]Five American survivors. You. One lunar base in caretaker mode. One plan scribbled in a dead engineer's handwriting.[paragraph break][italic type]Begin preparations[roman type], Chen says, after a long silence. [italic type]We have work to do.[roman type]"
@@ -1005,6 +1046,45 @@ Carry out staying silent:
 
 Report staying silent:
 	say "You listen to the loop. You do not key the microphone.[paragraph break]The first time it plays, you almost answer. The second time, you almost answer. The third time, you catch yourself already reaching for the mic. You pull your hand back.[paragraph break]Chen's voice fades. Maybe her battery failed. Maybe she gave up. Maybe she is still talking and the signal is too weak to reach you. Whichever it is, the channel is gone.[paragraph break]You sit alone with the static and with the math in Yevgenia's notebook. Alone, you cannot make Selengrad. The combined fuel is not optional. It is arithmetic.[paragraph break]You tell yourself you chose this for good reasons. You are not sure you believe yourself."
+
+Part 8B - De-orbiting
+
+Deorbiting is an action applying to nothing.
+Understand "deorbit" as deorbiting.
+Understand "de-orbit" as deorbiting.
+Understand "descend" as deorbiting.
+Understand "reenter" as deorbiting.
+Understand "re-enter" as deorbiting.
+Understand "initiate deorbit" as deorbiting.
+Understand "initiate de-orbit" as deorbiting.
+
+Check deorbiting:
+	if the player is not in the Soyuz Ferry:
+		say "You would need to be aboard the Soyuz ferry to initiate a de-orbit sequence." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "You reach for the de-orbit console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to leave." instead.
+
+Report deorbiting:
+	say "The de-orbit sequence is not yet available. The console waits."
+
+Part 8C - Firing the Cannon
+
+Firing the cannon is an action applying to nothing.
+Understand "fire cannon" as firing the cannon.
+Understand "fire r-23" as firing the cannon.
+Understand "fire rikhter" as firing the cannon.
+Understand "fire gun" as firing the cannon.
+Understand "fire weapon" as firing the cannon.
+Understand "shoot cannon" as firing the cannon.
+
+Check firing the cannon:
+	if the player is not in the Armament Bay:
+		say "You would need to be in the armament bay to fire the cannon." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "You reach for the fire-control console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to fire." instead.
+
+Report firing the cannon:
+	say "The fire-control console is dark. The cannon is inert. Whatever feeds its armored power line is not live tonight."
 
 Part 9 - Scene-Specific Responses
 

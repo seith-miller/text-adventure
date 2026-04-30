@@ -147,7 +147,7 @@ commits to an Act 3 climax.
 |-------|-------|--------------------|----------------|
 | **A** | Exposition + inciting incident | Wake in dark Crew Quarters. Light Zhuchok. LISTEN: you are alone. Pull pressure valve (irreversible; you share half your air with a vacuum). Enter Main Corridor. Confront Yevgenia's body. The world you knew is over. | implemented |
 | **B1** | Engineer's path | Notebook first. Multimeter. Restore power. Read Petrov's log. Open safe. Armament bay unlocks. You move through the station as a problem to be solved. | implemented |
-| **B2** | Witness's path | Viewport first (WWIII reveal). Yevgenia. Petrov. Life Support. Hydroponics. The dosimeter's tick. You move through the station as a liturgy of what was lost. | partial (beats exist; emphasis not yet scripted) |
+| **B2** | Witness's path | Viewport first (WWIII reveal). Yevgenia. Petrov. Life Support. Hydroponics. The dosimeter's tick. You move through the station as a liturgy of what was lost. | partial (beats exist; emphasis not yet scripted). **Pure B2 caveat:** A player who completes only B2 beats cannot reach C1 (requires power, a B1 beat) or C3 (requires safe, a B1 beat). Only C2 (Soyuz de-orbit) is arguably reachable. If no climax fires, the timers win and the player reaches E5 (tombstone). This is an accepted design choice — the station rewards engagement with its systems, and a pure witness earns a quieter, sadder end. |
 | **C1** | Climax: Respond | Hear the American distress call. TRANSMIT to Freedom Station. Commit to the Selengrad plan with Commander Chen. | partial (ends at "Begin preparations") |
 | **C2** | Climax: Descend | Board the Soyuz. Commit to the de-orbit sequence. Point the ship at a burning Earth. | TODO |
 | **C3** | Climax: Retaliate | Power the fire-control console. Aim the Rikhter R-23. Fire. | TODO |
@@ -180,7 +180,7 @@ What the player must have accomplished to advance.
 | Gate | Requires | Guards |
 |------|----------|--------|
 | A → B | Pulled the pressure valve; entered the corridor; examined at least one body | Act 1 cannot be skipped or shortcut. |
-| B → C | Read notebook AND read log AND opened safe (Engineer emphasis) OR seen viewport AND examined both bodies AND gathered the dosimeter (Witness emphasis). Either satisfies. | Player cannot reach a climax without knowing the situation. |
+| B → C | `b1-beats-completed >= 3` OR `b2-beats-completed >= 3`. B1 beats: notebook read, power restored, log read, safe opened (4 total). B2 beats: viewport examined, Yevgenia examined, Petrov examined, dosimeter taken (4 total). Either path with 3+ beats satisfies. Enforced by Check rules on TRANSMIT, DEORBIT, and FIRE CANNON. | Player cannot reach a climax without knowing the situation. |
 | C → D | Any irreversible climax committed (transmit, de-orbit, fire cannon) | Locks out the other climaxes. |
 | D → E | The falling action's scripted resolution fires | Endings are deterministic from Act 4. |
 
@@ -241,6 +241,9 @@ Ten modules, each with six faces. Direction synonyms accepted
 | `chose-silence`              | STAY SILENT                                  | Alternative branch (TODO)                |
 | `petrov-log-read`            | READ LOG (needs power)                       | Arming code visible to safe              |
 | `armament-bay-unlocked`      | OPEN SAFE (needs log read)                   | Main Corridor east hatch                 |
+| `b1-beats-completed`         | Incremented by notebook read, power restored, log read, safe opened (max 4) | B→C transition gate (≥3 required) |
+| `b2-beats-completed`         | Incremented by viewport examined, Yevgenia examined, Petrov examined, dosimeter taken (max 4) | B→C transition gate (≥3 required) |
+| `dominant-act2-path`         | Set at climax entry: "engineer" if b1≥b2, else "witness" | Perception layer / Director role    |
 
 ## Resources
 
