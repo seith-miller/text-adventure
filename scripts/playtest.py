@@ -291,6 +291,23 @@ def _system_with_cache(prompt: str) -> list[dict]:
     return [{"type": "text", "text": prompt, "cache_control": _CACHE_CONTROL}]
 
 
+def _read_game_version() -> str:
+    """
+    Return the version descriptor produced by scripts/make_version.py.
+
+    Falls back to "unknown" if the file is missing or unreadable.
+    """
+    path = REPO_ROOT / "game" / "dist" / "version.json"
+    try:
+        data = json.loads(path.read_text())
+        v = data.get("version_string")
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    except (OSError, ValueError):
+        pass
+    return "unknown"
+
+
 def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
     payload = {
         "session_id": session["session_id"],
@@ -302,7 +319,7 @@ def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
         "final_o2": session.get("final_o2"),
         "final_morale": session.get("final_morale"),
         "player_kind": player_kind,
-        "game_version": "develop",
+        "game_version": session.get("game_version") or _read_game_version(),
         "command_history": session["command_history"],
         "transcript": session["transcript"],
     }
@@ -321,6 +338,9 @@ def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
         return False
 
 
+DEFAULT_DUMP_DIR = REPO_ROOT / "docs" / "playtests" / "runs"
+
+
 def run_playtest(
     *,
     model: str = DEFAULT_MODEL,
@@ -329,6 +349,7 @@ def run_playtest(
     no_ingest: bool = False,
     proxy_url: str = DEFAULT_PROXY_URL,
     output_path: pathlib.Path | None = None,
+    dump_dir: pathlib.Path | None = DEFAULT_DUMP_DIR,
 ) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -567,7 +588,7 @@ def run_playtest(
         "stuck_moments": stuck_moments,
         "metadata": metadata,
         "player_kind": f"agent:{model}",
-        "game_version": "develop",
+        "game_version": _read_game_version(),
     }
 
     print(flush=True)
@@ -581,6 +602,18 @@ def run_playtest(
     if output_path:
         output_path.write_text(json.dumps(summary, indent=2))
         print(f"Transcript saved to {output_path}", flush=True)
+
+    if dump_dir is not None:
+        try:
+            sys.path.insert(0, str(REPO_ROOT))
+            from lib.playthrough_db import format_session_markdown  # noqa: PLC0415
+            dump_dir.mkdir(parents=True, exist_ok=True)
+            date_part = (summary.get("started_at") or "")[:10] or "undated"
+            md_path = dump_dir / f"{date_part}-{play_session_id}.md"
+            md_path.write_text(format_session_markdown(summary))
+            print(f"Markdown transcript: {md_path}", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"Markdown dump failed (non-fatal): {exc}\n")
 
     if not no_ingest:
         ok = _post_session(summary, proxy_url, f"agent:{model}")
@@ -600,6 +633,15 @@ def main() -> int:
     parser.add_argument("--no-ingest", action="store_true")
     parser.add_argument("--proxy-url", default=DEFAULT_PROXY_URL)
     parser.add_argument("--output", type=pathlib.Path, default=None)
+    parser.add_argument(
+        "--dump-dir", type=pathlib.Path, default=DEFAULT_DUMP_DIR,
+        help="Directory for the auto-dumped markdown transcript "
+             "(default: docs/playtests/runs/).",
+    )
+    parser.add_argument(
+        "--no-dump", action="store_true",
+        help="Suppress the markdown auto-dump entirely.",
+    )
     args = parser.parse_args()
 
     run_playtest(
@@ -607,6 +649,7 @@ def main() -> int:
         max_turns=args.max_turns,
         stuck_window=args.stuck_window,
         no_ingest=args.no_ingest,
+        dump_dir=None if args.no_dump else args.dump_dir,
         proxy_url=args.proxy_url,
         output_path=args.output,
     )

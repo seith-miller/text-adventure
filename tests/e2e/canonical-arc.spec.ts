@@ -17,6 +17,7 @@ test("canonical arc A -> B1 -> C1 fires expected beats", async ({ page }) => {
     "pull lever",
     "n",
     "take notebook",
+    "read notebook",
     "u",
     "take dosimeter",
     "d",
@@ -46,7 +47,9 @@ test("canonical arc A -> B1 -> C1 fires expected beats", async ({ page }) => {
   await expect(body).toContainText(
     /isolated power bus|status console flickers/i,
   );
-  await expect(body).toContainText(/THREE-SEVEN-ONE-ONE/);
+  // Safe code is now randomized per playthrough (#113); the success
+  // message renders it as digits-and-dashes like "2-6-8-4".
+  await expect(body).toContainText(/\d-\d-\d-\d/);
   await expect(body).toContainText(/armament bay/i);
   await expect(body).toContainText(/Commander Diane Chen/);
   await expect(body).toContainText(/Begin preparations/);

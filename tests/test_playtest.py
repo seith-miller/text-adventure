@@ -392,3 +392,60 @@ def test_max_turns_caps_loop(monkeypatch):
     )
     assert summary["bailout_reason"] == "max-turns"
     assert summary["turns_count"] == 3
+
+
+def test_auto_dump_writes_markdown_transcript(monkeypatch, tmp_path):
+    """run_playtest writes a per-session markdown file when dump_dir is given."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+    bridge = FakeBridge(
+        send_command_responses=["You see a locker."],
+        states=[
+            {"currentRoom": "Crew Quarters", "inventory": [], "score": 0,
+             "o2": 100, "morale": 80},
+            {"currentRoom": "Crew Quarters", "inventory": [], "score": 0,
+             "o2": 99, "morale": 80},
+        ],
+    )
+    monkeypatch.setattr(playtest_mod, "GameBridge", lambda: bridge)
+
+    scripted = [
+        _make_response([_tool_use_block("c1", "mirs_end_start_game")]),
+        _make_response([
+            _tool_use_block(
+                "c2", "mirs_end_send_command",
+                session_id=bridge.session_id, command="look",
+            )
+        ]),
+    ]
+    _install_anthropic_stub(monkeypatch, FakeAnthropic(scripted))
+
+    dump_dir = tmp_path / "runs"
+    summary = playtest_mod.run_playtest(
+        no_ingest=True, max_turns=2, dump_dir=dump_dir,
+    )
+
+    md_files = list(dump_dir.glob("*.md"))
+    assert len(md_files) == 1
+    text = md_files[0].read_text()
+    assert summary["session_id"] in text
+    assert "## Turn 1: `look`" in text
+    assert "You see a locker." in text
+
+
+def test_auto_dump_disabled_when_dump_dir_is_none(monkeypatch, tmp_path):
+    """No markdown file is written when dump_dir is None."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+    bridge = FakeBridge(states=[{}])
+    monkeypatch.setattr(playtest_mod, "GameBridge", lambda: bridge)
+
+    scripted = [_make_response([_tool_use_block("c1", "mirs_end_start_game")])]
+    _install_anthropic_stub(monkeypatch, FakeAnthropic(scripted))
+
+    dump_dir = tmp_path / "should_not_exist"
+    playtest_mod.run_playtest(
+        no_ingest=True, max_turns=1, dump_dir=None,
+    )
+
+    assert not dump_dir.exists() or list(dump_dir.glob("*.md")) == []
