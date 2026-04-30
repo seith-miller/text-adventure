@@ -249,9 +249,16 @@
     if (!pre || !screen) return;
     // Reset to a baseline size and measure
     pre.style.fontSize = '10px';
+    // Force a reflow so the browser calculates layout with the new content.
+    void pre.offsetHeight;
     var rect = pre.getBoundingClientRect();
     var cw = screen.clientWidth  - 32;
     var ch = screen.clientHeight - 24;
+    // Guard against zero-dimension pre (font not loaded yet)
+    if (rect.width < 1 || rect.height < 1) {
+      requestAnimationFrame(function() { fit(); });
+      return;
+    }
     var scaleW = cw / rect.width;
     var scaleH = ch / rect.height;
     var scale = Math.min(scaleW, scaleH);
@@ -360,6 +367,11 @@
 
     /* Resize handler */
     window.addEventListener("resize", function() { if (state.gameStarted) render(); });
+
+    /* Re-fit when fonts finish loading (initial layout may measure wrong). */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function() { if (state.gameStarted) fit(); });
+    }
 
     /* Periodic header clock update */
     setInterval(function() { if (state.gameStarted) render(); }, 5000);
