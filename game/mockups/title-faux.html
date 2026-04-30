@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIR'S END — Faux-Cyrillic Title Variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700;900&family=Bebas+Neue&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --phosphor: #6cf06b;
+    --dim: #4a6e48;
+    --label: #888;
+    --hot: #d8d2bc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--phosphor); font-family: 'VT323', monospace; min-height: 100vh; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  h1.section {
+    font-family: 'VT323', monospace;
+    color: var(--label);
+    font-size: 22px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #2a2f35;
+    padding-bottom: 6px;
+    margin: 36px 0 18px;
+  }
+  h1.section:first-of-type { margin-top: 0; }
+
+  .variant {
+    margin: 28px 0 36px;
+    padding: 24px 28px;
+    background: #06090c;
+    border: 1px solid #1e2a36;
+    border-radius: 4px;
+  }
+  .variant .meta {
+    color: var(--label);
+    font-size: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .variant .meta b { color: var(--hot); font-weight: normal; }
+  .variant .note {
+    margin-top: 14px;
+    color: var(--dim);
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  .title-display {
+    color: var(--phosphor);
+    text-shadow: 0 0 14px rgba(108,240,107,0.45), 0 0 28px rgba(108,240,107,0.2);
+    line-height: 1.05;
+  }
+
+  /* Font flavors */
+  .f-vt323   { font-family: 'VT323', monospace;   font-size: 110px; letter-spacing: 6px; }
+  .f-russo   { font-family: 'Russo One', sans-serif; font-size: 92px; letter-spacing: 4px; }
+  .f-bebas   { font-family: 'Bebas Neue', sans-serif; font-size: 110px; letter-spacing: 14px; }
+  .f-cinzel  { font-family: 'Cinzel', serif; font-weight: 900; font-size: 84px; letter-spacing: 8px; }
+
+  /* Subtitle under each */
+  .subtitle {
+    color: var(--dim);
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    letter-spacing: 6px;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1 class="section">Faux-Cyrillic — title variants</h1>
+
+  <div class="variant">
+    <div class="meta">A · Subtle · <b>MIR'S EПD</b> · one substitution (N→П)</div>
+    <div class="title-display f-vt323">MIR'S EПD</div>
+    <div class="subtitle">An Interactive Survival Story</div>
+    <div class="note">Reads as English at first glance. The single substitution does the work — like a brand mark, not a costume.</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">B · Moderate · <b>МIR'S EПD</b> · M and N swapped to identical-looking Cyrillic</div>
+    <div class="title-display f-vt323">МIR'S EПD</div>
+    <div class="subtitle">An Interactive Survival Story</div>
+    <div class="note">Visually identical to plain English (М and Cyrillic М look the same), but the П flips you. Quietly off.</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">C · Loud · <b>МIЯ'S ЄПD</b> · classic Hollywood-Soviet</div>
+    <div class="title-display f-vt323">МIЯ'S ЄПD</div>
+    <div class="subtitle">An Interactive Survival Story</div>
+    <div class="note">Maximum vibe, maximum kitsch. Reads as "Russian movie poster." Cohesive but flirts with cliché.</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">D · Heavy · <b>МИЯ'Ѕ ЄПД</b> · every letter swapped</div>
+    <div class="title-display f-vt323">МИЯ'Ѕ ЄПД</div>
+    <div class="subtitle">An Interactive Survival Story</div>
+    <div class="note">Borat territory. Hard pass for me, but here for completeness.</div>
+  </div>
+
+  <h1 class="section">Same variant, different fonts</h1>
+
+  <div class="variant">
+    <div class="meta">VT323 · matches terminal</div>
+    <div class="title-display f-vt323">МIR'S EПD</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">Russo One · Soviet-poster-y geometric sans</div>
+    <div class="title-display f-russo">МIR'S EПD</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">Bebas Neue · industrial signage</div>
+    <div class="title-display f-bebas">МIR'S EПD</div>
+  </div>
+
+  <div class="variant">
+    <div class="meta">Cinzel · monumental, engraved-feeling</div>
+    <div class="title-display f-cinzel">МIR'S EПD</div>
+  </div>
+
+</div>
+</body>
+</html>
