@@ -86,12 +86,13 @@ class TestOxygenTimerGuard:
     """The oxygen timer must not fire suffocation after TRANSMIT."""
 
     def test_oxygen_timer_guarded(self, story_source):
-        """The oxygen every-turn rule checks selengrad-prep-begun."""
-        # Find the oxygen timer rule (decrease oxygen-level)
+        """The oxygen every-turn rule's `when` clause halts during arcs."""
+        # Find the oxygen timer rule (decrease oxygen-level).
         idx = story_source.find("decrease oxygen-level by 1")
         assert idx != -1, "Oxygen decrement rule not found"
-        # The guard should appear before the decrement in the same rule
-        block_start = story_source.rfind("Every turn:", 0, idx)
+        # The guard should appear in the `Every turn when ...:` clause
+        # immediately before the decrement.
+        block_start = story_source.rfind("Every turn when ", 0, idx)
         assert block_start != -1
         guard_block = story_source[block_start:idx]
         assert "selengrad-prep-begun is false" in guard_block, (
