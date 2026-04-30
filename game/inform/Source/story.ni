@@ -69,7 +69,7 @@ Every turn:
 	otherwise:
 		decrease oxygen-level by 1;
 		if oxygen-level <= 0:
-			carry out e5 dispatching.
+			try e5 dispatching.
 
 Chapter 5 - E5 Passive-Failure Dispatcher
 
