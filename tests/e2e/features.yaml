@@ -78,6 +78,15 @@
     TRANSMIT to fire normally.
   surfaces: [dom, interpreter]
 
+- id: c2-descent
+  area: story
+  demonstrates: >
+    The DEORBIT action in the Soyuz Ferry triggers the C2 climax,
+    fires a six-beat D3 reentry sequence on a turn counter, and
+    transitions to the terminal E3 return ending. The oxygen timer
+    does not fire during descent.
+  surfaces: [dom, state, interpreter]
+
 - id: session-export
   area: ui
   demonstrates: >

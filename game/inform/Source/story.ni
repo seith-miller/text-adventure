@@ -25,6 +25,20 @@ Yevgenia-beat-counted is a truth state that varies. Yevgenia-beat-counted is fal
 Petrov-beat-counted is a truth state that varies. Petrov-beat-counted is false.
 Dosimeter-beat-counted is a truth state that varies. Dosimeter-beat-counted is false.
 
+B1-beats-completed is a number that varies. B1-beats-completed is 0.
+B2-beats-completed is a number that varies. B2-beats-completed is 0.
+Dominant-act2-path is text that varies. Dominant-act2-path is "none".
+
+[Beat-counting guards — each beat increments its path counter once.]
+Notebook-beat-counted is a truth state that varies. Notebook-beat-counted is false.
+Yevgenia-beat-counted is a truth state that varies. Yevgenia-beat-counted is false.
+Petrov-beat-counted is a truth state that varies. Petrov-beat-counted is false.
+Dosimeter-beat-counted is a truth state that varies. Dosimeter-beat-counted is false.
+
+[Descent arc state — set by DEORBIT, guards oxygen timer and D3 sequence.]
+Chose-descent is a truth state that varies. Chose-descent is false.
+D3-beat-counter is a number that varies. D3-beat-counter is 0.
+
 Chapter 2 - Status Bar
 
 [In-story status bar intentionally omitted. The Web UI renders
@@ -35,12 +49,13 @@ Chapter 2 - Status Bar
 
 Chapter 3 - Oxygen Timer
 
-Every turn:
-	if selengrad-prep-begun is false:
-		decrease oxygen-level by 1;
-		if oxygen-level <= 0:
-			say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
-			end the story saying "You have suffocated".
+[Oxygen timer halts when an active arc is in progress (Selengrad
+ preparation, or Soyuz descent). The arc's own ending takes over.]
+Every turn when selengrad-prep-begun is false and chose-descent is false:
+	decrease oxygen-level by 1;
+	if oxygen-level <= 0:
+		say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
+		end the story saying "You have suffocated".
 
 Chapter 4 - UI Status Bridge
 
@@ -314,6 +329,9 @@ Instead of taking the loose cables:
 Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g. Her face is calm. She probably never registered what happened. A thin film of frost on her eyelashes.[if Yevgenia's notebook is part of Yevgenia] Her flight notebook is still clipped to the chest of her suit.[otherwise] The clip where her flight notebook was is empty. You have the notebook.[end if] The hand nearest the maintenance panel holds a screwdriver she will never put down."
 
 After examining Yevgenia:
+	if yevgenia-beat-counted is false:
+		now yevgenia-beat-counted is true;
+		increase b2-beats-completed by 1;
 	now the prior named object is Yevgenia;
 	if yevgenia-beat-counted is false:
 		now yevgenia-beat-counted is true;
@@ -420,6 +438,9 @@ The reinforced glass is scenery in the Observation Cupola. The description of th
 Petrov is a man. Petrov is scenery in the Observation Cupola. The printed name of Petrov is "Commander Petrov's body". Understand "petrov" or "commander" or "body" as Petrov. The description of Petrov is "Commander Petrov. Thirty years of service. One hand still on the hatch wheel. He was trying to get inside the cupola. Trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had."
 
 After examining Petrov:
+	if petrov-beat-counted is false:
+		now petrov-beat-counted is true;
+		increase b2-beats-completed by 1;
 	now the prior named object is Petrov;
 	if petrov-beat-counted is false:
 		now petrov-beat-counted is true;
@@ -517,6 +538,12 @@ After taking the dosimeter:
 	continue the action.
 
 The EVA airlock is scenery in the Life Support Module. Understand "airlock" or "eva" or "eva airlock" as the EVA airlock. The description of the EVA airlock is "An emergency EVA airlock at zenith. Dogged shut. Without a suit and a reason, that hatch does not open tonight."
+
+After taking the dosimeter:
+	if dosimeter-beat-counted is false:
+		now dosimeter-beat-counted is true;
+		increase b2-beats-completed by 1;
+	continue the action.
 
 Chapter 8 - Armament Bay
 
@@ -1134,6 +1161,8 @@ Every turn when fuel-choice-made is true:
 
 Part 8C - De-orbiting Gate Stub
 
+The Soyuz Reentry Capsule is a room. The printed name of the Soyuz Reentry Capsule is "Soyuz Reentry Capsule". "You are strapped into the descent module. The capsule shudders around you. There is nothing to do but wait."
+
 Deorbiting is an action applying to nothing.
 Understand "deorbit" as deorbiting.
 Understand "de-orbit" as deorbiting.
@@ -1142,15 +1171,59 @@ Understand "reenter" as deorbiting.
 Understand "re-enter" as deorbiting.
 Understand "initiate deorbit" as deorbiting.
 Understand "initiate de-orbit" as deorbiting.
+Understand "initiate descent" as deorbiting.
+Understand "fire retrorockets" as deorbiting.
+Understand "use de-orbit console" as deorbiting.
+Understand "use deorbit console" as deorbiting.
 
 Check deorbiting:
 	if the player is not in the Soyuz Ferry:
 		say "You would need to be aboard the Soyuz ferry to initiate a de-orbit sequence." instead;
 	if b1-beats-completed < 3 and b2-beats-completed < 3:
-		say "You reach for the de-orbit console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to leave." instead.
+		say "You reach for the de-orbit console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to leave." instead;
+	if responded-to-americans is true:
+		say "You have already committed to the Selengrad plan with Freedom Station. The de-orbit path is closed to you now." instead.
+
+Carry out deorbiting:
+	now chose-descent is true;
+	now d3-beat-counter is 1;
+	if b1-beats-completed >= b2-beats-completed:
+		now dominant-act2-path is "engineer";
+	otherwise:
+		now dominant-act2-path is "witness";
+	move the player to the Soyuz Reentry Capsule.
 
 Report deorbiting:
-	say "The de-orbit sequence is not yet available. The console waits."
+	say "[bracket]TODO prose: #56[close bracket][paragraph break]You seal the hatch. You strap in. You key the de-orbit sequence. The retrorockets fire. Mir-3 falls away behind you."
+
+Part 8CA - D3 Reentry Sequence
+
+[The D3 reentry fires one beat per turn on a counter. The player has no
+ agency during reentry — the interpreter prints scripted beats. Six beats
+ total, then transition to E3.]
+
+Every turn when chose-descent is true and d3-beat-counter > 0 and d3-beat-counter <= 6:
+	if d3-beat-counter is 1:
+		say "[line break][bracket]TODO prose: #56 — d3-deorbit-burn[close bracket]";
+	otherwise if d3-beat-counter is 2:
+		say "[line break][bracket]TODO prose: #56 — d3-atmosphere-entry[close bracket]";
+	otherwise if d3-beat-counter is 3:
+		say "[line break][bracket]TODO prose: #56 — d3-no-ground-control[close bracket]";
+	otherwise if d3-beat-counter is 4:
+		say "[line break][bracket]TODO prose: #56 — d3-continents-visible[close bracket]";
+	otherwise if d3-beat-counter is 5:
+		say "[line break][bracket]TODO prose: #56 — d3-soot-layers[close bracket]";
+	otherwise if d3-beat-counter is 6:
+		say "[line break][bracket]TODO prose: #56 — d3-touchdown[close bracket]";
+	increase d3-beat-counter by 1.
+
+Part 8CB - E3 Return Denouement
+
+[E3 fires the turn after d3-touchdown (beat counter reaches 7). Terminal.]
+
+Every turn when chose-descent is true and d3-beat-counter is 7:
+	say "[line break][bracket]TODO prose: #56 — e3-return[close bracket]";
+	end the story saying "You have returned".
 
 Part 8D - Firing the Cannon Gate Stub
 
