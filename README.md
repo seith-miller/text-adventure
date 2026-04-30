@@ -116,3 +116,4 @@ The Inform 7 compiler is not available in CI, so toolchain-dependent tests skip 
 ## Migration from Ink
 
 This project is migrating from Ink to Inform 7. The original Ink files are kept in `game/story/` as reference until the narrative port is complete. The Ink compilation script remains at `scripts/compile-ink.mjs` for reference.
+
