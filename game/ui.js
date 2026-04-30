@@ -1,6 +1,7 @@
 /**
  * MIR'S END — Web UI Shell
- * Hitchhiker's Guide-style layout with interpreter I/O interception.
+ * Soviet terminal visual language: 80×25 character grid rendered inside
+ * a single <pre> element with box-drawing borders and phosphor color tags.
  */
 
 (() => {
@@ -21,6 +22,14 @@
     "Observation Cupola",
   ];
 
+  /* ── Terminal grid constants ── */
+  var TOTAL_W   = 80;
+  var STORY_W   = 48;
+  var SIDE_W    = 25;
+  var HEADER_W  = 76; // inside outer borders + 1-char pad each side
+  var BODY_ROWS = 19; // rows between header separator and input separator
+  var MAX_STORY_LINES = 200; // keep scrollback trimmed
+
   /* ── State ── */
   var state = {
     commandHistory: [],
@@ -40,36 +49,254 @@
   var _saveLoadModalOpen = false;
 
   /* ── DOM references ── */
-  var storyOutput;
-  var sceneArt;
-  var commandInput;
-  var statusO2;
-  var statusMorale;
-  var barO2Fill;
-  var barMoraleFill;
-  var inventoryList;
+  var display;        // the <pre id="display">
+  var storyOutput;    // hidden #story-output (preserves test contract)
+  var commandInput;   // hidden <input id="command-input"> (test contract)
   var titleScreen;
   var menuContinueBtn;
   var ingameMenuBtn;
 
+  /* ── Story line buffer (plain text lines for the story column) ── */
+  var storyLines = [];
+  var storyScrollOffset = 0; // lines scrolled back from bottom
+
+  /* ── Current input line ── */
+  var inputBuffer = "";
+
   /* ── ASCII art cache ── */
   var artCache = {};
 
+  /* ── Uptime counter ── */
+  var uptimeStart = Date.now();
+
+  /* ── Terminal helpers ── */
+
+  /** Strip HTML tags and collapse entities → 1 char for visual length. */
+  function visLen(s) {
+    return s
+      .replace(/<[^>]+>/g, '')
+      .replace(/&[a-zA-Z0-9#]+;/g, 'X')
+      .length;
+  }
+
+  /** Pad string s with spaces to width w (accounting for inline tags). */
+  function pad(s, w) {
+    var n = w - visLen(s);
+    return n > 0 ? s + ' '.repeat(n) : s;
+  }
+
+  /** Left + right justified across width w. */
+  function cells(left, right, w) {
+    var fill = w - visLen(left) - visLen(right);
+    return left + ' '.repeat(Math.max(0, fill)) + right;
+  }
+
+  /** Word-wrap plain text to fit within a given column width. */
+  function wordWrap(text, width) {
+    var result = [];
+    var paragraphs = text.split('\n');
+    for (var p = 0; p < paragraphs.length; p++) {
+      var line = paragraphs[p];
+      if (line.length === 0) {
+        result.push('');
+        continue;
+      }
+      while (line.length > width) {
+        var breakAt = line.lastIndexOf(' ', width);
+        if (breakAt <= 0) breakAt = width;
+        result.push(line.substring(0, breakAt));
+        line = line.substring(breakAt + (line[breakAt] === ' ' ? 1 : 0));
+      }
+      result.push(line);
+    }
+    return result;
+  }
+
+  /** Escape < > & for safe insertion into the <pre> innerHTML. */
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* ── Build sidebar column (25 wide × BODY_ROWS) ── */
+  function buildSidebar() {
+    var rows = [];
+
+    // VITALS header
+    rows.push('<hd>VITALS / СОСТОЯНИЕ</hd>');
+    rows.push('');
+
+    // O2 bar
+    var o2Pct = Math.max(0, Math.min(100, state.o2));
+    var o2Tag = o2Pct > 50 ? 'bri' : (o2Pct > 25 ? 'amb' : 'red');
+    var o2Str = '<' + o2Tag + '>' + o2Pct + '%</' + o2Tag + '>';
+    rows.push(cells('O2 LEVEL', o2Str, SIDE_W));
+    var o2Lit = Math.round(o2Pct / 100 * SIDE_W);
+    var o2Dim = SIDE_W - o2Lit;
+    rows.push('<' + o2Tag + '>' + '█'.repeat(o2Lit) + '</' + o2Tag + '>' +
+              '<dim>' + '░'.repeat(o2Dim) + '</dim>');
+
+    // Morale bar
+    var moralePct = Math.max(0, Math.min(100, state.morale));
+    var mTag = moralePct > 50 ? 'bri' : (moralePct > 25 ? 'amb' : 'red');
+    var mStr = '<' + mTag + '>' + moralePct + '%</' + mTag + '>';
+    rows.push(cells('MORALE', mStr, SIDE_W));
+    var mLit = Math.round(moralePct / 100 * SIDE_W);
+    var mDim = SIDE_W - mLit;
+    rows.push('<' + mTag + '>' + '█'.repeat(mLit) + '</' + mTag + '>' +
+              '<dim>' + '░'.repeat(mDim) + '</dim>');
+
+    rows.push('');
+
+    // SYSTEMS header
+    rows.push('<hd>SYSTEMS / СИСТЕМЫ</hd>');
+    rows.push('');
+    rows.push('<grn>█</grn> PWR              <grn>█</grn> LIFE');
+    rows.push('<amb>█</amb> COMM             <off>█</off> NAV');
+    rows.push('<red>█</red> HULL             <wht>█</wht> DOCK');
+    rows.push('');
+
+    // INVENTORY header
+    rows.push('<hd>INVENTORY / ИНВЕНТАРЬ</hd>');
+    rows.push('');
+
+    if (state.inventory.length === 0) {
+      rows.push('<dim>(nothing carried)</dim>');
+    } else {
+      for (var i = 0; i < state.inventory.length; i++) {
+        var item = state.inventory[i];
+        if (item.length > SIDE_W - 2) item = item.substring(0, SIDE_W - 2);
+        rows.push('&gt; ' + esc(item));
+      }
+    }
+
+    return rows;
+  }
+
+  /* ── Build the full 80×25 screen ── */
+  function compose() {
+    var out = [];
+
+    // Row 1: top border
+    out.push('╔' + '═'.repeat(TOTAL_W - 2) + '╗');
+
+    // Row 2: header status bar
+    var now = new Date();
+    var elapsed = Math.floor((Date.now() - uptimeStart) / 1000);
+    var uh = String(Math.floor(elapsed / 3600)).padStart(3, '0');
+    var um = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    var us = String(elapsed % 60).padStart(2, '0');
+    var hh = String(now.getUTCHours()).padStart(2, '0');
+    var mm = String(now.getUTCMinutes()).padStart(2, '0');
+    var ss = String(now.getUTCSeconds()).padStart(2, '0');
+
+    var header =
+      'SYS <bri>МИР-2/TERM-04</bri>   ' +
+      'UPT <bri>' + uh + ':' + um + ':' + us + '</bri>   ' +
+      'ORB <bri>412KM/91.2MIN</bri>   ' +
+      'TIME <bri>' + hh + ':' + mm + ':' + ss + ' МСК</bri>';
+    out.push('║ ' + pad(header, HEADER_W) + ' ║');
+
+    // Row 3: separator (heavy horizontal, light vertical junction)
+    out.push('╠' + '═'.repeat(STORY_W + 2) + '╤' + '═'.repeat(SIDE_W + 2) + '╣');
+
+    // Rows 4–22: body (story left, sidebar right)
+    var sidebar = buildSidebar();
+
+    // Get visible story lines (last BODY_ROWS lines, adjusted by scroll offset)
+    var visibleStory = [];
+    var totalStory = storyLines.length;
+    var endIdx = totalStory - storyScrollOffset;
+    var startIdx = Math.max(0, endIdx - BODY_ROWS);
+    for (var i = startIdx; i < endIdx && i < totalStory; i++) {
+      visibleStory.push(storyLines[i]);
+    }
+
+    for (var r = 0; r < BODY_ROWS; r++) {
+      var left = visibleStory[r] || '';
+      var right = sidebar[r] || '';
+      // Truncate story lines that exceed column width (visual)
+      if (visLen(left) > STORY_W) {
+        // Simple truncation for plain-text lines
+        left = left.substring(0, STORY_W);
+      }
+      out.push('║ ' + pad(left, STORY_W) + ' │ ' + pad(right, SIDE_W) + ' ║');
+    }
+
+    // Row 23: separator above input
+    out.push('╠' + '═'.repeat(STORY_W + 2) + '╧' + '═'.repeat(SIDE_W + 2) + '╣');
+
+    // Row 24: input line
+    var inputLine = '<bri>&gt;</bri> ' + esc(inputBuffer) + '<cur>█</cur>';
+    out.push('║ ' + pad(inputLine, HEADER_W) + ' ║');
+
+    // Row 25: bottom border
+    out.push('╚' + '═'.repeat(TOTAL_W - 2) + '╝');
+
+    return out.join('\n');
+  }
+
+  /** Render the terminal display and auto-scale to fit. */
+  function render() {
+    if (!display) return;
+    display.innerHTML = compose();
+    fit();
+  }
+
+  /** Auto-scale the <pre> to fill the screen area. */
+  function fit() {
+    var pre = display;
+    var screen = document.getElementById('screen');
+    if (!pre || !screen) return;
+    // Reset to a baseline size and measure
+    pre.style.fontSize = '10px';
+    var rect = pre.getBoundingClientRect();
+    var cw = screen.clientWidth  - 32;
+    var ch = screen.clientHeight - 24;
+    var scaleW = cw / rect.width;
+    var scaleH = ch / rect.height;
+    var scale = Math.min(scaleW, scaleH);
+    pre.style.fontSize = (10 * scale) + 'px';
+  }
+
+  /* ── Sweeping scanline animation ── */
+  function initScanline() {
+    var bar = document.getElementById('scan-line');
+    var screen = document.getElementById('screen');
+    if (!bar || !screen) return;
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function sweep() {
+      var h = screen.clientHeight;
+      var dur = rand(900, 4200);
+      var op = rand(0.35, 1.0);
+      bar.style.transition = 'none';
+      bar.style.transform = 'translateY(-12px)';
+      bar.style.opacity = '0';
+      bar.offsetHeight; // force reflow
+      bar.style.transition = 'transform ' + dur + 'ms linear, opacity 200ms ease-in';
+      bar.style.opacity = String(op);
+      bar.style.transform = 'translateY(' + (h + 8) + 'px)';
+      setTimeout(function() { bar.style.opacity = '0'; }, dur - 180);
+      var gap = Math.random() < 0.25 ? rand(150, 600) : rand(2500, 9000);
+      setTimeout(sweep, dur + gap);
+    }
+    setTimeout(sweep, 600);
+  }
+
   /* ── Initialization ── */
   function init() {
+    display = document.getElementById("display");
     storyOutput = document.getElementById("story-output");
-    sceneArt = document.getElementById("scene-art");
     commandInput = document.getElementById("command-input");
-    statusO2 = document.getElementById("status-o2");
-    statusMorale = document.getElementById("status-morale");
-    barO2Fill = document.querySelector("#status-bar-o2 .bar-fill");
-    barMoraleFill = document.querySelector("#status-bar-morale .bar-fill");
-    inventoryList = document.getElementById("inventory-list");
     titleScreen = document.getElementById("title-screen");
     menuContinueBtn = document.getElementById("menu-continue");
     ingameMenuBtn = document.getElementById("ingame-menu-btn");
 
-    commandInput.addEventListener("keydown", handleKeyDown);
+    /* Keyboard input: capture globally and route to the terminal input buffer.
+       Also keep the hidden #command-input in sync for test compatibility. */
+    document.addEventListener("keydown", handleGlobalKeyDown);
+
+    /* Also listen on #command-input for tests that fill() + press() on it. */
+    commandInput.addEventListener("keydown", handleCommandInputKeyDown);
 
     /* Menu button handlers */
     document
@@ -79,7 +306,7 @@
     ingameMenuBtn.addEventListener("click", showMenu);
 
     /* ESC key to toggle menu during gameplay */
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", function(e) {
       if (e.key === "Escape") {
         if (window.MirsEndIntro?.isActive()) return;
         if (
@@ -94,8 +321,9 @@
       }
     });
 
-    /* Focus input on click anywhere (only when game is active, not during intro) */
-    document.addEventListener("click", (e) => {
+    /* Focus the hidden input on click so mobile keyboards work, and so
+       Playwright's fill() path functions correctly. */
+    document.addEventListener("click", function(e) {
       if (window.MirsEndIntro?.isActive()) return;
       if (
         state.gameStarted &&
@@ -108,8 +336,6 @@
       }
     });
 
-    updateStatus();
-
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
 
@@ -121,6 +347,98 @@
 
     /* Show title screen on launch */
     showMenu();
+
+    /* Start scanline animation */
+    initScanline();
+
+    /* Resize handler */
+    window.addEventListener("resize", function() { if (state.gameStarted) render(); });
+
+    /* Periodic header clock update */
+    setInterval(function() { if (state.gameStarted) render(); }, 5000);
+  }
+
+  /* ── Input handling ── */
+
+  /** Handle keyboard globally for the terminal input buffer. */
+  function handleGlobalKeyDown(e) {
+    // Don't capture when title screen is up or modal is open
+    if (!state.gameStarted) return;
+    if (titleScreen && !titleScreen.classList.contains("hidden")) return;
+    if (_saveLoadModalOpen) return;
+
+    // Ignore modifier combos except Shift
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (e.key === "Enter") {
+      submitCommand();
+      e.preventDefault();
+    } else if (e.key === "Backspace") {
+      if (inputBuffer.length > 0) {
+        inputBuffer = inputBuffer.slice(0, -1);
+        commandInput.value = inputBuffer;
+        render();
+      }
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (state.historyIndex > 0) {
+        state.historyIndex--;
+        inputBuffer = state.commandHistory[state.historyIndex];
+        commandInput.value = inputBuffer;
+        render();
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (state.historyIndex < state.commandHistory.length - 1) {
+        state.historyIndex++;
+        inputBuffer = state.commandHistory[state.historyIndex];
+        commandInput.value = inputBuffer;
+        render();
+      } else {
+        state.historyIndex = state.commandHistory.length;
+        inputBuffer = "";
+        commandInput.value = "";
+        render();
+      }
+    } else if (e.key.length === 1) {
+      inputBuffer += e.key;
+      commandInput.value = inputBuffer;
+      render();
+      e.preventDefault();
+    }
+  }
+
+  /**
+   * Handle keydown on the hidden #command-input.
+   * This path is used by Playwright tests that do cmdInput.fill("cmd")
+   * then cmdInput.press("Enter"). The fill() sets the value directly
+   * without firing individual key events, so we sync from .value here.
+   */
+  function handleCommandInputKeyDown(e) {
+    if (e.key === "Enter") {
+      /* Sync inputBuffer from .value in case Playwright used fill(). */
+      if (commandInput.value && commandInput.value !== inputBuffer) {
+        inputBuffer = commandInput.value;
+      }
+      submitCommand();
+      e.preventDefault();
+      e.stopPropagation(); // prevent double-handling by global listener
+    }
+  }
+
+  function submitCommand() {
+    var cmd = inputBuffer.trim();
+    if (cmd.length === 0) return;
+
+    state.commandHistory.push(cmd);
+    state.historyIndex = state.commandHistory.length;
+    inputBuffer = "";
+    commandInput.value = "";
+
+    appendPlayerInput(cmd);
+    sendToInterpreter(cmd);
+    render();
   }
 
   /* ── Menu system ── */
@@ -137,6 +455,7 @@
       titleScreen.classList.add("hidden");
       if (state.gameStarted) {
         commandInput.focus();
+        render();
       }
     }
   }
@@ -165,16 +484,20 @@
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
-    /* Clear story output */
+    /* Clear story */
+    storyLines = [];
+    storyScrollOffset = 0;
+    inputBuffer = "";
+    commandInput.value = "";
     storyOutput.innerHTML = "";
+    uptimeStart = Date.now();
 
     hideMenu();
-    updateStatus();
-    loadSceneArt("darkness");
+    render();
 
     /* Play intro sequence if available, then hook the interpreter */
     if (window.MirsEndIntro) {
-      window.MirsEndIntro.run(() => {
+      window.MirsEndIntro.run(function() {
         hookInterpreter();
         commandInput.focus();
       });
@@ -188,11 +511,9 @@
     /* Prefer SaveManager's multi-slot store when available, fall back to
        the inline single-slot SAVE_KEY that gates the menu Continue button. */
     if (window.SaveManager) {
-      const recent = window.SaveManager.getMostRecentSave();
+      var recent = window.SaveManager.getMostRecentSave();
       if (recent) {
         window.SaveManager.applyState(recent.data);
-        /* applyState covers o2/morale/inventory/currentRoom but not history;
-           restore those here so the UI matches the inline-SAVE_KEY path. */
         if (recent.data.commandHistory !== undefined) {
           state.commandHistory = recent.data.commandHistory;
           state.historyIndex = state.commandHistory.length;
@@ -200,12 +521,11 @@
         state.gameStarted = true;
         state.sessionStartedAt =
           state.sessionStartedAt || new Date().toISOString();
+        storyLines = [];
+        storyScrollOffset = 0;
         storyOutput.innerHTML = "";
         hideMenu();
-        updateStatus();
-        loadSceneArt(
-          state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
-        );
+        render();
         appendSystemText("[Resumed from last save.]");
         hookInterpreter();
         commandInput.focus();
@@ -234,15 +554,12 @@
     state.gameStarted = true;
     state.sessionStartedAt = state.sessionStartedAt || new Date().toISOString();
 
-    /* Clear story output and show restored message */
+    storyLines = [];
+    storyScrollOffset = 0;
     storyOutput.innerHTML = "";
 
     hideMenu();
-    updateStatus();
-
-    loadSceneArt(
-      state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
-    );
+    render();
 
     appendSystemText("[Game restored.]");
     hookInterpreter();
@@ -263,8 +580,6 @@
         commandHistory: state.commandHistory,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      /* Mirror to SaveManager's autosave slot so continueGame (which
-         prefers SaveManager) sees the latest data. */
       if (window.SaveManager?.autoSave) {
         window.SaveManager.autoSave();
       }
@@ -273,43 +588,11 @@
     }
   }
 
-  /* ── Command history & input handling ── */
-  function handleKeyDown(e) {
-    if (e.key === "Enter") {
-      const cmd = commandInput.value.trim();
-      if (cmd.length === 0) return;
-
-      state.commandHistory.push(cmd);
-      state.historyIndex = state.commandHistory.length;
-      commandInput.value = "";
-
-      appendPlayerInput(cmd);
-      sendToInterpreter(cmd);
-      /* Session persistence is handled by a MutationObserver on
-         #story-output — it fires for any input path, including the
-         Playwright helpers that drive GlkOte's input directly. */
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (state.historyIndex > 0) {
-        state.historyIndex--;
-        commandInput.value = state.commandHistory[state.historyIndex];
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (state.historyIndex < state.commandHistory.length - 1) {
-        state.historyIndex++;
-        commandInput.value = state.commandHistory[state.historyIndex];
-      } else {
-        state.historyIndex = state.commandHistory.length;
-        commandInput.value = "";
-      }
-    }
-  }
-
   /* ── Display functions ── */
+
   /**
-   * Match the machine-readable status line emitted by the Inform 7 every-turn
-   * rule. Format: [MIRSEND o2=N morale=N inv=a,b,c]  (inv may be empty)
+   * Match the machine-readable status line emitted by Inform 7.
+   * Format: [MIRSEND o2=N morale=N inv=a,b,c]
    */
   var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
 
@@ -319,54 +602,76 @@
     var o2 = parseInt(m[1], 10);
     var morale = parseInt(m[2], 10);
     var invStr = (m[3] || "").trim();
-    var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
+    var inventory = invStr === "" ? [] : invStr.split(",").map(function(s) { return s.trim(); });
     state.o2 = o2;
     state.morale = morale;
     state.inventory = inventory;
-    updateStatus();
+    render();
     return true;
   }
 
   function appendStoryText(text) {
-    /* Intercept status lines before they reach the DOM. */
+    /* Intercept status lines before they reach the display. */
     if (parseAndApplyMirsendStatus(text)) return;
+
+    /* Add to hidden #story-output for test compatibility. */
     var span = document.createElement("span");
     span.className = "story-text";
-    span.textContent = `${text}\n\n`;
+    span.textContent = text + "\n\n";
     storyOutput.appendChild(span);
-    scrollToBottom();
+
+    /* Word-wrap and add to story line buffer. */
+    var wrapped = wordWrap(text, STORY_W);
+    for (var i = 0; i < wrapped.length; i++) {
+      storyLines.push(esc(wrapped[i]));
+    }
+    storyLines.push(''); // blank line between paragraphs
+    trimStoryBuffer();
+    storyScrollOffset = 0;
     detectRoomChange(text);
+    render();
   }
 
   function appendPlayerInput(text) {
+    /* Hidden #story-output for tests. */
     var span = document.createElement("span");
     span.className = "player-input";
-    span.textContent = `> ${text}\n`;
+    span.textContent = "> " + text + "\n";
     storyOutput.appendChild(span);
-    scrollToBottom();
+
+    /* Echo into the terminal story column. */
+    storyLines.push('<echo>&gt; ' + esc(text) + '</echo>');
+    trimStoryBuffer();
+    storyScrollOffset = 0;
+    render();
   }
 
   function appendSystemText(text) {
+    /* Hidden #story-output for tests. */
     var span = document.createElement("span");
     span.className = "system-text";
-    span.textContent = `${text}\n`;
+    span.textContent = text + "\n";
     storyOutput.appendChild(span);
-    scrollToBottom();
+
+    storyLines.push('<dim>' + esc(text) + '</dim>');
+    trimStoryBuffer();
+    storyScrollOffset = 0;
+    render();
   }
 
-  function scrollToBottom() {
-    var panel = document.getElementById("story-panel");
-    panel.scrollTop = panel.scrollHeight;
+  function trimStoryBuffer() {
+    if (storyLines.length > MAX_STORY_LINES) {
+      storyLines = storyLines.slice(storyLines.length - MAX_STORY_LINES);
+    }
   }
 
   /* ── Room detection from story output ── */
   function detectRoomChange(text) {
-    for (let i = 0; i < KNOWN_ROOMS.length; i++) {
-      const room = KNOWN_ROOMS[i];
-      /* Match room name at start of line or as standalone line */
+    for (var i = 0; i < KNOWN_ROOMS.length; i++) {
+      var room = KNOWN_ROOMS[i];
       if (
         text.indexOf(room) !== -1 &&
-        (text.indexOf(`${room}\n`) !== -1 ||
+        (text.indexOf(room + "\n") !== -1 ||
           text.substring(0, room.length) === room)
       ) {
         setCurrentRoom(room);
@@ -378,116 +683,48 @@
   function setCurrentRoom(roomName) {
     var changed = state.currentRoom !== roomName;
     state.currentRoom = roomName;
-    var key = roomName.toLowerCase();
-    loadSceneArt(key);
 
     /* Auto-save when entering a new area */
     if (changed && window.SaveManager) {
-      const result = window.SaveManager.autoSave();
+      var result = window.SaveManager.autoSave();
       if (result.success) {
         appendSystemText("[Auto-saved]");
       }
     }
   }
 
-  /* ── Scene art loading ── */
+  /* ── Status update (no-op for DOM elements, state is rendered in compose()) ── */
+  function updateStatus() {
+    render();
+  }
+
+  /* ── Scene art loading (kept for compatibility, art not displayed in new UI) ── */
   function loadSceneArt(key) {
     var path = ROOM_ART[key];
     if (!path) return;
-
-    if (artCache[key]) {
-      sceneArt.textContent = artCache[key];
-      return;
-    }
-
+    if (artCache[key]) return;
     fetch(path)
-      .then((response) => {
-        if (!response.ok) {
-          sceneArt.textContent = "[No signal]";
-          return;
-        }
+      .then(function(response) {
+        if (!response.ok) return;
         return response.text();
       })
-      .then((text) => {
-        if (text) {
-          artCache[key] = text;
-          sceneArt.textContent = text;
-        }
+      .then(function(text) {
+        if (text) artCache[key] = text;
       })
-      .catch(() => {
-        sceneArt.textContent = "[No signal]";
-      });
-  }
-
-  /* ── Status panel updates ── */
-  function updateStatus() {
-    /* O2 */
-    statusO2.textContent = `${state.o2}%`;
-    statusO2.className = "status-value";
-    if (state.o2 > 50) {
-      statusO2.classList.add("good");
-      barO2Fill.style.background = "var(--status-green)";
-    } else if (state.o2 > 25) {
-      statusO2.classList.add("warning");
-      barO2Fill.style.background = "var(--status-yellow)";
-    } else {
-      statusO2.classList.add("danger");
-      barO2Fill.style.background = "var(--status-red)";
-    }
-    barO2Fill.style.width = `${state.o2}%`;
-
-    /* Morale */
-    statusMorale.textContent = `${state.morale}%`;
-    statusMorale.className = "status-value";
-    if (state.morale > 50) {
-      statusMorale.classList.add("good");
-      barMoraleFill.style.background = "var(--status-green)";
-    } else if (state.morale > 25) {
-      statusMorale.classList.add("warning");
-      barMoraleFill.style.background = "var(--status-yellow)";
-    } else {
-      statusMorale.classList.add("danger");
-      barMoraleFill.style.background = "var(--status-red)";
-    }
-    barMoraleFill.style.width = `${state.morale}%`;
-
-    /* Inventory */
-    inventoryList.innerHTML = "";
-    if (state.inventory.length === 0) {
-      const li = document.createElement("li");
-      li.className = "empty-inventory";
-      li.textContent = "Nothing carried";
-      inventoryList.appendChild(li);
-    } else {
-      for (let i = 0; i < state.inventory.length; i++) {
-        const item = document.createElement("li");
-        item.textContent = state.inventory[i];
-        inventoryList.appendChild(item);
-      }
-    }
+      .catch(function() {});
   }
 
   /* ── Interpreter I/O bridge ── */
 
-  /**
-   * Hook into Quixe/GlkOte to intercept interpreter output.
-   * The interpreter writes to GlkOte windows; we intercept
-   * the update callback to route text to our custom panels.
-   */
   function hookInterpreter() {
-    /* Check if GlkOte is loaded (Quixe) */
     if (typeof window.GlkOte !== "undefined") {
       hookGlkOte();
       return;
     }
-
-    /* Check if parchment is loaded */
     if (typeof window.parchment !== "undefined") {
       hookParchment();
       return;
     }
-
-    /* No interpreter loaded — run in standalone shell mode */
     appendSystemText(
       "[MIR'S END — UI Shell loaded. Waiting for interpreter...]",
     );
@@ -495,9 +732,8 @@
       "[Load a Glulx interpreter (Quixe or Parchment) to play the story.]",
     );
 
-    /* Poll for interpreter availability */
     var pollCount = 0;
-    var pollInterval = setInterval(() => {
+    var pollInterval = setInterval(function() {
       pollCount++;
       if (typeof window.GlkOte !== "undefined") {
         clearInterval(pollInterval);
@@ -513,15 +749,8 @@
 
   function hookGlkOte() {
     state.interpreterReady = true;
-
-    /* Observe the offscreen #windowport where GlkOte renders the story.
-       We can't reliably wrap GlkOte.update (Quixe caches an internal
-       reference), so mirror DOM changes instead. */
     observeWindowport();
-
     appendSystemText("[Interpreter connected.]");
-
-    /* Boot the story now that our hook is installed. */
     if (window.MirsEndBoot) {
       window.MirsEndBoot.start();
     }
@@ -532,11 +761,6 @@
     appendSystemText("[Parchment interpreter connected.]");
   }
 
-  /**
-   * Mirror text from the offscreen GlkOte windowport into our visible
-   * #story-output panel. We deduplicate by tracking seen line indices so
-   * each line is appended exactly once.
-   */
   function observeWindowport() {
     var windowport = document.getElementById("windowport");
     if (!windowport) {
@@ -547,15 +771,12 @@
     }
     var seen = new Set();
 
-    var flush = () => {
-      /* GlkOte creates buffer windows with class .WindowBuffer and within them
-         a sequence of .BufferLine divs. Take each line's text, append if new. */
-      const lines = windowport.querySelectorAll(".BufferLine");
-      for (let i = 0; i < lines.length; i++) {
-        const key = `line-${i}`;
+    var flush = function() {
+      var lines = windowport.querySelectorAll(".BufferLine");
+      for (var i = 0; i < lines.length; i++) {
+        var key = "line-" + i;
         if (seen.has(key)) continue;
-        const text = lines[i].textContent || "";
-        /* Skip empty paragraph breaks but honor real content. */
+        var text = lines[i].textContent || "";
         if (text.trim().length > 0) {
           appendStoryText(text);
         }
@@ -563,7 +784,7 @@
       }
     };
 
-    var observer = new MutationObserver(() => {
+    var observer = new MutationObserver(function() {
       flush();
     });
     observer.observe(windowport, {
@@ -571,15 +792,14 @@
       subtree: true,
       characterData: true,
     });
-    /* Initial flush in case content was already painted. */
     flush();
   }
 
   // Kept for reference; unused after we switched to DOM observation.
   // biome-ignore lint/correctness/noUnusedVariables: retained for future reuse
   function extractGlkText(content) {
-    let text = "";
-    for (let i = 0; i < content.length; i++) {
+    var text = "";
+    for (var i = 0; i < content.length; i++) {
       if (typeof content[i] === "string") {
         text += content[i];
       } else if (content[i]?.text) {
@@ -589,26 +809,14 @@
     return text;
   }
 
-  /**
-   * Send player command to the interpreter.
-   * If no interpreter is loaded, echo a demo response.
-   *
-   * GlkOte creates an `<input class="Input LineInput">` inside its
-   * current buffer window when a line event is pending. We drive that
-   * input directly — set value, dispatch Enter — which is the same path
-   * a real keyboard user exercises.
-   */
   function sendToInterpreter(cmd) {
     if (state.interpreterReady) {
-      const glkInput = document.querySelector("#windowport input.LineInput");
+      var glkInput = document.querySelector("#windowport input.LineInput");
       if (glkInput) {
-        /* GlkOte listens for keydown on the LineInput (bound via jQuery).
-           Set the value, focus, and fire a complete event sequence with
-           both native and jQuery paths to cover either binding style. */
         glkInput.value = cmd;
         glkInput.focus();
 
-        const native = new KeyboardEvent("keydown", {
+        var native = new KeyboardEvent("keydown", {
           key: "Enter",
           code: "Enter",
           keyCode: 13,
@@ -616,14 +824,13 @@
           bubbles: true,
           cancelable: true,
         });
-        /* keyCode/which are non-writable on native events unless we force them. */
         Object.defineProperty(native, "keyCode", { value: 13 });
         Object.defineProperty(native, "which", { value: 13 });
         glkInput.dispatchEvent(native);
 
         if (window.jQuery) {
-          const $input = window.jQuery(glkInput);
-          const jqEvt = window.jQuery.Event("keydown", {
+          var $input = window.jQuery(glkInput);
+          var jqEvt = window.jQuery.Event("keydown", {
             keyCode: 13,
             which: 13,
             key: "Enter",
@@ -631,16 +838,11 @@
           $input.trigger(jqEvt);
         }
 
-        /* Return focus to the visible #command-input so the player can
-           keep typing without clicking. Defer slightly: GlkOte may
-           re-focus its own LineInput when it renders the next prompt,
-           so we wait one frame plus a small timeout to win the race. */
-        setTimeout(() => commandInput.focus(), 0);
-        setTimeout(() => commandInput.focus(), 50);
+        setTimeout(function() { commandInput.focus(); }, 0);
+        setTimeout(function() { commandInput.focus(); }, 50);
         return;
       }
     }
-    /* Standalone shell mode — handle basic commands for demo */
     handleShellCommand(cmd);
   }
 
@@ -666,13 +868,13 @@
           "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
         );
       } else {
-        appendStoryText(`You look around ${state.currentRoom}.`);
+        appendStoryText("You look around " + state.currentRoom + ".");
       }
     } else if (lower === "inventory" || lower === "i") {
       if (state.inventory.length === 0) {
         appendStoryText("You are carrying nothing.");
       } else {
-        appendStoryText(`You are carrying:\n  ${state.inventory.join("\n  ")}`);
+        appendStoryText("You are carrying:\n  " + state.inventory.join("\n  "));
       }
     } else if (lower === "north" || lower === "n") {
       if (
@@ -743,17 +945,13 @@
 
   /* ── Save/Load UI ── */
 
-  /**
-   * Show the save/load modal overlay.
-   * @param {string} mode - "save" or "load"
-   */
   function showSaveLoadModal(mode) {
-    closeSaveLoadModal(); // remove any existing modal
+    closeSaveLoadModal();
     _saveLoadModalOpen = true;
 
     var overlay = document.createElement("div");
     overlay.id = "save-load-overlay";
-    overlay.addEventListener("click", (e) => {
+    overlay.addEventListener("click", function(e) {
       if (e.target === overlay) closeSaveLoadModal();
     });
 
@@ -765,23 +963,23 @@
     modal.appendChild(title);
 
     if (!window.SaveManager?.storageAvailable()) {
-      const msg = document.createElement("p");
+      var msg = document.createElement("p");
       msg.className = "save-load-error";
-      msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
+      msg.textContent = "localStorage is not available. Cannot " + mode + " games.";
       modal.appendChild(msg);
     } else {
-      const slots = window.SaveManager.listSlots();
-      for (let i = 0; i < slots.length; i++) {
-        ((slot) => {
-          const row = document.createElement("div");
+      var slots = window.SaveManager.listSlots();
+      for (var i = 0; i < slots.length; i++) {
+        (function(slot) {
+          var row = document.createElement("div");
           row.className = "save-slot-row";
 
-          const label = document.createElement("span");
+          var label = document.createElement("span");
           label.className = "save-slot-label";
           label.textContent =
-            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
+            slot.slot === "auto" ? "Auto-save" : "Slot " + slot.slot;
 
-          const summary = document.createElement("span");
+          var summary = document.createElement("span");
           summary.className = "save-slot-summary";
           summary.textContent = slot.summary;
 
@@ -789,21 +987,21 @@
           row.appendChild(summary);
 
           if (mode === "save" && slot.slot !== "auto") {
-            const saveBtn = document.createElement("button");
+            var saveBtn = document.createElement("button");
             saveBtn.className = "save-slot-btn";
             saveBtn.textContent = "Save";
-            saveBtn.addEventListener("click", () => {
-              const result = window.SaveManager.saveToSlot(slot.slot);
-              appendSystemText(`[${result.message}]`);
+            saveBtn.addEventListener("click", function() {
+              var result = window.SaveManager.saveToSlot(slot.slot);
+              appendSystemText("[" + result.message + "]");
               closeSaveLoadModal();
             });
             row.appendChild(saveBtn);
           } else if (mode === "load" && slot.hasData) {
-            const loadBtn = document.createElement("button");
+            var loadBtn = document.createElement("button");
             loadBtn.className = "save-slot-btn";
             loadBtn.textContent = "Load";
-            loadBtn.addEventListener("click", () => {
-              let result;
+            loadBtn.addEventListener("click", function() {
+              var result;
               if (slot.slot === "auto") {
                 result = window.SaveManager.loadAutoSave();
               } else {
@@ -811,9 +1009,9 @@
               }
               if (result.success) {
                 window.SaveManager.applyState(result.data);
-                appendSystemText(`[${result.message}]`);
+                appendSystemText("[" + result.message + "]");
               } else {
-                appendSystemText(`[${result.message}]`);
+                appendSystemText("[" + result.message + "]");
               }
               closeSaveLoadModal();
             });
@@ -841,21 +1039,15 @@
     if (existing) existing.remove();
   }
 
-  /**
-   * Quick-save to slot 1 (for command-line SAVE).
-   */
   function quickSave() {
     if (!window.SaveManager) {
       appendSystemText("[Save system not available.]");
       return;
     }
     var result = window.SaveManager.saveToSlot(1);
-    appendSystemText(`[${result.message}]`);
+    appendSystemText("[" + result.message + "]");
   }
 
-  /**
-   * Quick-load from slot 1 or most recent save (for command-line RESTORE).
-   */
   function quickLoad() {
     if (!window.SaveManager) {
       appendSystemText("[Save system not available.]");
@@ -872,37 +1064,8 @@
 
   /* ── Wire up sidebar save/load buttons ── */
   function initSaveLoadButtons() {
-    var saveBtn = document.getElementById("btn-save");
-    var loadBtn = document.getElementById("btn-load");
-    var continueBtn = document.getElementById("btn-continue");
-    var exportBtn = document.getElementById("btn-export");
-
-    if (saveBtn) {
-      saveBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showSaveLoadModal("save");
-      });
-    }
-    if (loadBtn) {
-      loadBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showSaveLoadModal("load");
-      });
-    }
-    if (continueBtn) {
-      continueBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        continueGame();
-      });
-    }
-    if (exportBtn) {
-      exportBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        downloadSession();
-      });
-    }
-    /* Ctrl+E / Cmd+E anywhere on the page exports too. */
-    document.addEventListener("keydown", (e) => {
+    /* Ctrl+E / Cmd+E anywhere on the page exports. */
+    document.addEventListener("keydown", function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
         e.preventDefault();
         downloadSession();
@@ -916,24 +1079,19 @@
   var SESSION_FORMAT_VERSION = 1;
   var sessionPersistTimer = null;
 
-  /* Persist the session to localStorage on every turn so a page crash or
-     reload doesn't lose the playtest record. */
   function persistSession() {
     if (!state.gameStarted) return;
     try {
-      const session = snapshotSession();
+      var session = snapshotSession();
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     } catch (_e) {
-      /* localStorage may be unavailable or full — silently ignore. */
+      /* localStorage may be unavailable or full */
     }
   }
 
-  /* Observe the story panel for any update (new command echo, new
-     interpreter response) and persist the session. Debounced so a burst
-     of paragraphs from one response produces a single write. */
   function initSessionRecorder() {
     if (!storyOutput) return;
-    var observer = new MutationObserver(() => {
+    var observer = new MutationObserver(function() {
       if (sessionPersistTimer) clearTimeout(sessionPersistTimer);
       sessionPersistTimer = setTimeout(persistSession, 250);
     });
@@ -977,7 +1135,7 @@
       "-",
     );
     a.href = url;
-    a.download = `mirsend-session-${stamp}.json`;
+    a.download = "mirsend-session-" + stamp + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -992,8 +1150,8 @@
     appendSystemText: appendSystemText,
     setCurrentRoom: setCurrentRoom,
     updateStatus: updateStatus,
-    getState: () => state,
-    setState: (newState) => {
+    getState: function() { return state; },
+    setState: function(newState) {
       if (newState.o2 !== undefined) state.o2 = newState.o2;
       if (newState.morale !== undefined) state.morale = newState.morale;
       if (newState.inventory !== undefined)
@@ -1008,8 +1166,8 @@
     startNewGame: startNewGame,
     exportSession: exportSession,
     downloadSession: downloadSession,
-    showSaveModal: () => showSaveLoadModal("save"),
-    showLoadModal: () => showSaveLoadModal("load"),
+    showSaveModal: function() { showSaveLoadModal("save"); },
+    showLoadModal: function() { showSaveLoadModal("load"); },
     quickSave: quickSave,
     quickLoad: quickLoad,
     continueGame: continueGame,
