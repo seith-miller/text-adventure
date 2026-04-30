@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import {
-  asMirsEnd,
   clearStorage,
   sendCommand,
   startNewGame,
@@ -8,8 +7,8 @@ import {
   waitForStoryText,
 } from "./helpers";
 
-const CANNED_LINE = "The AI channel is dead. Argon-87\u2019s console is dark.";
-const AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
+const _CANNED_LINE = "The AI channel is dead. Argon-87\u2019s console is dark.";
+const _AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
 
 test.describe("ai-feature-flag — flag OFF (default)", () => {
   test.beforeEach(async ({ page }) => {
