@@ -1059,7 +1059,7 @@ Chose-martyr is a truth state that varies. Chose-martyr is false.
 Fuel-choice-made is a truth state that varies. Fuel-choice-made is false.
 D1-counter is a number that varies. D1-counter is 0.
 
-Chapter 2 - D1 Trigger: Prepare Selengrad
+Chapter 2 - D1 Trigger Prepare Selengrad
 
 Preparing selengrad is an action applying to nothing.
 Understand "prepare selengrad" as preparing selengrad.
@@ -1079,7 +1079,7 @@ Check preparing selengrad:
 Report preparing selengrad:
 	say "[bracket]TODO prose: #55[close bracket][paragraph break]Chen's voice crackles through the static. The Selengrad plan requires a decision about fuel allocation. You must choose.[paragraph break]You can SPLIT FUEL between the two stations for a shared burn, or GIVE FUEL — sacrifice Mir-3's reserves entirely so Freedom Station can make the transit alone."
 
-Chapter 3 - D1 Sub-Choice: Split Fuel
+Chapter 3 - D1 Sub-Choice Split Fuel
 
 Splitting fuel is an action applying to nothing.
 Understand "split fuel" as splitting fuel.
@@ -1099,7 +1099,7 @@ Carry out splitting fuel:
 Report splitting fuel:
 	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. Split burn. Both stations commit their reserves. The math is tight but it works. Selengrad or nothing, together."
 
-Chapter 4 - D1 Sub-Choice: Give Fuel (Martyr)
+Chapter 4 - D1 Sub-Choice Give Fuel Martyr
 
 Giving fuel is an action applying to nothing.
 Understand "give fuel" as giving fuel.
@@ -1132,7 +1132,7 @@ Every turn when fuel-choice-made is true:
 			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]Freedom Station's engines fire on Mir-3's fuel. You watch from the cupola as Chen's station pulls away toward the Moon. Your orbit is stable. For now. The oxygen will not last. But they will make it.[paragraph break][italic type]End of the Selengrad arc — E2: Martyr.[roman type]";
 			end the story saying "You gave them the Moon".
 
-Part 8C - De-orbiting (C2 gate stub; full action lands in #43)
+Part 8C - De-orbiting Gate Stub
 
 Deorbiting is an action applying to nothing.
 Understand "deorbit" as deorbiting.
@@ -1152,7 +1152,7 @@ Check deorbiting:
 Report deorbiting:
 	say "The de-orbit sequence is not yet available. The console waits."
 
-Part 8D - Firing the Cannon (C3 gate stub; full action lands via m14)
+Part 8D - Firing the Cannon Gate Stub
 
 Firing the cannon is an action applying to nothing.
 Understand "fire cannon" as firing the cannon.
