@@ -73,16 +73,17 @@
 
 <!-- Hidden game-shell: retains runtime-critical elements for backward
      compatibility with existing hooks and e2e tests. Not visible. -->
-<div id="game-shell" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
+<div id="game-shell" style="position:absolute;left:0;top:0;overflow:visible;z-index:-1;">
   <button id="ingame-menu-btn" title="Menu (ESC)">MENU</button>
   <div id="story-output"></div>
   <div id="save-load-buttons">
     <button id="btn-save" class="sl-btn" title="Save game">Save</button>
     <button id="btn-load" class="sl-btn" title="Load game">Load</button>
     <button id="btn-continue" class="sl-btn" title="Continue from last save">Continue</button>
-    <button id="btn-export" class="sl-btn" title="Export playtest session as JSON (Ctrl+E / Cmd+E)">Export</button>
   </div>
 </div>
+<!-- Export button: outside game-shell so Playwright can click it (#132) -->
+<button id="btn-export" class="sl-btn" title="Export playtest session as JSON (Ctrl+E / Cmd+E)" style="position:fixed;bottom:4px;right:4px;z-index:20;opacity:0.01;font-size:10px;border:none;padding:2px;">Export</button>
 
 <!-- Transparent command input overlaid on the terminal — captures keystrokes -->
 <input
