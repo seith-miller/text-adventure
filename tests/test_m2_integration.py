@@ -132,11 +132,11 @@ class TestStatusVariables:
         assert "o2: 100" in ui_js
 
     def test_inventory_tracked_in_both(self, story_source, ui_js):
-        """Inventory is displayed in both Inform 7 status and UI panel."""
+        """Inventory is displayed in both Inform 7 status and UI sidebar."""
         assert "inventory" in ui_js.lower()
-        assert 'id="inventory-list"' in open(
-            os.path.join(GAME_DIR, "play.html")
-        ).read()
+        # Post-#132: inventory is rendered in the pre-based sidebar via
+        # buildSidebar(), not a separate #inventory-list DOM element.
+        assert "INVENTORY" in ui_js
 
     def test_status_bar_in_inform7(self, story_source):
         """Inform 7 source emits MIRSEND status with oxygen + morale for the UI."""

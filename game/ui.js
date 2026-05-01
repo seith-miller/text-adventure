@@ -12,11 +12,11 @@
 
 (() => {
   /* ── Grid constants (docs/ui-design.md) ── */
-  var TOTAL_W   = 80;
-  var STORY_W   = 48;
-  var SIDE_W    = 25;
-  var HEADER_W  = 76;   // inside outer borders + 1-char pad each side
-  var BODY_ROWS = 19;   // story/sidebar row count
+  var TOTAL_W = 80;
+  var STORY_W = 48;
+  var SIDE_W = 25;
+  var HEADER_W = 76; // inside outer borders + 1-char pad each side
+  var BODY_ROWS = 19; // story/sidebar row count
 
   /* ── Room-to-asset mapping ── */
   var ROOM_ART = {
@@ -67,37 +67,34 @@
   var _saveLoadModalOpen = false;
 
   /* ── DOM references ── */
-  var storyOutput;    // hidden #story-output (for session recording + e2e)
+  var storyOutput; // hidden #story-output (for session recording + e2e)
   var commandInput;
   var titleScreen;
   var menuContinueBtn;
   var ingameMenuBtn;
-  var displayPre;     // the visible <pre id="display">
+  var displayPre; // the visible <pre id="display">
 
   /* ── ASCII art cache ── */
   var artCache = {};
 
   /* ── Story lines buffer (word-wrapped at STORY_W chars) ── */
   var storyLines = [];
-  var storyScrollOffset = 0;
+  var _storyScrollOffset = 0;
 
   /* ── Current input text (for rendering the input line in the grid) ── */
   var currentInputText = "";
 
   /* ── Text helper functions (from v3-textmode mockup) ── */
   function visLen(s) {
-    return s
-      .replace(/<[^>]+>/g, '')
-      .replace(/&[a-zA-Z0-9#]+;/g, 'X')
-      .length;
+    return s.replace(/<[^>]+>/g, "").replace(/&[a-zA-Z0-9#]+;/g, "X").length;
   }
   function pad(s, w) {
     var n = w - visLen(s);
-    return n > 0 ? s + ' '.repeat(n) : s;
+    return n > 0 ? s + " ".repeat(n) : s;
   }
   function cells(left, right, w) {
     var fill = w - visLen(left) - visLen(right);
-    return left + ' '.repeat(Math.max(0, fill)) + right;
+    return left + " ".repeat(Math.max(0, fill)) + right;
   }
 
   /**
@@ -105,10 +102,7 @@
    * Leaves our custom inline tags (<hd>, <bri>, etc.) intact.
    */
   function escHtml(s) {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   /**
@@ -117,17 +111,17 @@
    */
   function wordWrap(text, width) {
     var result = [];
-    var paragraphs = text.split('\n');
-    for (var p = 0; p < paragraphs.length; p++) {
-      var para = paragraphs[p];
+    var paragraphs = text.split("\n");
+    for (let p = 0; p < paragraphs.length; p++) {
+      const para = paragraphs[p];
       if (para.length === 0) {
-        result.push('');
+        result.push("");
         continue;
       }
-      var words = para.split(/(\s+)/);
-      var line = '';
-      for (var i = 0; i < words.length; i++) {
-        var word = words[i];
+      const words = para.split(/(\s+)/);
+      let line = "";
+      for (let i = 0; i < words.length; i++) {
+        let word = words[i];
         if (line.length + word.length <= width) {
           line += word;
         } else if (line.length === 0) {
@@ -138,12 +132,12 @@
           }
           line = word;
         } else {
-          result.push(line.replace(/\s+$/, ''));
-          line = word.replace(/^\s+/, '');
+          result.push(line.replace(/\s+$/, ""));
+          line = word.replace(/^\s+/, "");
         }
       }
       if (line.length > 0) {
-        result.push(line.replace(/\s+$/, ''));
+        result.push(line.replace(/\s+$/, ""));
       }
     }
     return result;
@@ -153,51 +147,63 @@
   function buildSidebar() {
     var rows = [];
 
-    rows.push('<hd>VITALS / СОСТОЯНИЕ</hd>');
-    rows.push('');
+    rows.push("<hd>VITALS / СОСТОЯНИЕ</hd>");
+    rows.push("");
 
     // O2
     var o2Pct = Math.max(0, Math.min(100, state.o2));
-    var o2Str = o2Pct + '%';
-    var o2Tag = o2Pct > 50 ? 'bri' : (o2Pct > 25 ? 'amb' : 'red');
-    rows.push(cells('O2 LEVEL', '<' + o2Tag + '>' + o2Str + '</' + o2Tag + '>', SIDE_W));
-    var o2Lit = Math.round(o2Pct / 100 * SIDE_W);
-    var o2Bar = '<bri>' + '\u2588'.repeat(o2Lit) + '</bri>' +
-                '<dim>' + '\u2591'.repeat(SIDE_W - o2Lit) + '</dim>';
+    var o2Str = `${o2Pct}%`;
+    var o2Tag = o2Pct > 50 ? "bri" : o2Pct > 25 ? "amb" : "red";
+    rows.push(cells("O2 LEVEL", `<${o2Tag}>${o2Str}</${o2Tag}>`, SIDE_W));
+    var o2Lit = Math.round((o2Pct / 100) * SIDE_W);
+    var o2Bar =
+      "<bri>" +
+      "\u2588".repeat(o2Lit) +
+      "</bri>" +
+      "<dim>" +
+      "\u2591".repeat(SIDE_W - o2Lit) +
+      "</dim>";
     rows.push(o2Bar);
 
     // Morale
     var moralePct = Math.max(0, Math.min(100, state.morale));
-    var moraleStr = moralePct + '%';
-    var moraleTag = moralePct > 50 ? 'bri' : (moralePct > 25 ? 'amb' : 'red');
-    rows.push(cells('MORALE', '<' + moraleTag + '>' + moraleStr + '</' + moraleTag + '>', SIDE_W));
-    var moraleLit = Math.round(moralePct / 100 * SIDE_W);
-    var moraleBar = '<bri>' + '\u2588'.repeat(moraleLit) + '</bri>' +
-                    '<dim>' + '\u2591'.repeat(SIDE_W - moraleLit) + '</dim>';
+    var moraleStr = `${moralePct}%`;
+    var moraleTag = moralePct > 50 ? "bri" : moralePct > 25 ? "amb" : "red";
+    rows.push(
+      cells("MORALE", `<${moraleTag}>${moraleStr}</${moraleTag}>`, SIDE_W),
+    );
+    var moraleLit = Math.round((moralePct / 100) * SIDE_W);
+    var moraleBar =
+      "<bri>" +
+      "\u2588".repeat(moraleLit) +
+      "</bri>" +
+      "<dim>" +
+      "\u2591".repeat(SIDE_W - moraleLit) +
+      "</dim>";
     rows.push(moraleBar);
 
-    rows.push('');
-    rows.push('<hd>SYSTEMS / СИСТЕМЫ</hd>');
-    rows.push('');
+    rows.push("");
+    rows.push("<hd>SYSTEMS / СИСТЕМЫ</hd>");
+    rows.push("");
 
     // System status lamps (static for now — wiring is #133)
-    rows.push('<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE');
-    rows.push('<amb>\u2588</amb> COMM             <off>\u2588</off> NAV');
-    rows.push('<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK');
+    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
+    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
+    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
 
-    rows.push('');
-    rows.push('<hd>INVENTORY / ИНВЕНТАРЬ</hd>');
-    rows.push('');
+    rows.push("");
+    rows.push("<hd>INVENTORY / ИНВЕНТАРЬ</hd>");
+    rows.push("");
 
     if (state.inventory.length === 0) {
-      rows.push('<dim>(Nothing carried)</dim>');
+      rows.push("<dim>(Nothing carried)</dim>");
     } else {
-      for (var i = 0; i < state.inventory.length; i++) {
-        var item = state.inventory[i];
+      for (let i = 0; i < state.inventory.length; i++) {
+        let item = state.inventory[i];
         if (item.length > SIDE_W - 2) {
           item = item.substring(0, SIDE_W - 2);
         }
-        rows.push('> ' + item);
+        rows.push(`> ${item}`);
       }
     }
 
@@ -210,8 +216,8 @@
     var totalLines = storyLines.length;
     var start = Math.max(0, totalLines - BODY_ROWS);
     var rows = [];
-    for (var i = start; i < start + BODY_ROWS; i++) {
-      rows.push(i < totalLines ? storyLines[i] : '');
+    for (let i = start; i < start + BODY_ROWS; i++) {
+      rows.push(i < totalLines ? storyLines[i] : "");
     }
     return rows;
   }
@@ -223,42 +229,68 @@
     var sideCol = buildSidebar();
 
     // Top border
-    out.push('\u2554' + '\u2550'.repeat(TOTAL_W - 2) + '\u2557');
+    out.push(`\u2554${"\u2550".repeat(TOTAL_W - 2)}\u2557`);
 
     // Header line
     var roomLabel = state.currentRoom
       ? escHtml(state.currentRoom.toUpperCase())
-      : 'TERM-04';
+      : "TERM-04";
     var header =
-      'SYS <bri>\u041C\u0418\u0420-2/' + roomLabel + '</bri>   ' +
-      'O2 <bri>' + state.o2 + '%</bri>   ' +
-      'MRL <bri>' + state.morale + '%</bri>   ' +
-      'INV <bri>' + state.inventory.length + '</bri>';
-    out.push('\u2551 ' + pad(header, HEADER_W) + ' \u2551');
+      "SYS <bri>\u041C\u0418\u0420-2/" +
+      roomLabel +
+      "</bri>   " +
+      "O2 <bri>" +
+      state.o2 +
+      "%</bri>   " +
+      "MRL <bri>" +
+      state.morale +
+      "%</bri>   " +
+      "INV <bri>" +
+      state.inventory.length +
+      "</bri>";
+    out.push(`\u2551 ${pad(header, HEADER_W)} \u2551`);
 
     // Separator under header
-    out.push('\u2560' + '\u2550'.repeat(STORY_W + 2) + '\u2564' + '\u2550'.repeat(SIDE_W + 2) + '\u2563');
+    out.push(
+      "\u2560" +
+        "\u2550".repeat(STORY_W + 2) +
+        "\u2564" +
+        "\u2550".repeat(SIDE_W + 2) +
+        "\u2563",
+    );
 
     // Body rows
     var bodyRows = Math.max(storyCol.length, sideCol.length, BODY_ROWS);
-    for (var i = 0; i < bodyRows; i++) {
-      var left  = storyCol[i] || '';
-      var right = sideCol[i]  || '';
-      out.push('\u2551 ' + pad(escHtml(left), STORY_W) + ' \u2502 ' + pad(right, SIDE_W) + ' \u2551');
+    for (let i = 0; i < bodyRows; i++) {
+      const left = storyCol[i] || "";
+      const right = sideCol[i] || "";
+      out.push(
+        "\u2551 " +
+          pad(escHtml(left), STORY_W) +
+          " \u2502 " +
+          pad(right, SIDE_W) +
+          " \u2551",
+      );
     }
 
     // Separator above input
-    out.push('\u2560' + '\u2550'.repeat(STORY_W + 2) + '\u2567' + '\u2550'.repeat(SIDE_W + 2) + '\u2563');
+    out.push(
+      "\u2560" +
+        "\u2550".repeat(STORY_W + 2) +
+        "\u2567" +
+        "\u2550".repeat(SIDE_W + 2) +
+        "\u2563",
+    );
 
     // Input line
     var inputText = escHtml(currentInputText);
-    var inputLine = '<bri>&gt;</bri> ' + inputText + '<cur>\u2588</cur>';
-    out.push('\u2551 ' + pad(inputLine, HEADER_W) + ' \u2551');
+    var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
+    out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
 
     // Bottom border
-    out.push('\u255A' + '\u2550'.repeat(TOTAL_W - 2) + '\u255D');
+    out.push(`\u255A${"\u2550".repeat(TOTAL_W - 2)}\u255D`);
 
-    return out.join('\n');
+    return out.join("\n");
   }
 
   /* ── Render the display ── */
@@ -271,36 +303,40 @@
   /* ── Auto-scale <pre> to fill screen ── */
   function fitDisplay() {
     if (!displayPre) return;
-    var screen = document.getElementById('screen');
+    var screen = document.getElementById("screen");
     if (!screen) return;
-    displayPre.style.fontSize = '10px';
+    displayPre.style.fontSize = "10px";
     var rect = displayPre.getBoundingClientRect();
-    var cw = screen.clientWidth  - 32;
+    var cw = screen.clientWidth - 32;
     var ch = screen.clientHeight - 24;
     var scaleW = cw / rect.width;
     var scaleH = ch / rect.height;
     var scale = Math.min(scaleW, scaleH);
-    displayPre.style.fontSize = (10 * scale) + 'px';
+    displayPre.style.fontSize = `${10 * scale}px`;
   }
 
   /* ── Sweeping scanline animation ── */
   function initScanline() {
-    var bar = document.getElementById('scan-line');
-    var screen = document.getElementById('screen');
+    var bar = document.getElementById("scan-line");
+    var screen = document.getElementById("screen");
     if (!bar || !screen) return;
-    function rand(a, b) { return a + Math.random() * (b - a); }
+    function rand(a, b) {
+      return a + Math.random() * (b - a);
+    }
     function sweep() {
       var h = screen.clientHeight;
       var dur = rand(900, 4200);
       var op = rand(0.35, 1.0);
-      bar.style.transition = 'none';
-      bar.style.transform = 'translateY(-12px)';
-      bar.style.opacity = '0';
+      bar.style.transition = "none";
+      bar.style.transform = "translateY(-12px)";
+      bar.style.opacity = "0";
       bar.offsetHeight;
-      bar.style.transition = 'transform ' + dur + 'ms linear, opacity 200ms ease-in';
+      bar.style.transition = `transform ${dur}ms linear, opacity 200ms ease-in`;
       bar.style.opacity = String(op);
-      bar.style.transform = 'translateY(' + (h + 8) + 'px)';
-      setTimeout(function() { bar.style.opacity = '0'; }, dur - 180);
+      bar.style.transform = `translateY(${h + 8}px)`;
+      setTimeout(() => {
+        bar.style.opacity = "0";
+      }, dur - 180);
       var gap = Math.random() < 0.25 ? rand(150, 600) : rand(2500, 9000);
       setTimeout(sweep, dur + gap);
     }
@@ -379,7 +415,7 @@
     renderDisplay();
 
     /* Start animations */
-    window.addEventListener('resize', fitDisplay);
+    window.addEventListener("resize", fitDisplay);
     initScanline();
 
     /* Show title screen on launch */
@@ -720,10 +756,10 @@
 
     /* Add to visible story column */
     var wrapped = wordWrap(text, STORY_W);
-    for (var i = 0; i < wrapped.length; i++) {
+    for (let i = 0; i < wrapped.length; i++) {
       storyLines.push(wrapped[i]);
     }
-    storyLines.push(''); // blank line between paragraphs
+    storyLines.push(""); // blank line between paragraphs
 
     scrollToBottom();
     detectRoomChange(text);
@@ -845,7 +881,7 @@
     storyOutput.appendChild(span);
 
     /* Visible story column — show as echoed command */
-    storyLines.push('> ' + text);
+    storyLines.push(`> ${text}`);
 
     scrollToBottom();
   }
@@ -859,7 +895,7 @@
 
     /* Visible story column */
     var wrapped = wordWrap(text, STORY_W);
-    for (var i = 0; i < wrapped.length; i++) {
+    for (let i = 0; i < wrapped.length; i++) {
       storyLines.push(wrapped[i]);
     }
 

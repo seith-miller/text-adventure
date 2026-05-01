@@ -835,11 +835,14 @@ class TestCrossComponentIntegration:
     def test_no_orphan_dom_references(self):
         """All DOM IDs referenced in JS exist in HTML."""
         html = _read("play.html")
+        # Post-#132: scene-art, status-o2, status-morale, inventory-list
+        # are no longer separate DOM elements — they are rendered in the
+        # <pre id="display"> grid by compose(). The remaining IDs are
+        # still present in play.html (some hidden for runtime compat).
         critical_ids = [
             "title-screen", "menu-new-game", "menu-continue",
-            "ingame-menu-btn", "story-output", "scene-art",
-            "command-input", "status-o2", "status-morale",
-            "inventory-list", "game-shell",
+            "ingame-menu-btn", "story-output",
+            "command-input", "game-shell",
             "btn-save", "btn-load", "btn-continue",
         ]
         for dom_id in critical_ids:
