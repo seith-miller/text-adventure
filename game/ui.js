@@ -36,6 +36,9 @@
   /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
 
+  /* ── Command history persistence key ── */
+  var HISTORY_KEY = "mirsend_cmd_history";
+
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
 
@@ -109,6 +112,9 @@
     });
 
     updateStatus();
+
+    /* Restore command history from previous sessions */
+    restoreHistory();
 
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
@@ -273,6 +279,30 @@
     }
   }
 
+  /* ── Command history persistence ── */
+  function persistHistory() {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.commandHistory));
+    } catch (_e) {
+      /* localStorage may be unavailable */
+    }
+  }
+
+  function restoreHistory() {
+    try {
+      var raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          state.commandHistory = parsed;
+          state.historyIndex = parsed.length;
+        }
+      }
+    } catch (_e) {
+      /* localStorage may be unavailable or corrupted */
+    }
+  }
+
   /* ── Command history & input handling ── */
   function handleKeyDown(e) {
     if (e.key === "Enter") {
@@ -282,6 +312,7 @@
       state.commandHistory.push(cmd);
       state.historyIndex = state.commandHistory.length;
       commandInput.value = "";
+      persistHistory();
 
       appendPlayerInput(cmd);
       sendToInterpreter(cmd);
@@ -340,7 +371,7 @@
 
   function appendPlayerInput(text) {
     var span = document.createElement("span");
-    span.className = "player-input";
+    span.className = "player-input echo";
     span.textContent = `> ${text}\n`;
     storyOutput.appendChild(span);
     scrollToBottom();

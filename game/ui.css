@@ -17,6 +17,8 @@
   --status-yellow: #ffc107;
   --status-red: #ff5252;
   --title-color: #8ab4f8;
+  --phosphor-bright: #7fff7f;
+  --phosphor-glow: rgba(127, 255, 127, 0.35);
 }
 
 * {
@@ -82,8 +84,9 @@ html, body {
 }
 
 #story-output .player-input {
-  color: var(--text-input);
-  font-weight: bold;
+  color: var(--text-dim);
+  font-weight: normal;
+  font-style: italic;
 }
 
 #story-output .system-text {
@@ -243,11 +246,11 @@ html, body {
   font-style: italic;
 }
 
-/* ── Input bar (bottom) ── */
+/* ── Input bar (bottom row of box-drawing frame) ── */
 #input-bar {
   grid-row: 2 / 3;
   grid-column: 1 / -1;
-  background: var(--bg-input);
+  background: var(--bg-panel);
   display: flex;
   align-items: center;
   padding: 0.5em 1em;
@@ -267,15 +270,34 @@ html, body {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-input);
+  color: var(--phosphor-bright);
   font-family: "Courier New", Courier, monospace;
   font-size: 15px;
-  caret-color: var(--accent-cyan);
+  caret-color: transparent;
+  text-shadow: 0 0 4px var(--phosphor-glow);
 }
 
 #command-input::placeholder {
   color: var(--text-dim);
   opacity: 0.5;
+  text-shadow: none;
+}
+
+/* Blinking block cursor rendered via sibling element */
+#input-cursor {
+  color: var(--phosphor-bright);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 15px;
+  line-height: 1;
+  animation: blink-cursor 1s step-end infinite;
+  pointer-events: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 /* ── Location name display in story ── */
