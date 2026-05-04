@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import {
-  asMirsEnd,
   clearStorage,
   sendCommand,
   startNewGame,
@@ -65,7 +64,9 @@ test.describe("phosphor-renderer", () => {
       .innerHTML()
       .then((t) => t ?? "");
     /* The sidebar should contain Cyrillic text for vitals header */
-    expect(displayHtml).toContain("\u0421\u041E\u0421\u0422\u041E\u042F\u041D\u0418\u0415"); // СОСТОЯНИЕ
+    expect(displayHtml).toContain(
+      "\u0421\u041E\u0421\u0422\u041E\u042F\u041D\u0418\u0415",
+    ); // СОСТОЯНИЕ
     /* The sidebar should contain O2 LEVEL */
     const displayText = await page
       .locator("#display")

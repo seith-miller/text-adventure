@@ -40,10 +40,14 @@
 
   /* ── Cyrillic shadow labels for room titles ── */
   var ROOM_CYRILLIC = {
-    "Crew Quarters": "\u0416\u0418\u041B\u041E\u0419 \u041C\u041E\u0414\u0423\u041B\u042C",
-    "Main Corridor": "\u0413\u041B\u0410\u0412\u041D\u042B\u0419 \u041A\u041E\u0420\u0418\u0414\u041E\u0420",
-    "Command Module": "\u041A\u041E\u041C\u0410\u041D\u0414\u041D\u042B\u0419 \u041C\u041E\u0414\u0423\u041B\u042C",
-    "Observation Cupola": "\u041E\u0411\u0417\u041E\u0420\u041D\u042B\u0419 \u041A\u0423\u041F\u041E\u041B",
+    "Crew Quarters":
+      "\u0416\u0418\u041B\u041E\u0419 \u041C\u041E\u0414\u0423\u041B\u042C",
+    "Main Corridor":
+      "\u0413\u041B\u0410\u0412\u041D\u042B\u0419 \u041A\u041E\u0420\u0418\u0414\u041E\u0420",
+    "Command Module":
+      "\u041A\u041E\u041C\u0410\u041D\u0414\u041D\u042B\u0419 \u041C\u041E\u0414\u0423\u041B\u042C",
+    "Observation Cupola":
+      "\u041E\u0411\u0417\u041E\u0420\u041D\u042B\u0419 \u041A\u0423\u041F\u041E\u041B",
   };
 
   /* ── State ── */
@@ -146,7 +150,9 @@
   function buildSidebar() {
     var rows = [];
 
-    rows.push("<hd>VITALS / \u0421\u041E\u0421\u0422\u041E\u042F\u041D\u0418\u0415</hd>");
+    rows.push(
+      "<hd>VITALS / \u0421\u041E\u0421\u0422\u041E\u042F\u041D\u0418\u0415</hd>",
+    );
     rows.push("");
 
     // O2
@@ -191,7 +197,9 @@
     rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
 
     rows.push("");
-    rows.push("<hd>INVENTORY / \u0418\u041D\u0412\u0415\u041D\u0422\u0410\u0420\u042C</hd>");
+    rows.push(
+      "<hd>INVENTORY / \u0418\u041D\u0412\u0415\u041D\u0422\u0410\u0420\u042C</hd>",
+    );
     rows.push("");
 
     if (state.inventory.length === 0) {
@@ -284,12 +292,6 @@
     var inputText = escHtml(currentInputText);
     var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
     out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
-
-    // Scroll indicator
-    var scrollInfo = "";
-    if (_storyScrollOffset > 0) {
-      scrollInfo = "<dim>[SCROLL \u2191 PgUp/PgDn]</dim>";
-    }
 
     // Bottom border
     out.push(`\u255A${"\u2550".repeat(TOTAL_W - 2)}\u255D`);
@@ -426,10 +428,14 @@
     /* Mouse wheel scrolling on the terminal screen */
     var screenEl = document.getElementById("screen");
     if (screenEl) {
-      screenEl.addEventListener("wheel", (e) => {
-        e.preventDefault();
-        handleScroll(e.deltaY > 0 ? 1 : -1);
-      }, { passive: false });
+      screenEl.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          handleScroll(e.deltaY > 0 ? 1 : -1);
+        },
+        { passive: false },
+      );
     }
 
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
@@ -690,14 +696,14 @@
 
     /* Detect room names and inject Cyrillic shadow labels */
     for (let i = 0; i < wrapped.length; i++) {
-      var line = wrapped[i];
-      storyLines.push(line);
+      const wLine = wrapped[i];
+      storyLines.push(wLine);
 
       /* Check if this line is a room title */
       for (let r = 0; r < KNOWN_ROOMS.length; r++) {
-        var room = KNOWN_ROOMS[r];
-        if (line.trim() === room && ROOM_CYRILLIC[room]) {
-          storyLines.push(ROOM_CYRILLIC[room]);
+        const rName = KNOWN_ROOMS[r];
+        if (wLine.trim() === rName && ROOM_CYRILLIC[rName]) {
+          storyLines.push(ROOM_CYRILLIC[rName]);
           break;
         }
       }

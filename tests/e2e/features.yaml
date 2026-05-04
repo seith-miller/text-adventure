@@ -68,3 +68,27 @@
     history, and final state. Clicking Export (or Ctrl/Cmd+E) downloads
     the session as JSON, which can be shared for post-playtest review.
   surfaces: [dom, storage, state]
+
+- id: phosphor-renderer
+  area: ui
+  demonstrates: >
+    Glulx story text is rendered into an 80-column phosphor terminal
+    with word wrap at 48 chars, player input echoed in dim phosphor,
+    Cyrillic shadow labels on room titles, auto-scroll to bottom with
+    scroll pinning, and a sidebar showing vitals and inventory.
+  surfaces: [dom, state]
+
+- id: map-command
+  area: gameplay
+  demonstrates: >
+    The MAP command prints a schematic of the station layout. Gated
+    areas (Armament Bay, Reactor) require specific items or conditions.
+  surfaces: [dom, interpreter]
+
+- id: ship-state-integration
+  area: gameplay
+  demonstrates: >
+    The ship-state simulation correctly tracks orbit, systems, and
+    crew state across turns. Power restore, cannon fire, and orbit
+    cycling produce expected state transitions.
+  surfaces: [dom, state]
