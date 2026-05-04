@@ -1,4 +1,4 @@
-"""Tests for the title screen and menu system (issue #14)."""
+"""Tests for the title screen and menu system (issue #14, updated for #132)."""
 
 import os
 import re
@@ -49,8 +49,6 @@ class TestTitleScreenHTML:
 
     def test_continue_button_disabled_by_default(self):
         html = _read("play.html")
-        # The continue button should have the disabled attribute in HTML
-        # Find the continue button element and check for disabled
         match = re.search(r'<button[^>]*id="menu-continue"[^>]*>', html)
         assert match, "Continue button not found"
         assert "disabled" in match.group(0), (
@@ -85,13 +83,13 @@ class TestTitleScreenHTML:
         html = _read("play.html")
         assert 'id="ingame-menu-btn"' in html, "Missing in-game menu button"
 
-    def test_title_screen_before_game_shell(self):
-        """Title screen overlay appears before the game shell in DOM order."""
+    def test_title_screen_before_terminal(self):
+        """Title screen overlay appears before the terminal in DOM order."""
         html = _read("play.html")
         title_pos = html.find('id="title-screen"')
-        shell_pos = html.find('id="game-shell"')
-        assert title_pos < shell_pos, (
-            "Title screen should appear before game shell in DOM"
+        terminal_pos = html.find('id="terminal"')
+        assert title_pos < terminal_pos, (
+            "Title screen should appear before terminal in DOM"
         )
 
 
@@ -107,14 +105,12 @@ class TestTitleScreenCSS:
 
     def test_title_screen_uses_fixed_position(self):
         css = _read("ui.css")
-        # Title screen should overlay the game using fixed positioning
         assert "position: fixed" in css or "position:fixed" in css, (
             "Title screen should use fixed positioning"
         )
 
     def test_title_screen_has_z_index(self):
         css = _read("ui.css")
-        # Should have high z-index to overlay everything
         assert "z-index" in css, "Title screen needs z-index for layering"
 
     def test_title_screen_hidden_class(self):
@@ -146,7 +142,6 @@ class TestTitleScreenCSS:
     def test_title_screen_uses_theme_colors(self):
         """Title screen uses existing theme CSS variables."""
         css = _read("ui.css")
-        # Find the title-screen section and verify it uses theme vars
         assert "var(--bg-dark)" in css, "Title screen should use --bg-dark"
         assert "var(--title-color)" in css, "Title should use --title-color"
 
@@ -200,10 +195,8 @@ class TestMenuJavaScript:
     def test_new_game_resets_state(self):
         """startNewGame should reset o2, morale, inventory."""
         js = _read("ui.js")
-        # Find startNewGame function and verify it resets key state
         start_idx = js.find("function startNewGame")
         assert start_idx != -1, "startNewGame function not found"
-        # Check within ~500 chars of the function
         chunk = js[start_idx:start_idx + 600]
         assert "o2" in chunk, "startNewGame should reset o2"
         assert "morale" in chunk, "startNewGame should reset morale"
@@ -243,8 +236,6 @@ class TestMenuJavaScript:
         js = _read("ui.js")
         continue_idx = js.find("function continueGame")
         assert continue_idx != -1, "continueGame function not found"
-        # Widened window: continueGame may delegate to a SaveManager path
-        # before falling back to direct localStorage/JSON.parse.
         chunk = js[continue_idx:continue_idx + 2000]
         assert "localStorage" in chunk or "SAVE_KEY" in chunk, (
             "continueGame should read from localStorage"
@@ -267,7 +258,6 @@ class TestMenuIntegration:
         ids = ["menu-new-game", "menu-continue", "menu-settings", "ingame-menu-btn"]
         for btn_id in ids:
             assert btn_id in html, f"Button #{btn_id} missing from HTML"
-            # menu-settings may not have a JS handler yet (placeholder)
             if btn_id != "menu-settings":
                 assert btn_id in js, f"Button #{btn_id} not referenced in JS"
 
