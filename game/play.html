@@ -12,15 +12,32 @@
 
 <!-- Title screen overlay — shown on launch, before gameplay -->
 <div id="title-screen">
-  <div id="title-screen-content">
-    <h1 id="title-logo">MIR'S END</h1>
-    <div id="title-subtitle">An Interactive Survival Story</div>
-    <nav id="title-menu">
-      <button class="menu-btn" id="menu-new-game">New Game</button>
-      <button class="menu-btn" id="menu-continue" disabled>Continue</button>
-      <button class="menu-btn" id="menu-settings" disabled>Settings</button>
-    </nav>
-    <div id="title-footer">Press ESC during gameplay to return to this menu</div>
+  <div id="title-bezel">
+    <div id="title-phosphor">
+      <div id="title-screen-content">
+        <div id="title-id-plate">
+          <span class="plate-label">СТАНЦИЯ</span>
+          <h1 id="title-logo">MIR'S END</h1>
+          <span class="plate-label">ИНТЕРАКТИВНАЯ ИСТОРИЯ ВЫЖИВАНИЯ</span>
+        </div>
+        <div id="title-subtitle">An Interactive Survival Story</div>
+        <nav id="title-menu">
+          <button class="menu-btn" id="menu-new-game">
+            <span class="btn-label-en">New Game</span>
+            <span class="btn-label-ru">НОВАЯ ИГРА</span>
+          </button>
+          <button class="menu-btn" id="menu-continue" disabled>
+            <span class="btn-label-en">Continue</span>
+            <span class="btn-label-ru">ПРОДОЛЖИТЬ</span>
+          </button>
+          <button class="menu-btn" id="menu-settings" disabled>
+            <span class="btn-label-en">Settings</span>
+            <span class="btn-label-ru">НАСТРОЙКИ</span>
+          </button>
+        </nav>
+        <div id="title-footer">Press ESC during gameplay to return to this menu</div>
+      </div>
+    </div>
   </div>
 </div>
 

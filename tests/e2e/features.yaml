@@ -104,3 +104,14 @@
     swallowed gracefully. Player kind is detected from init scripts,
     query params, or defaults to human.
   surfaces: [dom, state]
+
+- id: title-screen-restyle
+  area: menu
+  demonstrates: >
+    The title screen renders the v3 Soviet terminal visual language: a
+    bezel + phosphor CRT frame around an etched ID plate that names
+    "MIR'S END" in Latin, bilingual menu buttons (NEW GAME / НОВАЯ ИГРА),
+    and phosphor scanlines + vignette matching the in-game sidebar
+    panels. Guards against regressions in the visible structural
+    elements that establish the design language before gameplay starts.
+  surfaces: [dom]
