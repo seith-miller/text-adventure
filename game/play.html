@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="game-version" content="unknown">
   <title>MIR'S END — An Interactive Survival Story</title>
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="intro.css">
@@ -40,79 +41,75 @@
   </div>
 </div>
 
-<div id="game-shell">
+<!-- Soviet terminal bezel — the new visual shell (#132) -->
+<div id="terminal">
+  <span class="screw tl"></span><span class="screw tr"></span>
+  <span class="screw bl"></span><span class="screw br"></span>
 
-  <!-- Menu button — visible during gameplay -->
-  <button id="ingame-menu-btn" title="Menu (ESC)">☰ MENU</button>
-
-  <!-- Left panel: scrollable story text output -->
-  <div id="story-panel">
-    <div id="story-output"></div>
+  <!-- Etched ID plate above the screen -->
+  <div id="bezel-plate">
+    <div class="plate-cell id">
+      <span class="lat">MIR-2 / MIR-2 STATION</span>
+      <span class="cyr">ОРБИТАЛЬНАЯ СТАНЦИЯ</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">CONSOLE 04</span>
+      <span class="cyr">ПУЛЬТ 04</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">OP. KOVAL, A.I.</span>
+      <span class="cyr">ОПЕРАТОР</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">14.03.1991</span>
+      <span class="cyr">ДАТА</span>
+    </div>
   </div>
 
-  <!-- Right sidebar -->
-  <div id="sidebar">
-
-    <!-- Top right: scene illustration -->
-    <div id="scene-panel">
-      <pre id="scene-art">[No signal]</pre>
-    </div>
-
-    <!-- Mid right: title display -->
-    <div id="title-panel">
-      <h1>MIR'S END</h1>
-      <div class="subtitle">An Interactive Survival Story</div>
-      <div id="save-load-buttons">
-        <button id="btn-save" class="sl-btn" title="Save game">Save</button>
-        <button id="btn-load" class="sl-btn" title="Load game">Load</button>
-        <button id="btn-continue" class="sl-btn" title="Continue from last save">Continue</button>
-        <button id="btn-export" class="sl-btn" title="Export playtest session as JSON (Ctrl+E / Cmd+E)">Export</button>
-      </div>
-    </div>
-
-    <!-- Bottom right: status panel -->
-    <div id="status-panel">
-      <h2>Station Status</h2>
-
-      <div class="status-row">
-        <span class="status-label">O2 Level</span>
-        <span id="status-o2" class="status-value good">100%</span>
-      </div>
-      <div id="status-bar-o2">
-        <div class="bar-fill" style="width: 100%; background: var(--status-green);"></div>
-      </div>
-
-      <div class="status-row" style="margin-top: 0.5em;">
-        <span class="status-label">Morale</span>
-        <span id="status-morale" class="status-value good">70%</span>
-      </div>
-      <div id="status-bar-morale">
-        <div class="bar-fill" style="width: 70%; background: var(--status-green);"></div>
-      </div>
-
-      <div id="inventory-section">
-        <h2>Inventory</h2>
-        <ul id="inventory-list">
-          <li class="empty-inventory">Nothing carried</li>
-        </ul>
-      </div>
-    </div>
-
+  <div id="screen">
+    <pre id="display"></pre>
+    <div id="scan-line"></div>
   </div>
 
-  <!-- Bottom: command input -->
-  <div id="input-bar">
-    <span id="input-prompt">&gt;</span>
-    <input
-      type="text"
-      id="command-input"
-      placeholder="Enter command..."
-      autocomplete="off"
-      spellcheck="false"
-    >
+  <div id="bezel-bottom">
+    <div id="power-led">
+      <span class="dot"></span>
+      <span>PWR / ПИТ</span>
+    </div>
+    <div id="vents">
+      <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+      <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+      <span class="slot"></span><span class="slot"></span>
+    </div>
+    <div id="brand">
+      <div class="cyr">ЭЛЕКТРОНИКА</div>
+      <div class="model">МС-0511 · 1989</div>
+    </div>
   </div>
-
 </div>
+
+<!-- Hidden game-shell: retains runtime-critical elements for backward
+     compatibility with existing hooks and e2e tests. Not visible. -->
+<div id="game-shell" style="position:absolute;left:0;top:0;overflow:visible;z-index:-1;">
+  <button id="ingame-menu-btn" title="Menu (ESC)">MENU</button>
+  <div id="story-output"></div>
+  <div id="save-load-buttons">
+    <button id="btn-save" class="sl-btn" title="Save game">Save</button>
+    <button id="btn-load" class="sl-btn" title="Load game">Load</button>
+    <button id="btn-continue" class="sl-btn" title="Continue from last save">Continue</button>
+  </div>
+</div>
+<!-- Export button: outside game-shell so Playwright can click it (#132) -->
+<button id="btn-export" class="sl-btn" title="Export playtest session as JSON (Ctrl+E / Cmd+E)" style="position:fixed;bottom:4px;right:4px;z-index:20;opacity:0.01;font-size:10px;border:none;padding:2px;">Export</button>
+
+<!-- Transparent command input overlaid on the terminal — captures keystrokes -->
+<input
+  type="text"
+  id="command-input"
+  autocomplete="off"
+  spellcheck="false"
+  style="position:fixed;bottom:0;left:0;width:100%;opacity:0;height:1px;border:none;outline:none;z-index:10;"
+>
 
 <!-- Offscreen gameport for Quixe/GlkOte attachment.
      GlkOte measures DOM metrics during init, so display:none breaks it.
@@ -157,6 +154,15 @@
     lib_path: "lib/",
     proxy_url: ""
   };
+
+  // Warm AI feature flag — off by default.
+  // Set to 1 (or "1" / "true") to enable AI-powered Argon-87 conversations.
+  // When enabled, the proxy server at localhost:8787 must be running.
+  // Use window.MIRSEND_AI_ENABLED instead of `var` so that test harnesses
+  // (Playwright's page.addInitScript) can preset it before this script runs.
+  if (typeof window.MIRSEND_AI_ENABLED === "undefined") {
+    window.MIRSEND_AI_ENABLED = 0;
+  }
 </script>
 
 <!-- Quixe interpreter bundle -->
@@ -202,6 +208,7 @@
 
 <!-- Save/Load Manager — must load before UI shell -->
 <script src="save-manager.js"></script>
+<script src="station-ai-runtime.js"></script>
 
 <!-- UI Shell — must load after interpreter scripts -->
 <script src="ui.js"></script>

@@ -264,7 +264,7 @@ def test_play_html_loads_save_manager():
 
 
 def test_play_html_save_load_buttons_container():
-    """Save/load buttons are in a dedicated container."""
+    """Save/load buttons are in a dedicated container (may be hidden)."""
     path = os.path.join(GAME_DIR, "play.html")
     with open(path) as f:
         content = f.read()

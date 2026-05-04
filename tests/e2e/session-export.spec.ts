@@ -30,7 +30,7 @@ test.describe("session-export", () => {
     expect(session.version).toBe(1);
     expect(session.startedAt).toBeTruthy();
     expect(session.commandHistory).toContain("open emergency locker");
-    expect(session.transcript).toMatch(/You wake to/);
+    expect(session.transcript).toMatch(/You were sleeping/);
     expect(session.transcript).toMatch(/revealing a flashlight/i);
     expect(session.finalState.gameStarted).toBe(true);
   });

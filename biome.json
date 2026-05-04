@@ -36,6 +36,7 @@
       "**/*.mjs",
       "**/*.js",
       "!game/lib",
+      "!game/mockups/frames",
       "!node_modules",
       "!test-results",
       "!playwright-report"

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIR'S END — Font Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bezel-paint: #6b7560;
+    --bezel-paint-lit: #8a937c;
+    --bezel-paint-shadow: #3f4639;
+    --screen-bg: #0a1408;
+    --screen-bg-deep: #050a04;
+    --phosphor: #6cf06b;
+    --phosphor-dim: #3a8a39;
+    --phosphor-glow: rgba(108, 240, 107, 0.35);
+    --lamp-amber: #ffb020;
+    --lamp-green: #4dff60;
+    --label-cream: #d8d2bc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #15171a;
+    overflow: hidden;
+  }
+
+  /* Bezel */
+  #terminal {
+    position: absolute;
+    inset: 18px;
+    background:
+      radial-gradient(ellipse at top left, var(--bezel-paint-lit) 0%, var(--bezel-paint) 35%, var(--bezel-paint-shadow) 100%);
+    border-radius: 14px;
+    padding: 14px 16px 36px 16px;
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,0.12),
+      inset 0 -3px 8px rgba(0,0,0,0.45),
+      0 8px 30px rgba(0,0,0,0.7);
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+
+  #terminal::before, #terminal::after {
+    content: '';
+    position: absolute;
+    width: 9px; height: 9px;
+    background: radial-gradient(circle at 35% 35%, #5a5a52 0%, #2a2a24 70%, #0a0a08 100%);
+    border-radius: 50%;
+  }
+  #terminal::before { top: 6px; left: 6px; }
+  #terminal::after  { top: 6px; right: 6px; }
+
+  /* Screen */
+  #screen {
+    position: relative;
+    background: radial-gradient(ellipse at center, var(--screen-bg) 0%, var(--screen-bg-deep) 100%);
+    border: 3px solid #1a1d18;
+    border-radius: 8px;
+    color: var(--phosphor);
+    text-shadow: 0 0 4px var(--phosphor-glow);
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.7),
+      inset 0 0 8px rgba(108, 240, 107, 0.12);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Static scanlines + vignette */
+  #screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0) 4px);
+    pointer-events: none;
+    z-index: 5;
+  }
+  #screen::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* Top header */
+  .screen-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--phosphor-dim);
+    padding-bottom: 4px;
+    color: var(--phosphor-dim);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+  .screen-header b { color: var(--phosphor); font-weight: normal; }
+
+  /* Each font panel */
+  .font-panel {
+    border: 1px solid var(--phosphor-dim);
+    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .font-meta {
+    border-right: 1px dashed var(--phosphor-dim);
+    padding-right: 10px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    line-height: 1.2;
+    color: var(--phosphor-dim);
+  }
+  .font-meta .name { color: var(--phosphor); font-size: 18px; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .font-meta .tag { display: block; color: var(--phosphor-dim); font-size: 13px; opacity: 0.8; }
+
+  .font-sample .title {
+    color: var(--phosphor);
+    font-size: 28px;
+    letter-spacing: 4px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .font-sample .sub {
+    color: var(--phosphor-dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .font-sample .body {
+    color: var(--phosphor);
+    font-size: 16px;
+    line-height: 1.35;
+  }
+  .font-sample .echo { color: var(--phosphor-dim); }
+  .font-sample .echo::before { content: '> '; }
+
+  .font-sample .status {
+    margin-top: 6px;
+    display: flex;
+    gap: 18px;
+    font-size: 14px;
+    color: var(--phosphor-dim);
+  }
+  .font-sample .status b { color: var(--phosphor); font-weight: normal; }
+  .lamp { color: var(--lamp-green); text-shadow: 0 0 6px currentColor; }
+  .lamp.amber { color: var(--lamp-amber); }
+
+  /* Per-font font-family overrides */
+  .f-vt323     .font-sample { font-family: 'VT323', monospace; }
+  .f-vt323     .font-sample .title { font-size: 36px; }
+
+  .f-share     .font-sample { font-family: 'Share Tech Mono', monospace; }
+  .f-space     .font-sample { font-family: 'Space Mono', monospace; }
+  .f-jetbrains .font-sample { font-family: 'JetBrains Mono', monospace; }
+  .f-plex      .font-sample { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Sweeping scanline */
+  #scan-line {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 6px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(108, 240, 107, 0.05) 20%,
+      rgba(108, 240, 107, 0.35) 50%,
+      rgba(108, 240, 107, 0.05) 80%,
+      transparent 100%);
+    box-shadow: 0 0 8px rgba(108, 240, 107, 0.4);
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+</style>
+</head>
+<body>
+
+<div id="terminal">
+  <div id="screen">
+
+    <div class="screen-header">
+      <span>SYS <b>МИР-2 / TERM-04</b></span>
+      <span>FONT COMPARISON SHEET</span>
+      <span>14.03.1991 · <b>04:17 МСК</b></span>
+    </div>
+
+    <!-- VT323 -->
+    <div class="font-panel f-vt323">
+      <div class="font-meta">
+        <span class="name">VT323</span>
+        <span class="tag">pixel CRT</span>
+        <span class="tag">peak retro</span>
+      </div>
+      <div class="font-sample">
+        <div class="title">MIR'S END</div>
+        <div class="sub">КОМАНДНЫЙ МОДУЛЬ</div>
+        <div class="body">Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange. Three lamps dark, one amber. <span class="echo">examine logbook</span></div>
+        <div class="status"><span><span class="lamp">■</span> O2 <b>94%</b></span><span><span class="lamp amber">■</span> COMM <b>DEGRADED</b></span><span>UPT <b>003:14:22</b></span></div>
+      </div>
+    </div>
+
+    <!-- Share Tech Mono -->
+    <div class="font-panel f-share">
+      <div class="font-meta">
+        <span class="name">Share Tech Mono</span>
+        <span class="tag">sci-fi mono</span>
+        <span class="tag">clean console</span>
+      </div>
+      <div class="font-sample">
+        <div class="title">MIR'S END</div>
+        <div class="sub">КОМАНДНЫЙ МОДУЛЬ</div>
+        <div class="body">Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange. Three lamps dark, one amber. <span class="echo">examine logbook</span></div>
+        <div class="status"><span><span class="lamp">■</span> O2 <b>94%</b></span><span><span class="lamp amber">■</span> COMM <b>DEGRADED</b></span><span>UPT <b>003:14:22</b></span></div>
+      </div>
+    </div>
+
+    <!-- Space Mono -->
+    <div class="font-panel f-space">
+      <div class="font-meta">
+        <span class="name">Space Mono</span>
+        <span class="tag">retro-future</span>
+        <span class="tag">distinctive zeros</span>
+      </div>
+      <div class="font-sample">
+        <div class="title">MIR'S END</div>
+        <div class="sub">КОМАНДНЫЙ МОДУЛЬ</div>
+        <div class="body">Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange. Three lamps dark, one amber. <span class="echo">examine logbook</span></div>
+        <div class="status"><span><span class="lamp">■</span> O2 <b>94%</b></span><span><span class="lamp amber">■</span> COMM <b>DEGRADED</b></span><span>UPT <b>003:14:22</b></span></div>
+      </div>
+    </div>
+
+    <!-- JetBrains Mono -->
+    <div class="font-panel f-jetbrains">
+      <div class="font-meta">
+        <span class="name">JetBrains Mono</span>
+        <span class="tag">modern dev</span>
+        <span class="tag">excellent Cyrillic</span>
+      </div>
+      <div class="font-sample">
+        <div class="title">MIR'S END</div>
+        <div class="sub">КОМАНДНЫЙ МОДУЛЬ</div>
+        <div class="body">Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange. Three lamps dark, one amber. <span class="echo">examine logbook</span></div>
+        <div class="status"><span><span class="lamp">■</span> O2 <b>94%</b></span><span><span class="lamp amber">■</span> COMM <b>DEGRADED</b></span><span>UPT <b>003:14:22</b></span></div>
+      </div>
+    </div>
+
+    <!-- IBM Plex Mono -->
+    <div class="font-panel f-plex">
+      <div class="font-meta">
+        <span class="name">IBM Plex Mono</span>
+        <span class="tag">corporate</span>
+        <span class="tag">very legible</span>
+      </div>
+      <div class="font-sample">
+        <div class="title">MIR'S END</div>
+        <div class="sub">КОМАНДНЫЙ МОДУЛЬ</div>
+        <div class="body">Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange. Three lamps dark, one amber. <span class="echo">examine logbook</span></div>
+        <div class="status"><span><span class="lamp">■</span> O2 <b>94%</b></span><span><span class="lamp amber">■</span> COMM <b>DEGRADED</b></span><span>UPT <b>003:14:22</b></span></div>
+      </div>
+    </div>
+
+    <div id="scan-line"></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const bar = document.getElementById('scan-line');
+    const screen = document.getElementById('screen');
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function sweep() {
+      const h = screen.clientHeight;
+      const dur = rand(900, 4200);
+      const op = rand(0.35, 1.0);
+      bar.style.transition = 'none';
+      bar.style.transform = `translateY(-12px)`;
+      bar.style.opacity = '0';
+      bar.offsetHeight;
+      bar.style.transition = `transform ${dur}ms linear, opacity 200ms ease-in`;
+      bar.style.opacity = String(op);
+      bar.style.transform = `translateY(${h + 8}px)`;
+      setTimeout(() => { bar.style.opacity = '0'; }, dur - 180);
+      const gap = Math.random() < 0.25 ? rand(150, 600) : rand(2500, 9000);
+      setTimeout(sweep, dur + gap);
+    }
+    setTimeout(sweep, 600);
+  })();
+</script>
+</body>
+</html>
