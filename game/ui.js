@@ -289,10 +289,12 @@
   }
 
   function restoreHistory() {
+    var raw;
+    var parsed;
     try {
-      var raw = localStorage.getItem(HISTORY_KEY);
+      raw = localStorage.getItem(HISTORY_KEY);
       if (raw) {
-        var parsed = JSON.parse(raw);
+        parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           state.commandHistory = parsed;
           state.historyIndex = parsed.length;
