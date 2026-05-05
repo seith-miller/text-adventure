@@ -53,7 +53,11 @@ const MODEL = val("model", "claude-sonnet-4-5");
 const MAX_TURNS = parseInt(val("max-turns", "60"), 10);
 const HEADED = flag("headed");
 const NO_FILE = flag("no-file");
-const MILESTONE = val("milestone", "m13: Game UI iteration");
+// No default milestone — the playtester finds any kind of real bug
+// (UI, gameplay, prose), so a static milestone would mis-tag most of
+// them. The "playtest" + "bug" labels are always applied so filed
+// issues are easy to find and triage manually.
+const MILESTONE = val("milestone", "");
 const BASE_URL = val("url", "http://localhost:8765/play.html");
 
 // ── Setup ────────────────────────────────────────────────────
@@ -144,21 +148,47 @@ Each turn you receive TWO things:
 1. A screenshot of the live page (use this to judge VISUAL problems — alignment, color, overflow, glyph rendering, bezel chrome, anything that looks off to a human eye)
 2. The textContent of the rendered terminal (use this to quote exact strings in your bug report)
 
-Play the game like a curious player. Try things. Examine objects. Move between rooms. Take items. Look at status. Send save/load commands occasionally. Try the EXAMINE, TAKE, INVENTORY, STATUS, HELP commands. Try \`talk to argon\` if it makes sense.
+# Live regions vs scrollback — READ THIS BEFORE FILING
 
-Watch for UI problems such as:
+Only some parts of the screen are LIVE state. Other parts are a HISTORICAL TRANSCRIPT. Conflating the two is the most common false-positive class — do not file based on this confusion.
+
+LIVE (always reflects current game state):
+- The SYS header bar (top row): location, console, date/time
+- The right-side sidebar: VITALS bars, SYSTEMS lamps, INVENTORY list
+- The bottom input row (current cursor + what you're typing)
+
+TRANSCRIPT (chronological log of past output, never rewritten):
+- The entire story column on the left, including any \`> command\` echoes, room names, prose, and prior \`> inventory\` / \`> status\` outputs
+
+Implications:
+- Yes, an old "You are carrying: a chocolate bar" line will still appear in the scrollback after you eat the chocolate bar. That's a transcript of what was printed earlier. The live INVENTORY in the sidebar is the source of truth. NOT A BUG.
+- Yes, an old "O2 75%" line will still appear in the scrollback after O2 drops to 60%. The live VITALS bar is the source of truth. NOT A BUG.
+- Comparing scrollback text from N turns ago to the live sidebar now is meaningless and is NEVER a bug.
+
+A REAL state-mismatch bug looks like ONE of these:
+- The CURRENT turn's prose just said "You picked up the wrench" but the sidebar INVENTORY this same turn still doesn't show a wrench
+- The header bar says CREW QUARTERS but the most recent room-heading line in scrollback says COMMAND MODULE
+- The sidebar morale shows 80% but the prose this turn just said "You feel utterly hopeless" with no morale change
+- Numbers the live sidebar and the live header disagree on RIGHT NOW (not historical)
+
+Before filing, ask: "Would a developer reading this say 'yes that's a bug' or would they say 'that's just how scrollback works'?" If you can't be sure, keep playing.
+
+# Other UI problems worth flagging
+
 - Text overflow past column boundaries; box-drawing borders that don't line up
-- Garbled or duplicated characters / phantom prompts / leaked HTML tags or template tokens
-- Status that doesn't match the prose ("you took the apple" but inventory still empty)
-- Header values that contradict the sidebar
-- Cursor that doesn't blink, or input that doesn't echo
-- Buttons that don't react when clicked
+- Garbled or duplicated characters / phantom prompts / leaked HTML tags or template tokens (\`<hd>\`, \`&amp;gt;\`, \`[object Object]\`)
+- Same turn: prose contradicts the sidebar
+- Same turn: header contradicts the sidebar
+- Cursor doesn't blink, input doesn't echo when you type, buttons don't react when clicked
 - Visual glitches — wrong colors, weird spacing, unintended overlap
+- Crashes or no-output-after-command
 - Anything that looks unintentional
 
-When you spot something, call report_bug with severity and a precise reproduction. Otherwise keep playing — call submit_command with your next move. You have a hard limit of ${MAX_TURNS} turns.
+# How to play
 
-Stay in QA mode. Don't roleplay; don't narrate; don't try to "win". Your job is to break the UI, not the story.`;
+Play like a curious player. Try things. Examine objects. Move between rooms. Take items. Eat / use them. Send save / load occasionally. Try EXAMINE, TAKE, INVENTORY, STATUS, HELP. Try \`talk to argon\` if context suggests it. You have ${MAX_TURNS} turns.
+
+When you spot a real bug, call report_bug. Otherwise call submit_command with your next move. Stay in QA mode — don't roleplay or narrate. Your job is to break the UI, not the story.`;
 
 // ── Browser harness ──────────────────────────────────────────
 const browser = await chromium.launch({ headless: !HEADED });
@@ -302,20 +332,20 @@ async function fileBugReport({ title, description, severity }, transcript) {
     return null;
   }
 
-  const result = spawnSync(
-    "gh",
-    [
-      "issue",
-      "create",
-      "--title",
-      `[m13][bug] ${title}`,
-      "--body",
-      body,
-      "--milestone",
-      MILESTONE,
-    ],
-    { encoding: "utf8" },
-  );
+  const ghArgs = [
+    "issue",
+    "create",
+    "--title",
+    `[playtest] ${title}`,
+    "--body",
+    body,
+    "--label",
+    "playtest,bug",
+  ];
+  if (MILESTONE) {
+    ghArgs.push("--milestone", MILESTONE);
+  }
+  const result = spawnSync("gh", ghArgs, { encoding: "utf8" });
   if (result.status === 0) {
     const url = result.stdout.trim();
     console.log(`[playtest] filed: ${url}`);
