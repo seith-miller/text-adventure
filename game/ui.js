@@ -27,12 +27,22 @@
     darkness: "assets/ascii/darkness.txt",
   };
 
-  /* ── Known room names for location detection ── */
+  /* ── Known room names for location detection ──
+     Must match the printed name from story.ni exactly. When a room
+     prints its name as a buffer line we update the SYS header and
+     emit a bilingual heading. */
   var KNOWN_ROOMS = [
     "Crew Quarters",
     "Main Corridor",
     "Command Module",
     "Observation Cupola",
+    "Life Support Module",
+    "Hydroponics Lab",
+    "Armament Bay",
+    "Reactor Module",
+    "Progress Ferry",
+    "Soyuz Ferry",
+    "Soyuz Reentry Capsule",
   ];
 
   // Cyrillic shadow labels for the room-name heading. Keys must match
@@ -42,6 +52,13 @@
     "Main Corridor": "ГЛАВНЫЙ КОРИДОР",
     "Command Module": "КОМАНДНЫЙ МОДУЛЬ",
     "Observation Cupola": "НАБЛЮДАТЕЛЬНЫЙ КУПОЛ",
+    "Life Support Module": "СИСТЕМА ЖИЗНЕОБЕСПЕЧЕНИЯ",
+    "Hydroponics Lab": "ГИДРОПОННАЯ ЛАБОРАТОРИЯ",
+    "Armament Bay": "ОРУЖЕЙНЫЙ ОТСЕК",
+    "Reactor Module": "РЕАКТОРНЫЙ МОДУЛЬ",
+    "Progress Ferry": "ГРУЗОВОЙ КОРАБЛЬ ПРОГРЕСС",
+    "Soyuz Ferry": "СОЮЗ",
+    "Soyuz Reentry Capsule": "СПУСКАЕМЫЙ АППАРАТ СОЮЗ",
   };
 
   /* ── Warm AI feature flag ── */
