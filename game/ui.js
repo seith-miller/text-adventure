@@ -27,13 +27,39 @@
     darkness: "assets/ascii/darkness.txt",
   };
 
-  /* ── Known room names for location detection ── */
+  /* ── Known room names for location detection ──
+     Must match the printed name from story.ni exactly. When a room
+     prints its name as a buffer line we update the SYS header and
+     emit a bilingual heading. */
   var KNOWN_ROOMS = [
     "Crew Quarters",
     "Main Corridor",
     "Command Module",
     "Observation Cupola",
+    "Life Support Module",
+    "Hydroponics Lab",
+    "Armament Bay",
+    "Reactor Module",
+    "Progress Ferry",
+    "Soyuz Ferry",
+    "Soyuz Reentry Capsule",
   ];
+
+  // Cyrillic shadow labels for the room-name heading. Keys must match
+  // KNOWN_ROOMS exactly. Missing entries fall back to Latin only.
+  var ROOM_CYRILLIC = {
+    "Crew Quarters": "ОТСЕК ЭКИПАЖА",
+    "Main Corridor": "ГЛАВНЫЙ КОРИДОР",
+    "Command Module": "КОМАНДНЫЙ МОДУЛЬ",
+    "Observation Cupola": "НАБЛЮДАТЕЛЬНЫЙ КУПОЛ",
+    "Life Support Module": "СИСТЕМА ЖИЗНЕОБЕСПЕЧЕНИЯ",
+    "Hydroponics Lab": "ГИДРОПОННАЯ ЛАБОРАТОРИЯ",
+    "Armament Bay": "ОРУЖЕЙНЫЙ ОТСЕК",
+    "Reactor Module": "РЕАКТОРНЫЙ МОДУЛЬ",
+    "Progress Ferry": "ГРУЗОВОЙ КОРАБЛЬ ПРОГРЕСС",
+    "Soyuz Ferry": "СОЮЗ",
+    "Soyuz Reentry Capsule": "СПУСКАЕМЫЙ АППАРАТ СОЮЗ",
+  };
 
   /* ── Warm AI feature flag ── */
   var AI_ENABLED = (function readAiFlag() {
@@ -231,7 +257,8 @@
     // Top border
     out.push(`\u2554${"\u2550".repeat(TOTAL_W - 2)}\u2557`);
 
-    // Header line
+    // Header line. Shows metadata only (location + console + diegetic
+    // date/time). Gauges live in the sidebar so we don't double-display.
     var roomLabel = state.currentRoom
       ? escHtml(state.currentRoom.toUpperCase())
       : "TERM-04";
@@ -239,15 +266,9 @@
       "SYS <bri>\u041C\u0418\u0420-2/" +
       roomLabel +
       "</bri>   " +
-      "O2 <bri>" +
-      state.o2 +
-      "%</bri>   " +
-      "MRL <bri>" +
-      state.morale +
-      "%</bri>   " +
-      "INV <bri>" +
-      state.inventory.length +
-      "</bri>";
+      "CONSOLE <bri>04</bri>   " +
+      "<bri>17.03.1988</bri>   " +
+      "<bri>02:14 \u041C\u0421\u041A</bri>";
     out.push(`\u2551 ${pad(header, HEADER_W)} \u2551`);
 
     // Separator under header
@@ -264,9 +285,12 @@
     for (let i = 0; i < bodyRows; i++) {
       const left = storyCol[i] || "";
       const right = sideCol[i] || "";
+      // storyLines entries are pre-escaped at push-time (see
+      // appendStoryText / appendPlayerInput), so trusted tags like <hd>
+      // and <echo> survive into the rendered output.
       out.push(
         "\u2551 " +
-          pad(escHtml(left), STORY_W) +
+          pad(left, STORY_W) +
           " \u2502 " +
           pad(right, SIDE_W) +
           " \u2551",
@@ -713,7 +737,13 @@
 
   /* ── Display functions ── */
 
-  var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
+  // The Inform 7 status line is currently:
+  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH]
+  // The trailing fields (b1/b2/act2) are story-state instrumentation, not
+  // inventory. Capture inv=... non-greedily and let the optional trailing
+  // " key=value..." block be discarded.
+  var MIRSEND_STATUS_RE =
+    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)(?:\s+\w+=[^\]]*)?\]/;
 
   function interceptAiPrompt(text) {
     if (!window.StationAI) return false;
@@ -754,10 +784,28 @@
     span.textContent = `${text}\n\n`;
     storyOutput.appendChild(span);
 
-    /* Add to visible story column */
+    /* Room-name lines arrive on their own — render as a bilingual heading
+       in bright phosphor. Falls through to normal wrapping otherwise. */
+    const trimmed = text.trim();
+    if (KNOWN_ROOMS.indexOf(trimmed) !== -1) {
+      const cyr = ROOM_CYRILLIC[trimmed];
+      const heading = cyr
+        ? `<hd>${trimmed.toUpperCase()} / ${cyr}</hd>`
+        : `<hd>${trimmed.toUpperCase()}</hd>`;
+      storyLines.push(heading);
+      storyLines.push("");
+      scrollToBottom();
+      detectRoomChange(text);
+      return;
+    }
+
+    /* Add to visible story column. Each wrapped line is HTML-escaped
+       at push-time so Glulx prose containing <, >, & renders as text
+       rather than as injected markup. Trusted tags (room headings,
+       echoes, cursor) are pushed pre-formatted via other paths. */
     var wrapped = wordWrap(text, STORY_W);
     for (let i = 0; i < wrapped.length; i++) {
-      storyLines.push(wrapped[i]);
+      storyLines.push(escHtml(wrapped[i]));
     }
     storyLines.push(""); // blank line between paragraphs
 
@@ -880,8 +928,9 @@
     span.textContent = `> ${text}\n`;
     storyOutput.appendChild(span);
 
-    /* Visible story column — show as echoed command */
-    storyLines.push(`> ${text}`);
+    /* Visible story column — show as dim echo. The `>` is pushed as a
+       trusted bri-tag; user text is escaped before injection. */
+    storyLines.push(`<echo>&gt; ${escHtml(text)}</echo>`);
 
     scrollToBottom();
   }
@@ -893,10 +942,10 @@
     span.textContent = `${text}\n`;
     storyOutput.appendChild(span);
 
-    /* Visible story column */
+    /* Visible story column. Wrapped chunks are escaped at push-time. */
     var wrapped = wordWrap(text, STORY_W);
     for (let i = 0; i < wrapped.length; i++) {
-      storyLines.push(wrapped[i]);
+      storyLines.push(`<dim>${escHtml(wrapped[i])}</dim>`);
     }
 
     scrollToBottom();
@@ -1029,7 +1078,12 @@
         const key = `line-${i}`;
         if (seen.has(key)) continue;
         const text = lines[i].textContent || "";
-        if (text.trim().length > 0) {
+        // Inform 7 emits a bare ">" prompt buffer line at the end of every
+        // turn (with a trailing zero-width joiner U+200D). Our visible UI
+        // has its own input row, so the inline prompt is just visual noise.
+        // Strip ZWJ + standard whitespace, then drop empty / pure ">" lines.
+        const trimmed = text.replace(/[‍​‌﻿]/g, "").trim();
+        if (trimmed.length > 0 && trimmed !== ">") {
           appendStoryText(text);
         }
         seen.add(key);

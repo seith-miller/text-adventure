@@ -23,11 +23,28 @@ How this project moves code from an idea to a stable release. See [naming.md](na
 
 ## Release workflow
 
-1. When `develop` has landed a shippable body of work, open a release PR from `develop` to `main` titled `Release vX.Y.Z`.
+Before opening the release PR, **run a UI playtest** end-to-end and triage anything filed:
+
+```
+set -a && . ./.env.playtest && set +a
+node scripts/playtest-with-ui.mjs --max-turns 60
+```
+
+This boots `play.html` in headless Chromium, hands turn-by-turn screenshots + DOM to Claude, and lets the model play the actual UI. Any real bug it finds gets filed automatically with the `playtest` + `bug` labels.
+
+Triage what comes back:
+
+- **Real bug, severe / moderate** → fix or hotfix before cutting the release.
+- **Real bug, minor / cosmetic** → file a follow-up issue, link from release notes, ship anyway if the maintainer is OK with it.
+- **Not a bug** → close the auto-filed issue with a comment explaining why; consider whether the system prompt needs another guardrail.
+
+Then proceed with the release:
+
+1. When `develop` has landed a shippable body of work AND the playtest pass above is clean (or its findings have been triaged), open a release PR from `develop` to `main` titled `Release vX.Y.Z`.
 2. Wait for CI green on the release PR.
 3. Merge with **Squash and merge** so `main` stays one commit per release tag.
 4. Locally, pull `main`, then tag the merge commit: `git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`.
-5. Create a GitHub release from the tag with release notes.
+5. Create a GitHub release from the tag with release notes. If the playtest filed any deferred bugs, link them in the "Known issues" section of the notes.
 
 Note: feature PRs into `develop` use merge commits (to preserve feature history), but release PRs into `main` use squash merges (to keep `main` linear and one-commit-per-tag). This is a deliberate deviation from a pure merge-commit-everywhere flow. See [naming.md](naming.md#project-specific-deviation-from-agent-lab).
 

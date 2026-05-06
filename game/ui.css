@@ -314,9 +314,14 @@ off    { color: var(--lamp-off); }
 cur    {
   color: var(--phosphor-bright);
   text-shadow: 0 0 8px var(--phosphor-glow);
-  animation: blink 1.05s steps(1) infinite;
+  animation: blink 1.1s steps(1) infinite;
 }
-@keyframes blink { 50% { opacity: 0; } }
+/* On-biased duty cycle so the cursor reads "lit, blinking" rather than
+   half-vanished. Mirrors a real CRT terminal cursor. */
+@keyframes blink {
+  0%, 70%   { opacity: 1; }
+  70.01%, 100% { opacity: 0; }
+}
 
 /* ── Sweeping scanline ── */
 #scan-line {

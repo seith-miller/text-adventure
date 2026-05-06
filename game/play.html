@@ -192,7 +192,9 @@
         })
         .then((buf) => {
           var bytes = Array.from(new Uint8Array(buf));
-          GiLoad.load_run(null, bytes, "array");
+          // set_page_title:false stops GiLoad from overwriting our <title>
+          // with "Game - undefined" once the .ulx loads.
+          GiLoad.load_run({ set_page_title: false }, bytes, "array");
           console.log("[MirsEndBoot] Quixe started —", bytes.length, "bytes");
         })
         .catch((err) => {
