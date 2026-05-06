@@ -75,6 +75,11 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -r tests/requirements.txt
           .venv/bin/pip install -e .
+          # playtest.py drives the Glulx interpreter via lib/playwright_python
+          # (loaded by scripts/mirs_end_mcp.py). Not in tests/requirements.txt
+          # because tests use the Node Playwright instead.
+          .venv/bin/pip install playwright
+          .venv/bin/playwright install chromium
 
       - name: Build story
         run: npm run build:story || echo "(story already built or compiler unavailable; using committed game/dist/story.ulx)"

@@ -383,6 +383,42 @@ messages.push({
   ],
 });
 
+// Each turn we attach a base64 PNG screenshot (~50–80 KB). After ~25
+// turns the cumulative request body crosses Anthropic's 413 limit. Strip
+// images from older tool_results before sending — the model only needs
+// recent visual state to act, and it can still quote text from older
+// turns via the textContent block which we keep.
+const KEEP_RECENT_IMAGE_TURNS = 3;
+
+function trimMessagesForRequest(msgs) {
+  // Index of tool_result-bearing messages, oldest first
+  const trIndices = [];
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (m.role !== "user" || !Array.isArray(m.content)) continue;
+    if (m.content.some((b) => b.type === "tool_result")) trIndices.push(i);
+  }
+  const keepFrom = Math.max(0, trIndices.length - KEEP_RECENT_IMAGE_TURNS);
+  const trimSet = new Set(trIndices.slice(0, keepFrom));
+
+  return msgs.map((m, i) => {
+    if (!trimSet.has(i)) return m;
+    const newContent = m.content.map((block) => {
+      if (block.type !== "tool_result") return block;
+      if (!Array.isArray(block.content)) return block;
+      const noImages = block.content.filter((c) => c.type !== "image");
+      if (noImages.length === 0) {
+        return {
+          ...block,
+          content: [{ type: "text", text: "[earlier-turn screenshot elided]" }],
+        };
+      }
+      return { ...block, content: noImages };
+    });
+    return { ...m, content: newContent };
+  });
+}
+
 let stopped = false;
 for (let turn = 0; turn < MAX_TURNS && !stopped; turn++) {
   transcript.turns = turn + 1;
@@ -395,7 +431,7 @@ for (let turn = 0; turn < MAX_TURNS && !stopped; turn++) {
       { type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } },
     ],
     tools: TOOLS,
-    messages,
+    messages: trimMessagesForRequest(messages),
   });
 
   messages.push({ role: "assistant", content: resp.content });
