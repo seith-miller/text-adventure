@@ -392,26 +392,132 @@ cur    {
   display: none;
 }
 
+/* ── Bezel frame: the outer metallic housing ── */
+#title-bezel {
+  border: 2px solid var(--border-color);
+  background: var(--border-color);
+  padding: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 40px rgba(30, 58, 95, 0.4),
+    0 0 80px rgba(30, 58, 95, 0.15);
+  position: relative;
+}
+
+#title-bezel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-glow),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* ── Phosphor screen: the inner CRT display ── */
+#title-phosphor {
+  background: var(--bg-panel);
+  padding: 3em 4em;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Faint scanline overlay */
+#title-phosphor::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Subtle vignette at edges */
+#title-phosphor::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 1;
+}
+
 #title-screen-content {
   text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── ID plate: etched station designation ── */
+#title-id-plate {
+  border: 1px solid var(--border-color);
+  padding: 1.2em 2em 1em;
+  margin-bottom: 0.8em;
+  position: relative;
+}
+
+#title-id-plate::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-glow),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.plate-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  opacity: 0.6;
 }
 
 #title-logo {
-  font-size: 48px;
-  letter-spacing: 12px;
+  font-size: 52px;
+  letter-spacing: 14px;
   color: var(--title-color);
   text-transform: uppercase;
   font-weight: bold;
-  text-shadow: 0 0 20px rgba(138, 180, 248, 0.4),
-               0 0 40px rgba(138, 180, 248, 0.15);
-  margin-bottom: 0.15em;
+  text-shadow:
+    0 0 20px rgba(138, 180, 248, 0.5),
+    0 0 40px rgba(138, 180, 248, 0.2),
+    0 0 80px rgba(138, 180, 248, 0.08);
+  margin: 0.15em 0;
+  line-height: 1.1;
 }
 
 #title-subtitle {
-  font-size: 14px;
+  font-size: 12px;
   letter-spacing: 4px;
   color: var(--text-dim);
-  margin-bottom: 3em;
+  margin-bottom: 2.5em;
 }
 
 #title-menu {
@@ -426,19 +532,46 @@ cur    {
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
-  font-size: 16px;
+  font-size: 14px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  padding: 0.6em 2.5em;
+  padding: 0.7em 2em;
   cursor: pointer;
-  width: 240px;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  width: 280px;
+  transition: background 0.2s, border-color 0.2s, color 0.2s,
+              box-shadow 0.2s, text-shadow 0.2s;
+  position: relative;
+}
+
+.menu-btn .btn-label-en {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 3px;
+}
+
+.menu-btn .btn-label-ru {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  opacity: 0.6;
+  transition: color 0.2s, opacity 0.2s;
 }
 
 .menu-btn:hover:not(:disabled) {
-  background: var(--border-color);
+  background: rgba(30, 58, 95, 0.3);
   border-color: var(--border-glow);
   color: var(--title-color);
+  text-shadow: 0 0 8px rgba(138, 180, 248, 0.4);
+  box-shadow:
+    0 0 12px rgba(42, 90, 143, 0.3),
+    inset 0 0 12px rgba(42, 90, 143, 0.1);
+}
+
+.menu-btn:hover:not(:disabled) .btn-label-ru {
+  color: var(--title-color);
+  opacity: 0.8;
 }
 
 .menu-btn:focus {
@@ -453,7 +586,7 @@ cur    {
 }
 
 #title-footer {
-  margin-top: 3em;
+  margin-top: 2.5em;
   font-size: 11px;
   color: var(--text-dim);
   opacity: 0.5;
