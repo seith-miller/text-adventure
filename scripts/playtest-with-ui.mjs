@@ -30,9 +30,14 @@
     --model MODEL        Claude model (default: claude-sonnet-4-5)
     --max-turns N        Hard cap on turns (default: 60)
     --headed             Show the browser (debugging)
-    --no-file            Don't actually file a bug; just print it
-    --milestone NAME     GitHub milestone for filed bugs
-                         (default: "m13: Game UI iteration")
+    --file-bugs          File any bug-report calls as GitHub issues
+                         (labels: playtest, bug). Default OFF — opt in for
+                         scheduled QA runs and CI. Without this flag the
+                         harness still runs and saves evidence locally.
+    --milestone NAME     Optional GitHub milestone for filed bugs.
+                         Off by default since the playtester finds any
+                         kind of real bug and a static milestone would
+                         mis-tag most of them.
 */
 
 import { spawnSync } from "node:child_process";
@@ -52,11 +57,18 @@ function val(name, def) {
 const MODEL = val("model", "claude-sonnet-4-5");
 const MAX_TURNS = parseInt(val("max-turns", "60"), 10);
 const HEADED = flag("headed");
-const NO_FILE = flag("no-file");
-// No default milestone — the playtester finds any kind of real bug
-// (UI, gameplay, prose), so a static milestone would mis-tag most of
-// them. The "playtest" + "bug" labels are always applied so filed
-// issues are easy to find and triage manually.
+// Filing is opt-in (matches scripts/playtest.py convention). Without
+// --file-bugs, a bug call still produces local evidence but no GitHub
+// issue. CI workflows pass --file-bugs explicitly.
+const FILE_BUGS = flag("file-bugs");
+// Backwards-compatible: --no-file used to be a flag; now it's a no-op
+// because filing is already off by default.
+if (argv.includes("--no-file")) {
+  console.error(
+    "[playtest] --no-file is deprecated and now a no-op (filing is " +
+      "opt-in via --file-bugs). Continuing without filing.",
+  );
+}
 const MILESTONE = val("milestone", "");
 const BASE_URL = val("url", "http://localhost:8765/play.html");
 
@@ -326,8 +338,8 @@ async function fileBugReport({ title, description, severity }, transcript) {
   console.log(`\n[playtest] BUG REPORTED (${severity}): ${title}`);
   console.log(`[playtest] screenshot: ${screenshotPath}`);
 
-  if (NO_FILE) {
-    console.log("[playtest] --no-file passed, skipping gh issue create");
+  if (!FILE_BUGS) {
+    console.log("[playtest] --file-bugs not set, skipping gh issue create");
     console.log(`[playtest] would have created issue with body:\n${body}`);
     return null;
   }

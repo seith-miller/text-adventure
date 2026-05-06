@@ -28,6 +28,10 @@ Optional flags:
   --no-ingest            Skip POST to /v1/sessions
   --proxy-url URL        Override proxy URL (default: http://localhost:8787)
   --output PATH          Write transcript to this path on completion
+  --file-bugs            Add a `report_bug` tool to the agent's catalog. When
+                         called, files a GitHub issue (labels: playtest, bug)
+                         and stops the playtest. Default off — opt in for
+                         scheduled QA runs and CI.
 
 ## What the agent CAN see
 
@@ -63,6 +67,55 @@ DEFAULT_STUCK_WINDOW = 10
 DEFAULT_PROXY_URL = "http://localhost:8787"
 
 SYSTEM_PROMPT = "Play a text-based adventure game using the available tools."
+
+# Appended to SYSTEM_PROMPT when --file-bugs is on. Kept in a separate
+# constant so the default (sandboxed, no-file) prompt stays one sentence.
+BUG_FILING_ADDENDUM = (
+    " You also have a `report_bug` tool. Call it ONLY when you observe a real,"
+    " reproducible bug — a wrong response, broken puzzle logic, contradictory"
+    " state, parser inconsistency, or anything that would make a developer say"
+    " 'yes that's wrong'. Do NOT report things you simply don't enjoy or don't"
+    " understand. When in doubt, keep playing. Calling report_bug stops the"
+    " playtest."
+)
+
+# Optional 5th tool, only attached when --file-bugs is on. Mirrors the
+# UI harness's report_bug schema so triagers see consistent issue shape.
+REPORT_BUG_TOOL = {
+    "name": "report_bug",
+    "description": (
+        "Report a real, reproducible bug. Stops the playtest. Use only when "
+        "you've observed something that would qualify as a defect to a "
+        "developer — not aesthetic preference, not narrative confusion."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "title": {
+                "type": "string",
+                "description": "Brief bug title (under 80 chars)",
+            },
+            "description": {
+                "type": "string",
+                "description": (
+                    "Markdown reproduction: commands you sent, what the game "
+                    "responded with, what was wrong, what you expected. "
+                    "Include enough that a developer can reproduce from your "
+                    "description alone."
+                ),
+            },
+            "severity": {
+                "type": "string",
+                "enum": ["minor", "moderate", "severe"],
+                "description": (
+                    "minor=cosmetic prose drift, moderate=functional but "
+                    "recoverable, severe=blocks gameplay or corrupts state"
+                ),
+            },
+        },
+        "required": ["title", "description", "severity"],
+    },
+}
 
 TOOLS_SCHEMA = [
     {
@@ -341,6 +394,88 @@ def _post_session(session: dict, proxy_url: str, player_kind: str) -> bool:
 DEFAULT_DUMP_DIR = REPO_ROOT / "docs" / "playtests" / "runs"
 
 
+def _file_bug_to_github(
+    *,
+    title: str,
+    description: str,
+    severity: str,
+    model: str,
+    play_session_id: str,
+    turn: int,
+    transcript: str,
+    command_history: list[str],
+    final_state: dict | None,
+    milestone: str | None = None,
+    dry_run: bool = False,
+) -> str | None:
+    """
+    Run `gh issue create` to file a bug found by the playtester. Returns
+    the resulting issue URL on success, None if filing failed or dry_run.
+    Mirrors the issue shape produced by scripts/playtest-with-ui.mjs so
+    triagers see a consistent format from both harnesses.
+    """
+    import subprocess  # noqa: PLC0415
+
+    body_lines = [
+        f"## Severity\n{severity}",
+        "",
+        "## Description",
+        description,
+        "",
+        "## How it was found",
+        (
+            f"Filed by `scripts/playtest.py` ({model}) after {turn} turns. "
+            f"Session id: `{play_session_id}`. The text-only harness drives "
+            f"Glulx via MCP and does not see the rendered UI."
+        ),
+        "",
+        "## Final state",
+        f"```json\n{json.dumps(final_state or {}, indent=2)}\n```",
+        "",
+        "## Commands the agent submitted",
+        "```",
+        "\n".join(command_history) or "(none)",
+        "```",
+        "",
+        "<details><summary>Full transcript</summary>",
+        "",
+        "```",
+        transcript or "(empty)",
+        "```",
+        "",
+        "</details>",
+    ]
+    body = "\n".join(body_lines)
+
+    print(f"\n[playtest] BUG REPORTED ({severity}): {title}", flush=True)
+
+    if dry_run:
+        print("[playtest] --no-file-only: would have created issue", flush=True)
+        print(f"[playtest] body:\n{body[:1000]}…", flush=True)
+        return None
+
+    args = [
+        "gh", "issue", "create",
+        "--title", f"[playtest] {title}",
+        "--body", body,
+        "--label", "playtest,bug",
+    ]
+    if milestone:
+        args.extend(["--milestone", milestone])
+
+    try:
+        result = subprocess.run(args, check=False, capture_output=True, text=True)
+    except FileNotFoundError:
+        sys.stderr.write("gh CLI not on PATH; cannot file bug\n")
+        return None
+    if result.returncode != 0:
+        sys.stderr.write(f"gh issue create failed: {result.stderr}\n")
+        return None
+    url = result.stdout.strip()
+    print(f"[playtest] filed: {url}", flush=True)
+    return url
+
+
 def run_playtest(
     *,
     model: str = DEFAULT_MODEL,
@@ -350,6 +485,8 @@ def run_playtest(
     proxy_url: str = DEFAULT_PROXY_URL,
     output_path: pathlib.Path | None = None,
     dump_dir: pathlib.Path | None = DEFAULT_DUMP_DIR,
+    file_bugs: bool = False,
+    bug_milestone: str | None = None,
 ) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -367,9 +504,21 @@ def run_playtest(
 
     play_session_id = str(uuid.uuid4())
     started_at = datetime.now(timezone.utc).isoformat()
+    active_system = (
+        SYSTEM_PROMPT + BUG_FILING_ADDENDUM if file_bugs else SYSTEM_PROMPT
+    )
+    active_tools = (
+        TOOLS_SCHEMA + [REPORT_BUG_TOOL] if file_bugs else TOOLS_SCHEMA
+    )
     print(f"Playtest {play_session_id} starting (model: {model})", flush=True)
     print(f"  started: {started_at}", flush=True)
     print(f"  max-turns: {max_turns}, stuck-window: {stuck_window}", flush=True)
+    if file_bugs:
+        print(
+            f"  bug filing: ON (will file to GitHub on report_bug call"
+            f"{', milestone=' + bug_milestone if bug_milestone else ''})",
+            flush=True,
+        )
     print(flush=True)
 
     messages: list[dict] = [
@@ -404,8 +553,8 @@ def run_playtest(
             response = client.messages.create(
                 model=model,
                 max_tokens=1024,
-                system=_system_with_cache(SYSTEM_PROMPT),
-                tools=_tools_with_cache(TOOLS_SCHEMA),
+                system=_system_with_cache(active_system),
+                tools=_tools_with_cache(active_tools),
                 messages=_with_cache_breakpoint(messages),
             )
 
@@ -481,6 +630,44 @@ def run_playtest(
                     )
                     bailout_reason = "agent-exported"
                     print(f"[turn {turn}] export_transcript", flush=True)
+                elif tool_name == "report_bug" and file_bugs:
+                    # Bug filing terminates the playtest — same convention
+                    # as the UI harness. Capture the partial transcript
+                    # before exiting the loop.
+                    bug_title = str(tool_input.get("title", "(untitled)"))
+                    bug_desc = str(tool_input.get("description", ""))
+                    bug_severity = str(tool_input.get("severity", "minor"))
+                    transcript_so_far = ""
+                    cmd_history_so_far: list[str] = []
+                    if current_session_id:
+                        try:
+                            export = bridge.export_transcript(current_session_id)
+                            transcript_so_far = export.get("transcript", "")
+                            cmd_history_so_far = export.get("command_history", [])
+                        except Exception:
+                            pass
+                    bug_url = _file_bug_to_github(
+                        title=bug_title,
+                        description=bug_desc,
+                        severity=bug_severity,
+                        model=model,
+                        play_session_id=play_session_id,
+                        turn=game_turn,
+                        transcript=transcript_so_far,
+                        command_history=cmd_history_so_far,
+                        final_state=final_state,
+                        milestone=bug_milestone,
+                    )
+                    result = {
+                        "filed": bool(bug_url),
+                        "issue_url": bug_url,
+                        "message": (
+                            "Bug filed; playtest is stopping."
+                            if bug_url
+                            else "Bug logged locally; gh filing failed."
+                        ),
+                    }
+                    bailout_reason = "bug-reported"
                 else:
                     result = {"error": f"unknown tool: {tool_name}"}
 
@@ -521,7 +708,7 @@ def run_playtest(
                 bailout_reason = "ending"
                 break
 
-            if bailout_reason == "agent-exported":
+            if bailout_reason in ("agent-exported", "bug-reported"):
                 break
 
         if current_session_id:
@@ -642,6 +829,22 @@ def main() -> int:
         "--no-dump", action="store_true",
         help="Suppress the markdown auto-dump entirely.",
     )
+    parser.add_argument(
+        "--file-bugs", action="store_true",
+        help=(
+            "Add a `report_bug` tool to the agent's catalog and file any "
+            "reports as GitHub issues with `playtest` + `bug` labels. "
+            "Default off — opt in for scheduled QA runs and CI."
+        ),
+    )
+    parser.add_argument(
+        "--bug-milestone", default=None,
+        help=(
+            "Optional GitHub milestone to attach to filed bugs. Off by "
+            "default since the playtester finds any kind of real bug and a "
+            "static milestone would mis-tag most of them."
+        ),
+    )
     args = parser.parse_args()
 
     run_playtest(
@@ -652,6 +855,8 @@ def main() -> int:
         dump_dir=None if args.no_dump else args.dump_dir,
         proxy_url=args.proxy_url,
         output_path=args.output,
+        file_bugs=args.file_bugs,
+        bug_milestone=args.bug_milestone,
     )
     return 0
 

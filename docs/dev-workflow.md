@@ -23,14 +23,19 @@ How this project moves code from an idea to a stable release. See [naming.md](na
 
 ## Release workflow
 
-Before opening the release PR, **run a UI playtest** end-to-end and triage anything filed:
+Before opening the release PR, **run both playtests** end-to-end and triage anything filed. Each one catches a different bug class:
 
 ```
 set -a && . ./.env.playtest && set +a
-node scripts/playtest-with-ui.mjs --max-turns 60
+
+# Text-only — gameplay, parser, story bugs (drives Glulx via MCP)
+.venv/bin/python3 scripts/playtest.py --max-turns 100 --file-bugs
+
+# UI-only — rendering, layout, state-display bugs (drives Chromium)
+node scripts/playtest-with-ui.mjs --max-turns 60 --file-bugs
 ```
 
-This boots `play.html` in headless Chromium, hands turn-by-turn screenshots + DOM to Claude, and lets the model play the actual UI. Any real bug it finds gets filed automatically with the `playtest` + `bug` labels.
+`--file-bugs` is opt-in on both — without it the harnesses still run and save evidence locally but don't open GitHub issues. CI runs them on a schedule (`.github/workflows/playtest.yml`) with filing enabled, so review whatever's been filed under `gh issue list --label playtest` since the last release.
 
 Triage what comes back:
 
