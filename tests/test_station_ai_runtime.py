@@ -311,4 +311,6 @@ class TestConfig:
             console.log(window.StationAI._config.FALLBACK_MESSAGE);
         """
         )
-        assert "does not respond" in result
+        # Aligned with the flag-OFF canned line so proxy-down reads as a
+        # consistent "AI is unavailable" UX.
+        assert "AI channel is dead" in result

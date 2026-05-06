@@ -41,7 +41,7 @@ test.describe("ai-feature-flag — flag OFF (default)", () => {
     await waitForStoryText(page, "AI channel is dead");
   });
 
-  test.fixme("ASK ARGON prints the canned line", async ({ page }) => {
+  test("ASK ARGON prints the canned line", async ({ page }) => {
     await startNewGame(page);
 
     await sendCommand(page, "ask argon");
@@ -84,7 +84,7 @@ test.describe("ai-feature-flag — flag ON", () => {
     });
   });
 
-  test.fixme("config.aiEnabled is true when flag is set before load", async ({
+  test("config.aiEnabled is true when flag is set before load", async ({
     page,
   }) => {
     // We need to set the flag BEFORE ui.js runs, so use addInitScript
@@ -100,7 +100,7 @@ test.describe("ai-feature-flag — flag ON", () => {
     expect(aiEnabled).toBe(true);
   });
 
-  test.fixme("AI online badge is visible when flag is on", async ({ page }) => {
+  test("AI online badge is visible when flag is on", async ({ page }) => {
     await page.addInitScript(() => {
       (window as any).MIRSEND_AI_ENABLED = 1;
     });
@@ -111,7 +111,7 @@ test.describe("ai-feature-flag — flag ON", () => {
     await expect(badge).toHaveText("AI online");
   });
 
-  test.fixme("first-run onboarding modal appears once", async ({ page }) => {
+  test("first-run onboarding modal appears once", async ({ page }) => {
     await page.addInitScript(() => {
       (window as any).MIRSEND_AI_ENABLED = 1;
     });
@@ -133,13 +133,19 @@ test.describe("ai-feature-flag — flag ON", () => {
     await expect(overlayAgain).toHaveCount(0);
   });
 
-  test.fixme("TALK TO ARGON with proxy down prints canned line and logs outage", async ({
+  test("TALK TO ARGON with proxy down prints canned line and logs outage", async ({
     page,
   }) => {
     await page.addInitScript(() => {
       (window as any).MIRSEND_AI_ENABLED = 1;
+      // Suppress the first-run onboarding modal so it does not intercept
+      // clicks on the title screen during this test.
+      try {
+        localStorage.setItem("mirsend_ai_onboarding_seen", "1");
+      } catch (_e) {
+        /* localStorage may be unavailable */
+      }
     });
-    await page.goto("/play.html");
 
     // Collect console warnings
     const warnings: string[] = [];

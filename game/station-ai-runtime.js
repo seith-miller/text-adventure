@@ -19,8 +19,11 @@
   const PROXY_URL = "http://localhost:8787/v1/call";
   const REQUEST_TIMEOUT_MS = 15000;
   const MAX_CONVERSATION_HISTORY = 10;
+  /* Same canned line the flag-OFF path prints, so proxy-down reads as a
+     consistent "AI is unavailable" UX. The differentiator for developers
+     is the console.warn below. */
   const FALLBACK_MESSAGE =
-    "Argon-87's voice stutters. Static fills the channel. He does not respond.";
+    "The AI channel is dead. Argon-87's console is dark.";
 
   /* ── AI-PROMPT tag pattern ──
      Format: [AI-PROMPT: topic=<noun> text=<verbatim player text>]
@@ -105,8 +108,18 @@
         content: displayText.trim(),
       });
     } catch (err) {
-      console.warn("[StationAI] Proxy call failed:", err.message || err);
-      appendArgonText(FALLBACK_MESSAGE);
+      console.warn(
+        "[StationAI] AI proxy unreachable — falling back to canned line:",
+        err.message || err,
+      );
+      /* Route through MirsEnd.appendStoryText so the canned line reads as
+         narration, not as Argon speaking about his own dead console. */
+      const mirsEnd = window.MirsEnd;
+      if (mirsEnd?.appendStoryText) {
+        mirsEnd.appendStoryText(FALLBACK_MESSAGE);
+      } else {
+        appendArgonText(FALLBACK_MESSAGE);
+      }
     } finally {
       requestInFlight = false;
     }

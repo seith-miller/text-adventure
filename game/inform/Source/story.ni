@@ -1325,7 +1325,7 @@ Part 9B - Argon-87 grammar (m8 in-game runtime)
  depending on the MIRSEND_AI_ENABLED feature flag.]
 
 Talking to argon is an action applying to nothing.
-Understand "talk to argon" or "talk to station ai" or "speak to argon" or "speak to ship" or "call argon" or "call station ai" as talking to argon.
+Understand "talk to argon" or "talk to station ai" or "speak to argon" or "speak to ship" or "call argon" or "call station ai" or "ask argon" or "ask station ai" as talking to argon.
 
 Asking argon about is an action applying to one topic.
 Understand "ask argon about [text]" or "ask station ai about [text]" as asking argon about.
