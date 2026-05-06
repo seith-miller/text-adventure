@@ -108,13 +108,11 @@ test.describe("station-ai-runtime", () => {
       );
     });
 
-    // Wait for the fallback message
+    // Fallback prints the canned line as plain narration, not as Argon speech.
     await page
-      .locator("#story-output .argon-speech")
+      .locator("#story-output")
+      .filter({ hasText: "AI channel is dead" })
       .waitFor({ timeout: 5000 });
-
-    const speech = page.locator("#story-output .argon-speech .argon-text");
-    await expect(speech).toContainText("does not respond");
   });
 
   test("fallback message on network failure", async ({ page }) => {
@@ -133,11 +131,9 @@ test.describe("station-ai-runtime", () => {
     });
 
     await page
-      .locator("#story-output .argon-speech")
+      .locator("#story-output")
+      .filter({ hasText: "AI channel is dead" })
       .waitFor({ timeout: 5000 });
-
-    const speech = page.locator("#story-output .argon-speech .argon-text");
-    await expect(speech).toContainText("does not respond");
   });
 
   test("conversation history accumulates across calls", async ({ page }) => {

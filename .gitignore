@@ -40,3 +40,9 @@ docs/playtests/runs/
 # Source media for ASCII video conversion (large binaries, kept local).
 # The generated frames in game/mockups/frames/ ARE committed.
 media/
+
+# Editable-install build artifacts from `pip install -e .`
+*.egg-info/
+
+# Local Claude Code settings
+.claude/

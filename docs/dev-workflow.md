@@ -99,3 +99,9 @@ Neither branch requires reviews, because this project has one maintainer. When t
 Semver. The first stable is `v0.1.0`. Minor bumps for feature work on `develop` that lands to `main`. Patch bumps for hotfixes.
 
 The game is pre-1.0 until a full five-act arc is playable end to end (milestone [m4](https://github.com/seith-miller/text-adventure/milestone/4)).
+
+## AI features
+
+Argon-87 (the in-game AI) and the MCP server (LLM-as-player) are off by
+default and have their own configuration, cost caps, and QA scripts.
+See [docs/ai-setup.md](ai-setup.md).
