@@ -44,7 +44,6 @@ test.describe("session-export", () => {
     await page.waitForTimeout(500);
 
     const session = await page.evaluate(() => {
-      // biome-ignore lint/suspicious/noExplicitAny: window global
       return (window as any).MirsEnd.exportSession();
     });
 
