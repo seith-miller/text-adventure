@@ -105,7 +105,37 @@
 
   /* ── Story lines buffer (word-wrapped at STORY_W chars) ── */
   var storyLines = [];
+  /* Lines above the bottom we've scrolled back. 0 = pinned to bottom. */
   var _storyScrollOffset = 0;
+  var SCROLL_PAGE = 10;
+
+  /* Push a line into the story buffer, advancing the scroll offset when the
+     user has scrolled back so their visible window stays anchored on the
+     same content as new lines arrive. */
+  function pushStoryLine(line) {
+    var maxOffset;
+    storyLines.push(line);
+    if (_storyScrollOffset > 0) {
+      maxOffset = Math.max(0, storyLines.length - BODY_ROWS);
+      _storyScrollOffset = Math.min(_storyScrollOffset + 1, maxOffset);
+    }
+  }
+
+  function scrollUp(lines) {
+    var maxOffset = Math.max(0, storyLines.length - BODY_ROWS);
+    _storyScrollOffset = Math.min(_storyScrollOffset + lines, maxOffset);
+    renderDisplay();
+  }
+
+  function scrollDown(lines) {
+    _storyScrollOffset = Math.max(0, _storyScrollOffset - lines);
+    renderDisplay();
+  }
+
+  function scrollToTop() {
+    _storyScrollOffset = Math.max(0, storyLines.length - BODY_ROWS);
+    renderDisplay();
+  }
 
   /* ── Current input text (for rendering the input line in the grid) ── */
   var currentInputText = "";
@@ -238,13 +268,16 @@
 
   /* ── Build the visible story rows ── */
   function buildStoryColumn() {
-    // Show the most recent BODY_ROWS lines (scrolled to bottom)
     var totalLines = storyLines.length;
-    var start = Math.max(0, totalLines - BODY_ROWS);
+    var maxOffset = Math.max(0, totalLines - BODY_ROWS);
+    var offset = Math.min(_storyScrollOffset, maxOffset);
+    var end = totalLines - offset;
+    var start = Math.max(0, end - BODY_ROWS);
     var rows = [];
-    for (let i = start; i < start + BODY_ROWS; i++) {
-      rows.push(i < totalLines ? storyLines[i] : "");
+    for (let i = start; i < end; i++) {
+      rows.push(storyLines[i]);
     }
+    while (rows.length < BODY_ROWS) rows.push("");
     return rows;
   }
 
@@ -402,6 +435,56 @@
       }
     });
 
+    /* Scrollback through the story buffer. PageUp/Down step by half a
+       screen; Home/End jump to the ends. The hidden #command-input
+       captures most keys but ignores these, so the document handler
+       sees them. Suppressed during the title screen and intro. */
+    document.addEventListener("keydown", (e) => {
+      if (!state.gameStarted) return;
+      if (window.MirsEndIntro?.isActive()) return;
+      if (titleScreen && !titleScreen.classList.contains("hidden")) return;
+      if (e.key === "PageUp") {
+        e.preventDefault();
+        scrollUp(SCROLL_PAGE);
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        scrollDown(SCROLL_PAGE);
+      } else if (e.key === "Home" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        scrollToTop();
+      } else if (e.key === "End" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        scrollToBottom();
+      }
+    });
+
+    /* Mouse-wheel scrollback over the visible screen. Trackpad gestures
+       generate many wheel events per second; deltaY is divided so a
+       full notch ≈ 1–2 lines, with a per-event cap so a hard fling
+       can't jump past the buffer. */
+    var screen = document.getElementById("screen");
+    if (screen) {
+      screen.addEventListener(
+        "wheel",
+        (e) => {
+          if (!state.gameStarted) return;
+          if (titleScreen && !titleScreen.classList.contains("hidden")) return;
+          var lines = Math.max(
+            1,
+            Math.min(BODY_ROWS, Math.round(Math.abs(e.deltaY) / 20)),
+          );
+          if (e.deltaY < 0) {
+            e.preventDefault();
+            scrollUp(lines);
+          } else if (e.deltaY > 0) {
+            e.preventDefault();
+            scrollDown(lines);
+          }
+        },
+        { passive: false },
+      );
+    }
+
     /* Focus input on click anywhere (only when game is active, not during intro) */
     document.addEventListener("click", (e) => {
       if (window.MirsEndIntro?.isActive()) return;
@@ -495,6 +578,7 @@
     /* Clear story output */
     storyOutput.innerHTML = "";
     storyLines = [];
+    _storyScrollOffset = 0;
     currentInputText = "";
 
     hideMenu();
@@ -531,6 +615,7 @@
           state.sessionStartedAt || new Date().toISOString();
         storyOutput.innerHTML = "";
         storyLines = [];
+        _storyScrollOffset = 0;
         currentInputText = "";
         hideMenu();
         renderDisplay();
@@ -568,6 +653,7 @@
     /* Clear story output and show restored message */
     storyOutput.innerHTML = "";
     storyLines = [];
+    _storyScrollOffset = 0;
     currentInputText = "";
 
     hideMenu();
@@ -792,9 +878,9 @@
       const heading = cyr
         ? `<hd>${trimmed.toUpperCase()} / ${cyr}</hd>`
         : `<hd>${trimmed.toUpperCase()}</hd>`;
-      storyLines.push(heading);
-      storyLines.push("");
-      scrollToBottom();
+      pushStoryLine(heading);
+      pushStoryLine("");
+      renderDisplay();
       detectRoomChange(text);
       return;
     }
@@ -805,11 +891,11 @@
        echoes, cursor) are pushed pre-formatted via other paths. */
     var wrapped = wordWrap(text, STORY_W);
     for (let i = 0; i < wrapped.length; i++) {
-      storyLines.push(escHtml(wrapped[i]));
+      pushStoryLine(escHtml(wrapped[i]));
     }
-    storyLines.push(""); // blank line between paragraphs
+    pushStoryLine(""); // blank line between paragraphs
 
-    scrollToBottom();
+    renderDisplay();
     detectRoomChange(text);
     checkForGameEnd(text);
   }
@@ -930,8 +1016,10 @@
 
     /* Visible story column — show as dim echo. The `>` is pushed as a
        trusted bri-tag; user text is escaped before injection. */
-    storyLines.push(`<echo>&gt; ${escHtml(text)}</echo>`);
+    pushStoryLine(`<echo>&gt; ${escHtml(text)}</echo>`);
 
+    /* Typing a command always returns the viewport to the bottom — the
+       player wants to see the response to what they just submitted. */
     scrollToBottom();
   }
 
@@ -945,13 +1033,14 @@
     /* Visible story column. Wrapped chunks are escaped at push-time. */
     var wrapped = wordWrap(text, STORY_W);
     for (let i = 0; i < wrapped.length; i++) {
-      storyLines.push(`<dim>${escHtml(wrapped[i])}</dim>`);
+      pushStoryLine(`<dim>${escHtml(wrapped[i])}</dim>`);
     }
 
-    scrollToBottom();
+    renderDisplay();
   }
 
   function scrollToBottom() {
+    _storyScrollOffset = 0;
     renderDisplay();
   }
 
@@ -1508,6 +1597,12 @@
     quickSave: quickSave,
     quickLoad: quickLoad,
     continueGame: continueGame,
+    scrollUp: scrollUp,
+    scrollDown: scrollDown,
+    scrollToTop: scrollToTop,
+    scrollToBottom: scrollToBottom,
+    getScrollOffset: () => _storyScrollOffset,
+    getStoryLineCount: () => storyLines.length,
   };
 
   /* ── Boot ── */
