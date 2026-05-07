@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "axis": "morale",
+    "buckets": ["morale:low", "morale:mid", "morale:high"],
+    "doc": "docs/perception-buckets.md",
+    "tracked_in_issue": 41,
+    "prose_authored_in_issue": 54,
+    "note": "Hand-authored. No generator. ui.js falls back silently to the inline base text when a key has no variant for the current bucket."
+  },
+  "cupola-nadir-war": {
+    "base": "You press your face to the reinforced glass and look down at the Earth.",
+    "variants": {
+      "morale:low": "[PLACEHOLDER morale:low cupola-nadir-war] You press your face to the glass.",
+      "morale:mid": "[PLACEHOLDER morale:mid cupola-nadir-war] You press your face to the glass.",
+      "morale:high": "[PLACEHOLDER morale:high cupola-nadir-war] You press your face to the glass."
+    }
+  },
+  "cupola-nadir-revisit": {
+    "base": "You look down. The flashes are still coming. Fewer now, perhaps. Or only harder to pick out from the smoke. You force yourself to look away.",
+    "variants": {
+      "morale:low": "",
+      "morale:mid": "",
+      "morale:high": ""
+    }
+  },
+  "examine-yevgenia": {
+    "base": "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g.",
+    "variants": {
+      "morale:low": "",
+      "morale:mid": "",
+      "morale:high": ""
+    }
+  },
+  "examine-petrov": {
+    "base": "Commander Petrov. Thirty years of service. One hand still on the hatch wheel.",
+    "variants": {
+      "morale:low": "",
+      "morale:mid": "",
+      "morale:high": ""
+    }
+  },
+  "reactor-radiation-tick": {
+    "base": "The dosimeter ticks.",
+    "variants": {
+      "morale:low": "",
+      "morale:mid": "",
+      "morale:high": ""
+    }
+  }
+}

@@ -103,6 +103,21 @@ To say mirsend-inventory-list:
 Every turn:
 	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
 
+Chapter 7 - Perception Markers
+
+[Convention for variant-eligible descriptions (m5 #41):
+
+   say "[bracket]PERCEIVE my-key[close bracket][line break]The base prose paragraph...";
+
+ ui.js detects [PERCEIVE key], looks up game/perceptions.json, and
+ substitutes the next paragraph with the morale-bucketed variant. If
+ ui.js is not active (CLI / glulxe), the marker prints on its own line
+ and the base prose follows unchanged. Keys use kebab-case; hyphens are
+ emitted as literal characters inside [bracket]…[close bracket], so a
+ phrase wrapper like "To say perceive (key - some text)" is not used —
+ Inform 7's text-literal grammar would reject the call site. See
+ docs/perception-buckets.md for bucket thresholds.]
+
 Part 1B - Direction Synonyms
 
 [Spaceflight uses axis-relative names. Mir-3's crews think in fore/aft,
@@ -454,7 +469,7 @@ Instead of examining the viewport:
 		now war-is-discovered is true;
 		increase b2-beats-completed by 1;
 		decrease morale-level by 15;
-		say "You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire. Point fire. Hundreds of points. Blooms of orange and white. Some already fading. Some still expanding in slow-motion circles. Fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. From three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
+		say "[bracket]PERCEIVE cupola-nadir-war[close bracket][line break]You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire. Point fire. Hundreds of points. Blooms of orange and white. Some already fading. Some still expanding in slow-motion circles. Fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. From three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
 	otherwise:
 		say "You look down. The flashes are still coming. Fewer now, perhaps. Or only harder to pick out from the smoke. You force yourself to look away."
 

@@ -103,6 +103,10 @@
   /* ── ASCII art cache ── */
   var artCache = {};
 
+  /* ── Perception variant bank (m5 #41). Loaded once at boot from
+       game/perceptions.json. See docs/perception-buckets.md. ── */
+  var perceptionBank = null;
+
   /* ── Story lines buffer (word-wrapped at STORY_W chars) ── */
   var storyLines = [];
   /* Lines above the bottom we've scrolled back. 0 = pinned to bottom. */
@@ -509,6 +513,9 @@
        so session payloads can carry the exact code state. */
     loadVersionJson();
 
+    /* Fetch the perception variant bank (m5 #41). */
+    loadPerceptionBank();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -857,12 +864,84 @@
     return true;
   }
 
+  /* ── Perception variant overlay (m5 #41) ──
+     Inform 7 emits [PERCEIVE key] at the head of variant-eligible descriptions.
+     Glulxe/GlkOte may flush the marker and the body paragraph in separate
+     stream chunks (the [line break] after the marker forces a flush), so we
+     can't always substitute inline. Instead the marker arms a "pending trap"
+     that fires on the next chunk with body content, replacing its first
+     paragraph with the bucketed variant. Inline marker+body works too —
+     the trap fires on the same chunk after the marker is stripped. */
+
+  var PERCEIVE_MARKER_RE = /\[PERCEIVE ([\w-]+)\][ \t]*\n?/g;
+  var pendingPerceptionVariant = null;
+
+  function currentBucket() {
+    /* Test/dev override hatch (parallels MIRSEND_AI_ENABLED, MIRSEND_PLAYER_KIND). */
+    var override =
+      typeof window.MIRSEND_PERCEPTION_BUCKET === "string"
+        ? window.MIRSEND_PERCEPTION_BUCKET
+        : null;
+    if (override === "low" || override === "mid" || override === "high") {
+      return "morale:" + override;
+    }
+    /* Thresholds match the sidebar morale color buckets (>50 / >25 / ≤25). */
+    var m = state.morale;
+    if (m <= 25) return "morale:low";
+    if (m <= 50) return "morale:mid";
+    return "morale:high";
+  }
+
+  function resolveVariant(key) {
+    if (!perceptionBank) return null;
+    var entry = perceptionBank[key];
+    if (!entry || !entry.variants) return null;
+    var v = entry.variants[currentBucket()];
+    return v && v.length > 0 ? v : null;
+  }
+
+  function applyPerception(text) {
+    /* Strip any markers in this chunk; arm the trap for the next body chunk. */
+    text = text.replace(PERCEIVE_MARKER_RE, function (_match, key) {
+      var variant = resolveVariant(key);
+      if (variant !== null) pendingPerceptionVariant = variant;
+      return "";
+    });
+    /* Fire the trap on the first chunk with body content. */
+    if (
+      pendingPerceptionVariant !== null &&
+      text.replace(/\s+/g, "").length > 0
+    ) {
+      var v = pendingPerceptionVariant;
+      pendingPerceptionVariant = null;
+      var firstBreak = text.indexOf("\n\n");
+      text = firstBreak === -1 ? v : v + text.slice(firstBreak);
+    }
+    return text;
+  }
+
+  function loadPerceptionBank() {
+    fetch("perceptions.json")
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (b) {
+        perceptionBank = b;
+      })
+      .catch(function () {
+        perceptionBank = null;
+      });
+  }
+
   function appendStoryText(text) {
     /* Intercept status lines before they reach the DOM. */
     if (parseAndApplyMirsendStatus(text)) return;
 
     /* Intercept AI-PROMPT tags from Inform 7 and route to Station AI. */
     if (interceptAiPrompt(text)) return;
+
+    /* Substitute perception variants and strip [PERCEIVE …] markers. */
+    text = applyPerception(text);
 
     /* Add to hidden #story-output DOM (for session recording + e2e tests) */
     var span = document.createElement("span");
