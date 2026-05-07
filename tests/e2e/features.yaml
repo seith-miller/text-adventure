@@ -115,3 +115,14 @@
     panels. Guards against regressions in the visible structural
     elements that establish the design language before gameplay starts.
   surfaces: [dom]
+
+- id: phosphor-renderer
+  area: ui
+  demonstrates: >
+    The 80-column phosphor renderer (m13 #143) word-wraps Glulx prose
+    at 48 chars into the story column, echoes player input as a dim
+    `> command` line, renders bilingual Latin/Cyrillic shadow headings
+    on known room names, and supports scrollback with pin-on-append:
+    when the player has scrolled up to read history, new arriving
+    content does not yank the viewport back to the bottom.
+  surfaces: [dom, state]
