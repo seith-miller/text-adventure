@@ -883,7 +883,7 @@
         ? window.MIRSEND_PERCEPTION_BUCKET
         : null;
     if (override === "low" || override === "mid" || override === "high") {
-      return "morale:" + override;
+      return `morale:${override}`;
     }
     /* Thresholds match the sidebar morale color buckets (>50 / >25 / ≤25). */
     var m = state.morale;
@@ -894,15 +894,15 @@
 
   function resolveVariant(key) {
     if (!perceptionBank) return null;
-    var entry = perceptionBank[key];
-    if (!entry || !entry.variants) return null;
-    var v = entry.variants[currentBucket()];
+    var variants = perceptionBank[key]?.variants;
+    if (!variants) return null;
+    var v = variants[currentBucket()];
     return v && v.length > 0 ? v : null;
   }
 
   function applyPerception(text) {
     /* Strip any markers in this chunk; arm the trap for the next body chunk. */
-    text = text.replace(PERCEIVE_MARKER_RE, function (_match, key) {
+    text = text.replace(PERCEIVE_MARKER_RE, (_match, key) => {
       var variant = resolveVariant(key);
       if (variant !== null) pendingPerceptionVariant = variant;
       return "";
@@ -912,9 +912,9 @@
       pendingPerceptionVariant !== null &&
       text.replace(/\s+/g, "").length > 0
     ) {
-      var v = pendingPerceptionVariant;
+      const v = pendingPerceptionVariant;
       pendingPerceptionVariant = null;
-      var firstBreak = text.indexOf("\n\n");
+      const firstBreak = text.indexOf("\n\n");
       text = firstBreak === -1 ? v : v + text.slice(firstBreak);
     }
     return text;
@@ -922,13 +922,11 @@
 
   function loadPerceptionBank() {
     fetch("perceptions.json")
-      .then(function (r) {
-        return r.ok ? r.json() : null;
-      })
-      .then(function (b) {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => {
         perceptionBank = b;
       })
-      .catch(function () {
+      .catch(() => {
         perceptionBank = null;
       });
   }

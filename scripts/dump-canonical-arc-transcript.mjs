@@ -7,11 +7,12 @@
  *
  *   node scripts/dump-canonical-arc-transcript.mjs
  */
-import { chromium } from "playwright";
-import { writeFileSync, mkdirSync } from "node:fs";
+
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import { chromium } from "playwright";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(__dirname, "..");

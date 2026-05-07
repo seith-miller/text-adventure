@@ -6,11 +6,12 @@
  *
  *   node scripts/dump-perception-transcripts.mjs
  */
-import { chromium } from "playwright";
-import { writeFileSync, mkdirSync } from "node:fs";
+
+import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import { chromium } from "playwright";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(__dirname, "..");
@@ -99,7 +100,11 @@ async function main() {
     await browser.close();
 
     const today = new Date().toISOString().slice(0, 10);
-    const outPath = resolve(REPO, "docs/playtests", `${today}-m5-perception.md`);
+    const outPath = resolve(
+      REPO,
+      "docs/playtests",
+      `${today}-m5-perception.md`,
+    );
     mkdirSync(dirname(outPath), { recursive: true });
     const md = renderMarkdown(transcripts, today);
     writeFileSync(outPath, md);
@@ -125,12 +130,11 @@ transcript from \`#story-output\`, excerpts the cupola section.
 **Verifies:**
 
 - \`[PERCEIVE cupola-nadir-war]\` markers never appear in visible output
-- The placeholder variant for each bucket lands at the head of the reveal
+- The bucketed variant for each register lands at the head of the reveal
 - The post-marker paragraphs ("The nightside should be …", the count,
   the framing) render unchanged across all three buckets
 
-Real prose for these placeholders is pending issue #54
-([m7][story] Write morale-axis perception variants for five key descriptions).
+Variant prose is hand-authored in \`game/perceptions.json\` per #54.
 
 ---
 

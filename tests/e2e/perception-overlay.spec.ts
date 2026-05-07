@@ -120,9 +120,11 @@ test.describe("perception-overlay", () => {
   test("currentBucket() falls back to morale state when no override is set", async ({
     page,
   }) => {
-    /* No override + starting morale (50–70 from the randomized opening) lands
-       the player in morale:mid or morale:high. We just verify *some* bucket's
-       placeholder substitutes — the marker is gone and one of the three
+    /* No override + starting morale (30–55 from the Inform 7 randomized
+       opening, see story.ni "now morale-level is a random number between 30
+       and 55"; the war reveal further decreases morale by 15) lands the
+       player in morale:low or morale:mid. We just verify *some* bucket's
+       variant substitutes: the marker is gone and one of the three
        variants is present. */
     await startNewGame(page);
     /* Wait for at least one MIRSEND status so state.morale is current. */
