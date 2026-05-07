@@ -1,4 +1,4 @@
-# m5 perception overlay — Playwright transcript dump — 2026-05-05
+# m5 perception overlay — Playwright transcript dump — 2026-05-07
 
 **Run by:** `node scripts/dump-perception-transcripts.mjs`. Drives the
 canonical cupola-nadir-war path three times, once per morale bucket
@@ -37,7 +37,7 @@ The hatch back to the central node is above you (zenith).
 
 
 
-[PLACEHOLDER morale:low cupola-nadir-war] You press your face to the glass.
+You press your face to the glass. The glass is cold. The glass has been waiting. You look down.
 
 The nightside should be a field of glittering city lights.
 
@@ -76,7 +76,7 @@ The hatch back to the central node is above you (zenith).
 
 
 
-[PLACEHOLDER morale:mid cupola-nadir-war] You press your face to the glass.
+You press your face to the glass. You look down. The Earth is below you, the way it always is.
 
 The nightside should be a field of glittering city lights.
 
@@ -115,7 +115,7 @@ The hatch back to the central node is above you (zenith).
 
 
 
-[PLACEHOLDER morale:high cupola-nadir-war] You press your face to the glass.
+You press your face to the glass. The cold of it works through your skin. You look down. You will see this.
 
 The nightside should be a field of glittering city lights.
 

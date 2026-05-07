@@ -6,46 +6,46 @@
     "doc": "docs/perception-buckets.md",
     "tracked_in_issue": 41,
     "prose_authored_in_issue": 54,
-    "note": "Hand-authored. No generator. ui.js falls back silently to the inline base text when a key has no variant for the current bucket."
+    "note": "Hand-authored. No generator. ui.js falls back silently to the inline base text when a key has no variant for the current bucket. Voice rules in docs/writing-style.md and docs/writing-samples/."
   },
   "cupola-nadir-war": {
     "base": "You press your face to the reinforced glass and look down at the Earth.",
     "variants": {
-      "morale:low": "[PLACEHOLDER morale:low cupola-nadir-war] You press your face to the glass.",
-      "morale:mid": "[PLACEHOLDER morale:mid cupola-nadir-war] You press your face to the glass.",
-      "morale:high": "[PLACEHOLDER morale:high cupola-nadir-war] You press your face to the glass."
+      "morale:low": "You press your face to the glass. The glass is cold. The glass has been waiting. You look down.",
+      "morale:mid": "You press your face to the glass. You look down. The Earth is below you, the way it always is.",
+      "morale:high": "You press your face to the glass. The cold of it works through your skin. You look down. You will see this."
     }
   },
   "cupola-nadir-revisit": {
     "base": "You look down. The flashes are still coming. Fewer now, perhaps. Or only harder to pick out from the smoke. You force yourself to look away.",
     "variants": {
-      "morale:low": "",
-      "morale:mid": "",
-      "morale:high": ""
+      "morale:low": "You look down. The Earth is still burning. The Earth has always been burning. You look at it because it is what is.",
+      "morale:mid": "You look down. The flashes still come. Some fading. Some new. The smoke makes them hard to count. You look away.",
+      "morale:high": "You look down. You count what is still happening. The number is climbing. You log it and look away."
     }
   },
   "examine-yevgenia": {
-    "base": "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g.",
+    "base": "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g. Her face is calm. She probably never registered what happened. A thin film of frost on her eyelashes.",
     "variants": {
-      "morale:low": "",
-      "morale:mid": "",
-      "morale:high": ""
+      "morale:low": "Yevgenia Kozlova floats in the corridor. The station's engineer. The frost on her eyelashes catches the light in a pattern. Someone made the pattern. Someone did not.",
+      "morale:mid": "Yevgenia Kozlova. The station's engineer. Suspended in zero-g. Her face calm. She did not see it coming. Frost on her eyelashes.",
+      "morale:high": "Yevgenia Kozlova. The station's engineer. The best of you. Suspended in the corridor. She did not see it. You will."
     }
   },
   "examine-petrov": {
-    "base": "Commander Petrov. Thirty years of service. One hand still on the hatch wheel.",
+    "base": "Commander Petrov. Thirty years of service. One hand still on the hatch wheel. He was trying to get inside the cupola. Trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had.",
     "variants": {
-      "morale:low": "",
-      "morale:mid": "",
-      "morale:high": ""
+      "morale:low": "Commander Petrov. Thirty years. One hand on the wheel. He saw it first. He understood it first. His eyes are still open. He is still looking.",
+      "morale:mid": "Commander Petrov. Thirty years of service. One hand on the wheel. He was trying to get inside. He never made it. The hatch sealed. The breach. His eyes still open.",
+      "morale:high": "Commander Petrov. Thirty years of service. One hand still on the wheel. He was trying to see. So are you. He failed. You will not."
     }
   },
   "reactor-radiation-tick": {
-    "base": "The dosimeter ticks.",
+    "base": "Your dosimeter ticks up another increment. Not lethal. Not tonight. But you cannot stay here.",
     "variants": {
-      "morale:low": "",
-      "morale:mid": "",
-      "morale:high": ""
+      "morale:low": "The dosimeter counts. Counting has never meant what it means now. Each number a saint. You cannot stay.",
+      "morale:mid": "Your dosimeter ticks. Another increment. Not lethal tonight. You cannot stay.",
+      "morale:high": "Your dosimeter ticks. The number climbs. The number will be lethal soon enough. Not yet."
     }
   }
 }

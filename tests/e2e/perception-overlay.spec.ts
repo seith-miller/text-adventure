@@ -53,6 +53,12 @@ test.describe("perception-overlay", () => {
     expect(visible).not.toMatch(/\[PERCEIVE/);
   });
 
+  /* Distinctive phrases lifted from the variants in game/perceptions.json.
+     Each is unique to its bucket so cross-bucket leakage shows up in tests. */
+  const HIGH_PHRASE = "You will see this";
+  const MID_PHRASE = "the way it always is";
+  const LOW_PHRASE = "The glass has been waiting";
+
   test("morale:high bucket substitutes the high variant", async ({ page }) => {
     await startNewGame(page);
     await page.evaluate(() => {
@@ -60,9 +66,9 @@ test.describe("perception-overlay", () => {
     });
     await walkToCupolaAndLook(page);
     const visible = await storyText(page);
-    expect(visible).toContain("PLACEHOLDER morale:high cupola-nadir-war");
-    expect(visible).not.toContain("PLACEHOLDER morale:low");
-    expect(visible).not.toContain("PLACEHOLDER morale:mid");
+    expect(visible).toContain(HIGH_PHRASE);
+    expect(visible).not.toContain(LOW_PHRASE);
+    expect(visible).not.toContain(MID_PHRASE);
     /* The original base first paragraph must be REPLACED, not duplicated. */
     expect(visible).not.toContain(
       "You press your face to the reinforced glass and look down at the Earth.",
@@ -76,9 +82,9 @@ test.describe("perception-overlay", () => {
     });
     await walkToCupolaAndLook(page);
     const visible = await storyText(page);
-    expect(visible).toContain("PLACEHOLDER morale:mid cupola-nadir-war");
-    expect(visible).not.toContain("PLACEHOLDER morale:low");
-    expect(visible).not.toContain("PLACEHOLDER morale:high");
+    expect(visible).toContain(MID_PHRASE);
+    expect(visible).not.toContain(LOW_PHRASE);
+    expect(visible).not.toContain(HIGH_PHRASE);
   });
 
   test("morale:low bucket substitutes the low variant", async ({ page }) => {
@@ -88,9 +94,9 @@ test.describe("perception-overlay", () => {
     });
     await walkToCupolaAndLook(page);
     const visible = await storyText(page);
-    expect(visible).toContain("PLACEHOLDER morale:low cupola-nadir-war");
-    expect(visible).not.toContain("PLACEHOLDER morale:mid");
-    expect(visible).not.toContain("PLACEHOLDER morale:high");
+    expect(visible).toContain(LOW_PHRASE);
+    expect(visible).not.toContain(MID_PHRASE);
+    expect(visible).not.toContain(HIGH_PHRASE);
   });
 
   test("the rest of the description (post-marker paragraphs) still renders", async ({
@@ -127,8 +133,9 @@ test.describe("perception-overlay", () => {
     await walkToCupolaAndLook(page);
     const visible = await storyText(page);
     expect(visible).not.toMatch(/\[PERCEIVE/);
+    /* One of the three bucket-specific phrases must be present. */
     expect(visible).toMatch(
-      /PLACEHOLDER morale:(low|mid|high) cupola-nadir-war/,
+      /You will see this|the way it always is|The glass has been waiting/,
     );
   });
 });
