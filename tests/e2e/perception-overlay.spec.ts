@@ -140,4 +140,98 @@ test.describe("perception-overlay", () => {
       /You will see this|the way it always is|The glass has been waiting/,
     );
   });
+
+  /* The examine-yevgenia site is the only perception wiring with a non-trivial
+     structure: a [paragraph break] separates the variant-eligible opener from
+     the unchanged notebook-state conditional and screwdriver detail. If the
+     splice ever breaks (e.g. someone removes the paragraph break in
+     story.ni's Yevgenia description), the variant would eat the notebook
+     conditional and the inventory hint would silently disappear. This test
+     locks the splice in place. SET finding #176. */
+  test("examine-yevgenia variant fires AND the notebook conditional below it still renders", async ({
+    page,
+  }) => {
+    await startNewGame(page);
+    await page.evaluate(() => {
+      (window as any).MIRSEND_PERCEPTION_BUCKET = "high";
+    });
+    const steps = [
+      "open locker",
+      "take flashlight",
+      "switch on flashlight",
+      "pull lever",
+      "n", // Main Corridor (Yevgenia's body)
+      "examine yevgenia",
+    ];
+    for (const cmd of steps) {
+      await sendCommand(page, cmd);
+      await page.waitForTimeout(80);
+    }
+    await waitForStoryText(page, /flight notebook/i);
+    const visible = await storyText(page);
+    /* High variant fires. */
+    expect(visible).toContain("The best of you");
+    expect(visible).toContain("She did not see it. You will.");
+    /* The notebook conditional below the splice still renders (player has
+       not yet taken the notebook, so the "still clipped" branch fires). */
+    expect(visible).toContain(
+      "Her flight notebook is still clipped to the chest of her suit",
+    );
+    /* The closing screwdriver line in the same post-splice paragraph. */
+    expect(visible).toContain("screwdriver she will never put down");
+    /* The original opener must be REPLACED, not duplicated. */
+    expect(visible).not.toContain("She probably never registered what happened");
+    /* Marker stripped. */
+    expect(visible).not.toMatch(/\[PERCEIVE/);
+  });
+
+  /* The reactor-radiation-tick variant is the only perception emitted from
+     an "Every turn" rule (not an examine action). Per-turn emits flow
+     through ui.js's appendStoryText the same way examine output does, but
+     the code path is distinct enough to warrant explicit coverage. The rule
+     fires with a 1-in-4 random chance per turn, so we poll up to 25 turns
+     in the Reactor Module — probability of missing the variant across that
+     window is ~0.3%. SET finding #176. */
+  test("reactor-radiation-tick variant fires from the per-turn rule", async ({
+    page,
+  }) => {
+    await startNewGame(page);
+    await page.evaluate(() => {
+      (window as any).MIRSEND_PERCEPTION_BUCKET = "low";
+    });
+    /* The reactor hatch is dosimeter-gated ("Without a dosimeter on you,
+       walking into a reactor compartment is how people get cooked quietly").
+       So the setup grabs the dosimeter from Life Support before going aft. */
+    const setup = [
+      "open locker",
+      "take flashlight",
+      "switch on flashlight",
+      "pull lever", // open corridor valve
+      "n", // Crew Quarters → Main Corridor
+      "u", // Main Corridor → Life Support
+      "take dosimeter",
+      "d", // Life Support → Main Corridor
+      "s", // Main Corridor → Crew Quarters
+      "s", // Crew Quarters → Reactor Module (now allowed with dosimeter)
+    ];
+    for (const cmd of setup) {
+      await sendCommand(page, cmd);
+      await page.waitForTimeout(80);
+    }
+    await waitForStoryText(page, /Reactor Module/i);
+    const LOW_VARIANT_PHRASE = "Each number a saint";
+    let found = false;
+    for (let i = 0; i < 25 && !found; i++) {
+      await sendCommand(page, "look");
+      await page.waitForTimeout(80);
+      const visible = await storyText(page);
+      if (visible.includes(LOW_VARIANT_PHRASE)) {
+        found = true;
+      }
+    }
+    expect(found).toBe(true);
+    const visible = await storyText(page);
+    expect(visible).toContain(LOW_VARIANT_PHRASE);
+    expect(visible).not.toMatch(/\[PERCEIVE reactor-radiation-tick/);
+  });
 });
