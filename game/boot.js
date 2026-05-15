@@ -49,7 +49,7 @@
   /** Show a single POST line */
   function showLine(text, extraClass) {
     var el = document.createElement("div");
-    el.className = "boot-line" + (extraClass ? " " + extraClass : "");
+    el.className = extraClass ? `boot-line ${extraClass}` : "boot-line";
     el.textContent = text;
     textContainer.appendChild(el);
     /* Force reflow then add visible class */
@@ -59,9 +59,7 @@
 
   /** Cancel all pending timers */
   function cancelTimers() {
-    for (var i = 0; i < timers.length; i++) {
-      clearTimeout(timers[i]);
-    }
+    for (const t of timers) clearTimeout(t);
     timers = [];
   }
 
@@ -81,7 +79,7 @@
     skipEl.style.transition = "opacity 0.2s ease-out";
     skipEl.style.opacity = "0";
 
-    var timer = setTimeout(function () {
+    var timer = setTimeout(() => {
       overlay.classList.add("hidden");
       overlay.remove();
       skipEl.remove();
@@ -122,7 +120,7 @@
     }
 
     /* Show skip hint after 800ms */
-    var skipTimer = setTimeout(function () {
+    var skipTimer = setTimeout(() => {
       if (bootActive) skipEl.classList.add("visible");
     }, 800);
     timers.push(skipTimer);
@@ -132,19 +130,17 @@
     document.addEventListener("click", handleSkipClick);
 
     /* Schedule each POST line */
-    for (var i = 0; i < BOOT_LINES.length; i++) {
-      (function (index) {
-        var timer = setTimeout(function () {
-          if (!bootActive) return;
-          showLine(BOOT_LINES[index]);
-        }, index * LINE_INTERVAL);
-        timers.push(timer);
-      })(i);
+    for (let i = 0; i < BOOT_LINES.length; i++) {
+      const lineTimer = setTimeout(() => {
+        if (!bootActive) return;
+        showLine(BOOT_LINES[i]);
+      }, i * LINE_INTERVAL);
+      timers.push(lineTimer);
     }
 
     /* Schedule READY line after all POST lines + pause */
     var readyDelay = BOOT_LINES.length * LINE_INTERVAL + READY_PAUSE;
-    var readyTimer = setTimeout(function () {
+    var readyTimer = setTimeout(() => {
       if (!bootActive) return;
       showLine(READY_LINE, "boot-ready");
 
@@ -158,7 +154,7 @@
 
     /* End boot after READY holds */
     var endDelay = readyDelay + HOLD_AFTER_READY;
-    var endTimer = setTimeout(function () {
+    var endTimer = setTimeout(() => {
       if (!bootActive) return;
       endBoot();
     }, endDelay);
@@ -167,14 +163,12 @@
 
   /* ── Public API ── */
   window.MirsEndBoot_POST = {
-    run: function (callback) {
+    run: (callback) => {
       onCompleteCallback = callback || null;
       runBoot();
     },
     skip: endBoot,
-    isActive: function () {
-      return bootActive;
-    },
+    isActive: () => bootActive,
     LINES: BOOT_LINES,
     READY_LINE: READY_LINE,
     LINE_INTERVAL: LINE_INTERVAL,
