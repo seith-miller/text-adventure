@@ -15,13 +15,14 @@
 
   /** Read persisted mode from localStorage, default to "auto". */
   function loadMode() {
+    var stored = null;
     try {
-      var stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && VALID_MODES.indexOf(stored) !== -1) {
-        return stored;
-      }
+      stored = localStorage.getItem(STORAGE_KEY);
     } catch (_e) {
       /* localStorage unavailable */
+    }
+    if (stored && VALID_MODES.indexOf(stored) !== -1) {
+      return stored;
     }
     return "auto";
   }
@@ -89,10 +90,10 @@
   /* ── Public API ── */
   window.MirsEndMotion = {
     init: init,
-    getMode: function () { return _mode; },
+    getMode: () => _mode,
     setMode: setMode,
     cycleMode: cycleMode,
-    isReduced: function () { return _reducedMotion; },
+    isReduced: () => _reducedMotion,
     MODES: VALID_MODES,
     STORAGE_KEY: STORAGE_KEY,
   };

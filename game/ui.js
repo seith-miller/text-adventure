@@ -1008,7 +1008,7 @@
 
     var overlay = document.createElement("div");
     overlay.id = "settings-overlay";
-    overlay.addEventListener("click", function (e) {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeSettingsModal();
     });
 
@@ -1032,7 +1032,7 @@
     cycleBtn.className = "settings-cycle-btn";
     cycleBtn.id = "settings-motion-btn";
     cycleBtn.textContent = getMotionLabel();
-    cycleBtn.addEventListener("click", function () {
+    cycleBtn.addEventListener("click", () => {
       if (window.MirsEndMotion) {
         window.MirsEndMotion.cycleMode();
         cycleBtn.textContent = getMotionLabel();
