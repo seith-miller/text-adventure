@@ -503,7 +503,7 @@ Instead of taking the mechanical watch:
 
 Chapter 5 - Command Module
 
-The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
+The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. On the port wall, ARGON-87's monitor. Dark for now. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
 
 Power-is-restored is a truth state that varies. Power-is-restored is false.
 Armament-bay-unlocked is a truth state that varies. Armament-bay-unlocked is false.
@@ -763,7 +763,7 @@ Instead of examining west when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
 		say "It is too dark to port to see.";
 	otherwise:
-		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if]"
+		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if][paragraph break]Beside the comms console, ARGON-87's monitor. A flat dark panel. Above it a small brass plate. АРГОН-87. The station computer. Dark tonight."
 
 Instead of examining east when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
@@ -1402,6 +1402,32 @@ Instead of operating the deorbit console when power-is-restored is true:
 
 Instead of operating the fire-control console when the fire-control console is powered:
 	say "The targeting console hums. Radar sweep. Aim vector. The trigger guard is still locked. The weapon is ready but the decision is not yours alone."
+
+Part 9D - Argon-87 awareness cues (prose)
+
+[Issue #114. Across 8 playtest sessions on 2026-04-27 zero agents
+ addressed ARGON-87. Part 9B already wires TALK TO ARGON / ASK ARGON
+ ABOUT X to the AI-PROMPT routing. The verb grammar exists but the
+ prose gave no signal that the AI was there to talk to. This part adds
+ the prose surface only. Verb routing stays in 9B.
+
+ Three cues layer: the Command Module description names the monitor
+ on the port wall; LOOK PORT in the Command Module describes the
+ monitor and its АРГОН-87 plate; and the player's first turn standing
+ in the Main Corridor produces a single capacitor-burst speaker line
+ in his voice. The corridor line is consistent with the dead-bus
+ state because it is framed as stored capacitance, not live runtime.]
+
+The argon monitor is scenery in the Command Module. Understand "monitor" or "screen" or "argon monitor" or "argon screen" or "port monitor" or "brass plate" as the argon monitor. The printed name of the argon monitor is "ARGON-87's monitor". The description of the argon monitor is "A flat-panel monitor at the port wall. Above it a small brass plate stamped АРГОН-87 in the formal Cyrillic of an older era of Soviet hardware. The console where ARGON-87 speaks to the watch. Logs the burns. Hands back the short answers a watchstander asks at three in the morning.[if power-is-restored is false] The screen is dark. The bus that feeds him is one of the ones the EMP took.[otherwise] The screen carries a single patient cursor. The bus is alive again.[end if]"
+
+Instead of taking the argon monitor:
+	say "The monitor is bolted into the port wall. It is not going anywhere."
+
+Argon-corridor-cue-shown is a truth state that varies. Argon-corridor-cue-shown is false.
+
+Every turn when the player is in the Main Corridor and argon-corridor-cue-shown is false:
+	now argon-corridor-cue-shown is true;
+	say "[paragraph break]A speaker in the maintenance panel clicks. Soft. Once.[paragraph break][italic type]I am still here, comrade. When you can hear me, I will hear you.[roman type][paragraph break]The voice is synthesized. Calm. Not unfamiliar. The speaker goes quiet. The bus that feeds him is dead with everything else. The words came out of stored capacitance and nothing more."
 
 Part 10 - Score Tracking
 
