@@ -84,6 +84,10 @@
     inventory: [],
     interpreterReady: false,
     gameStarted: false,
+    // True once Inform 7 has emitted at least one [MIRSEND ...] status line.
+    // Until then, the system-status lamps render in their pre-init fallback
+    // (all <off>) so a fresh shell doesn't lie about ship state.
+    mirsendReceived: false,
   };
 
   /* ── Save key for localStorage (inline quick-save fallback) ── */
@@ -203,6 +207,97 @@
     return result;
   }
 
+  /* ── System-status lamp colors (#173) ──
+     Six lamps in the SYSTEMS panel reflect ship state, not decoration.
+     Until the first [MIRSEND ...] line arrives we treat all lamps as
+     <off> so an early-init render doesn't show six identical green lamps
+     before the Inform 7 every-turn rule has actually painted truth.
+
+     Mapping is derived in ui.js from already-available state (o2, morale,
+     inventory, currentRoom) plus story-side truth flags echoed in MIRSEND
+     when present. The Inform 7 status line currently emits o2/morale/inv
+     plus b1/b2/act2 progression counters; we extend the parse below to
+     forward-compatibly read named lamp fields (pwr=, comm=, nav=,
+     hull=, dock=) if story.ni ever publishes them. */
+
+  /**
+   * Compute the six lamp color tags from current ship state.
+   * Returns an object keyed by lamp name; values are tag names
+   * ("grn" / "amb" / "red" / "wht" / "off") that map to the existing
+   * color classes in ui.css. No new tags are introduced.
+   */
+  function computeLamps() {
+    var lamps = {
+      pwr: "off",
+      life: "off",
+      comm: "off",
+      nav: "off",
+      hull: "off",
+      dock: "off",
+    };
+
+    // Pre-init: shell loaded but interpreter hasn't sent a status line
+    // yet. Keep the lamps off so the panel doesn't pretend to know.
+    if (!state.mirsendReceived) return lamps;
+
+    var raw = state.shipStatus || {};
+
+    // PWR — main bus on/off. Story-side `pwr` field wins if present;
+    // otherwise we assume the bus is on whenever a MIRSEND has landed
+    // (the every-turn rule only fires after the interpreter is alive).
+    lamps.pwr = raw.pwr === "off" ? "off" : "grn";
+
+    // LIFE — life support, keyed on oxygen-level thresholds. Same
+    // bucketing used by the O2 gauge: >50 nominal, >25 degraded,
+    // <=25 failing. Story-side override accepted via `life=ok|deg|fail`.
+    if (raw.life === "ok") lamps.life = "grn";
+    else if (raw.life === "deg") lamps.life = "amb";
+    else if (raw.life === "fail") lamps.life = "red";
+    else if (state.o2 > 50) lamps.life = "grn";
+    else if (state.o2 > 25) lamps.life = "amb";
+    else lamps.life = "red";
+
+    // COMM — antenna deployed and proxy reachable. Defaults to amber
+    // (antenna patched to isolated bus, no live channel) per the
+    // canonical opening state in lib/ship-state.js. `comm=on|deg|off`
+    // override lets story.ni promote to green or knock to off.
+    if (raw.comm === "on") lamps.comm = "grn";
+    else if (raw.comm === "off") lamps.comm = "off";
+    else lamps.comm = "amb";
+
+    // NAV — orientation lock. Without power the station drifts
+    // (amber); once the player reaches the Command Module the manual
+    // gauges give a usable heading reference (green). Story-side
+    // override via `nav=ok|deg`.
+    if (raw.nav === "ok") lamps.nav = "grn";
+    else if (raw.nav === "deg") lamps.nav = "amb";
+    else if (
+      state.currentRoom === "Command Module" ||
+      state.currentRoom === "Observation Cupola"
+    )
+      lamps.nav = "grn";
+    else lamps.nav = "amb";
+
+    // HULL — pressure state. Canonical opening: central node "breached,
+    // sealed" — degraded but holding (amber). Story can override via
+    // `hull=ok|breach|vent`.
+    if (raw.hull === "ok") lamps.hull = "grn";
+    else if (raw.hull === "breach") lamps.hull = "amb";
+    else if (raw.hull === "vent") lamps.hull = "red";
+    else lamps.hull = "amb";
+
+    // DOCK — docked vehicles. Soyuz and Progress are both docked at
+    // game start (white = soft-locked is the post-departure-prep
+    // state). For now we surface "docked" as amber until story.ni
+    // emits `dock=hard|soft|off`.
+    if (raw.dock === "soft") lamps.dock = "wht";
+    else if (raw.dock === "hard") lamps.dock = "amb";
+    else if (raw.dock === "off") lamps.dock = "off";
+    else lamps.dock = "amb";
+
+    return lamps;
+  }
+
   /* ── Build sidebar column ── */
   function buildSidebar() {
     var rows = [];
@@ -246,10 +341,18 @@
     rows.push("<hd>SYSTEMS / СИСТЕМЫ</hd>");
     rows.push("");
 
-    // System status lamps (static for now — wiring is #133)
-    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
-    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
-    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
+    // System status lamps — wired to ship state (#173). Colors come
+    // from computeLamps() which derives from o2 / currentRoom / parsed
+    // MIRSEND fields. Before the first MIRSEND lands all six render
+    // <off> so a fresh shell doesn't pretend to know ship state.
+    var lamps = computeLamps();
+    var lamp = (name, label) => {
+      var t = lamps[name];
+      return `<${t}>\u2588</${t}> ${label}`;
+    };
+    rows.push(cells(lamp("pwr", "PWR"), lamp("life", "LIFE"), SIDE_W));
+    rows.push(cells(lamp("comm", "COMM"), lamp("nav", "NAV"), SIDE_W));
+    rows.push(cells(lamp("hull", "HULL"), lamp("dock", "DOCK"), SIDE_W));
 
     rows.push("");
     rows.push("<hd>INVENTORY / ИНВЕНТАРЬ</hd>");
@@ -576,6 +679,8 @@
     state.morale = 70;
     state.inventory = [];
     state.gameStarted = true;
+    state.mirsendReceived = false;
+    state.shipStatus = {};
     state.sessionStartedAt = new Date().toISOString();
 
     /* Reset playthrough-db session tracking (m11). */
@@ -860,8 +965,38 @@
     state.o2 = o2;
     state.morale = morale;
     state.inventory = inventory;
+    state.mirsendReceived = true;
+    // Capture any additional key=value fields after inv= (e.g. b1/b2/act2
+    // today, lamp-pwr/lamp-comm/etc. once story.ni publishes them) so the
+    // lamp logic in computeLamps() can read forward-compatible overrides
+    // without a parser change. Keys live on state.shipStatus.
+    state.shipStatus = parseMirsendTail(text);
     updateStatus();
     return true;
+  }
+
+  /**
+   * Pull every trailing `key=value` pair from the MIRSEND payload after the
+   * fixed o2/morale/inv prefix. Today story.ni emits b1/b2/act2; tomorrow
+   * it might emit lamp-pwr/lamp-comm/etc. Keeping the parse generic means
+   * computeLamps() can pick up new fields without a regex change.
+   */
+  function parseMirsendTail(text) {
+    var out = {};
+    var bracket = text.match(/\[MIRSEND([^\]]*)\]/);
+    if (!bracket) return out;
+    // Skip past o2= morale= inv= ; inv= runs until the next " key=" or EOL.
+    var tail = bracket[1].replace(
+      /^\s*o2=-?\d+\s+morale=-?\d+\s+inv=\S*\s*/,
+      "",
+    );
+    var fieldRe = /(\w+)=([^\s\]]*)/g;
+    var match = fieldRe.exec(tail);
+    while (match !== null) {
+      out[match[1]] = match[2];
+      match = fieldRe.exec(tail);
+    }
+    return out;
   }
 
   /* ── Perception variant overlay (m5 #41) ──
@@ -1680,6 +1815,10 @@
     scrollToBottom: scrollToBottom,
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
+    // System-status lamp colors (#173). Exposed for e2e tests so they
+    // can assert the sidebar reflects ship state without scraping the
+    // rendered <pre>.
+    getLamps: () => computeLamps(),
   };
 
   /* ── Boot ── */
