@@ -110,6 +110,14 @@
 
     updateStatus();
 
+    /* Wire up settings button */
+    initSettingsButton();
+
+    /* Initialize reduced-motion module */
+    if (window.MirsEndMotion) {
+      window.MirsEndMotion.init();
+    }
+
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
 
@@ -983,6 +991,79 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     appendSystemText("[Session exported.]");
+  }
+
+  /* ── Settings UI ── */
+
+  function initSettingsButton() {
+    var settingsBtn = document.getElementById("menu-settings");
+    if (settingsBtn) {
+      settingsBtn.disabled = false;
+      settingsBtn.addEventListener("click", showSettingsModal);
+    }
+  }
+
+  function showSettingsModal() {
+    closeSettingsModal();
+
+    var overlay = document.createElement("div");
+    overlay.id = "settings-overlay";
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeSettingsModal();
+    });
+
+    var modal = document.createElement("div");
+    modal.id = "settings-modal";
+
+    var title = document.createElement("h2");
+    title.textContent = "Settings";
+    modal.appendChild(title);
+
+    /* Reduced-motion toggle row */
+    var row = document.createElement("div");
+    row.className = "settings-row";
+
+    var label = document.createElement("div");
+    label.className = "settings-label";
+    label.innerHTML =
+      "Reduced Motion<small>Disables animations for accessibility</small>";
+
+    var cycleBtn = document.createElement("button");
+    cycleBtn.className = "settings-cycle-btn";
+    cycleBtn.id = "settings-motion-btn";
+    cycleBtn.textContent = getMotionLabel();
+    cycleBtn.addEventListener("click", function () {
+      if (window.MirsEndMotion) {
+        window.MirsEndMotion.cycleMode();
+        cycleBtn.textContent = getMotionLabel();
+      }
+    });
+
+    row.appendChild(label);
+    row.appendChild(cycleBtn);
+    modal.appendChild(row);
+
+    var closeBtn = document.createElement("button");
+    closeBtn.id = "settings-close";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", closeSettingsModal);
+    modal.appendChild(closeBtn);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  function closeSettingsModal() {
+    var existing = document.getElementById("settings-overlay");
+    if (existing) existing.remove();
+  }
+
+  function getMotionLabel() {
+    if (!window.MirsEndMotion) return "N/A";
+    var mode = window.MirsEndMotion.getMode();
+    if (mode === "auto") return "AUTO";
+    if (mode === "on") return "ON";
+    return "OFF";
   }
 
   /* ── Public API for interpreter integration ── */

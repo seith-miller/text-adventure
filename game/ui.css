@@ -563,3 +563,128 @@ html, body {
   text-align: center;
   padding: 1em 0;
 }
+
+/* ── Settings modal ── */
+#settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#settings-modal {
+  background: var(--bg-panel);
+  border: 2px solid var(--border-glow);
+  border-radius: 6px;
+  padding: 1.5em;
+  min-width: 380px;
+  max-width: 480px;
+  font-family: "Courier New", Courier, monospace;
+  color: var(--text-primary);
+  box-shadow: 0 0 30px rgba(42, 90, 143, 0.3);
+}
+
+#settings-modal h2 {
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--title-color);
+  text-transform: uppercase;
+  margin-bottom: 1em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5em;
+  text-align: center;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6em 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-label {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.settings-label small {
+  display: block;
+  color: var(--text-dim);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.settings-cycle-btn {
+  background: var(--bg-dark);
+  color: var(--text-input);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 4px 14px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.settings-cycle-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+#settings-close {
+  display: block;
+  margin: 1em auto 0;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 5px 20px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#settings-close:hover {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+/* ── Reduced-motion overrides ── */
+
+.reduced-motion #status-bar-o2 .bar-fill,
+.reduced-motion #status-bar-morale .bar-fill {
+  transition: none;
+}
+
+.reduced-motion .menu-btn {
+  transition: none;
+}
+
+.reduced-motion #ingame-menu-btn {
+  transition: none;
+}
+
+.reduced-motion .sl-btn {
+  transition: none;
+}
+
+.reduced-motion .save-slot-btn {
+  transition: none;
+}
+
+.reduced-motion #command-input {
+  caret-color: var(--accent-cyan);
+  animation: none;
+}

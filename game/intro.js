@@ -128,8 +128,17 @@
     document.body.appendChild(skipEl);
   }
 
-  /** Clear all visible intro lines with fade-out */
+  /** Check if reduced motion is active */
+  function isReducedMotion() {
+    return window.MirsEndMotion ? window.MirsEndMotion.isReduced() : false;
+  }
+
+  /** Clear all visible intro lines with fade-out (or hard cut if reduced motion) */
   function clearText() {
+    if (isReducedMotion()) {
+      textContainer.innerHTML = "";
+      return;
+    }
     var lines = textContainer.querySelectorAll(".intro-line");
     for (let i = 0; i < lines.length; i++) {
       lines[i].classList.add("fade-out");
@@ -153,8 +162,9 @@
     el.classList.add("visible");
   }
 
-  /** Trigger the EMP flash effect */
+  /** Trigger the EMP flash effect (skipped if reduced motion is active) */
   function triggerFlash() {
+    if (isReducedMotion()) return;
     flashEl.classList.add("flash");
     staticEl.classList.add("active");
     var timer = setTimeout(() => {
@@ -188,22 +198,17 @@
     document.removeEventListener("keydown", handleSkip);
     document.removeEventListener("click", handleSkipClick);
 
-    /* Fade out overlay */
-    overlay.style.transition = "opacity 1.2s ease-out";
-    overlay.style.opacity = "0";
-    skipEl.style.transition = "opacity 0.3s ease-out";
-    skipEl.style.opacity = "0";
     flashEl.style.display = "none";
     staticEl.style.display = "none";
 
-    var timer = setTimeout(() => {
+    if (isReducedMotion()) {
+      /* Hard cut — no fade-out transition */
       overlay.classList.add("hidden");
       overlay.remove();
       flashEl.remove();
       staticEl.remove();
       skipEl.remove();
 
-      /* Show the game shell */
       var gameShell = document.getElementById("game-shell");
       if (gameShell) {
         gameShell.style.display = "";
@@ -212,8 +217,31 @@
       if (onCompleteCallback) {
         onCompleteCallback();
       }
-    }, 1300);
-    timers.push(timer);
+    } else {
+      /* Fade out overlay */
+      overlay.style.transition = "opacity 1.2s ease-out";
+      overlay.style.opacity = "0";
+      skipEl.style.transition = "opacity 0.3s ease-out";
+      skipEl.style.opacity = "0";
+
+      var timer = setTimeout(() => {
+        overlay.classList.add("hidden");
+        overlay.remove();
+        flashEl.remove();
+        staticEl.remove();
+        skipEl.remove();
+
+        var gameShell = document.getElementById("game-shell");
+        if (gameShell) {
+          gameShell.style.display = "";
+        }
+
+        if (onCompleteCallback) {
+          onCompleteCallback();
+        }
+      }, 1300);
+      timers.push(timer);
+    }
   }
 
   /** Handle keypress to skip */

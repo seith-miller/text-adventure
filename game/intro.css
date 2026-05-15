@@ -165,3 +165,37 @@
   50%  { opacity: 0.08; }
   100% { opacity: 0.02; }
 }
+
+/* ── Reduced-motion overrides for intro ── */
+
+/* Hard cut instead of fade for intro text lines */
+.reduced-motion #intro-text .intro-line {
+  transition: none;
+  opacity: 0;
+}
+
+.reduced-motion #intro-text .intro-line.visible {
+  opacity: 1;
+}
+
+.reduced-motion #intro-text .intro-line.fade-out {
+  opacity: 0;
+  transition: none;
+}
+
+/* Disable EMP flash animation */
+.reduced-motion #intro-flash.flash {
+  animation: none;
+  opacity: 0;
+}
+
+/* Disable scanline flicker animation but keep static overlay */
+.reduced-motion #intro-static.active {
+  animation: none;
+  opacity: 0.04;
+}
+
+/* Disable skip prompt fade-in */
+.reduced-motion #intro-skip {
+  transition: none;
+}
