@@ -207,7 +207,7 @@
   function buildSidebar() {
     var rows = [];
 
-    rows.push("<hd>VITALS / СОСТОЯНИЕ</hd>");
+    rows.push("<hd>СОСТОЯНИЕ</hd>");
     rows.push("");
 
     // O2
@@ -243,7 +243,7 @@
     rows.push(moraleBar);
 
     rows.push("");
-    rows.push("<hd>SYSTEMS / СИСТЕМЫ</hd>");
+    rows.push("<hd>СИСТЕМЫ</hd>");
     rows.push("");
 
     // System status lamps (static for now — wiring is #133)
@@ -252,7 +252,7 @@
     rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
 
     rows.push("");
-    rows.push("<hd>INVENTORY / ИНВЕНТАРЬ</hd>");
+    rows.push("<hd>ИНВЕНТАРЬ</hd>");
     rows.push("");
 
     if (state.inventory.length === 0) {
@@ -947,13 +947,16 @@
     span.textContent = `${text}\n\n`;
     storyOutput.appendChild(span);
 
-    /* Room-name lines arrive on their own — render as a bilingual heading
-       in bright phosphor. Falls through to normal wrapping otherwise. */
+    /* Room-name lines arrive on their own — render as a bright-phosphor
+       Cyrillic heading. Latin-only fallback if no Cyrillic gloss exists
+       for the room. Bilingual treatment was dropped: Cyrillic glyph
+       widths in IBM Plex Mono don't match Latin glyph widths, which
+       threw off the grid padding when both sat in one line. */
     const trimmed = text.trim();
     if (KNOWN_ROOMS.indexOf(trimmed) !== -1) {
       const cyr = ROOM_CYRILLIC[trimmed];
       const heading = cyr
-        ? `<hd>${trimmed.toUpperCase()} / ${cyr}</hd>`
+        ? `<hd>${cyr}</hd>`
         : `<hd>${trimmed.toUpperCase()}</hd>`;
       pushStoryLine(heading);
       pushStoryLine("");
