@@ -128,17 +128,23 @@
     document.body.appendChild(skipEl);
   }
 
-  /** Clear all visible intro lines with fade-out */
+  /** Check if reduced motion is active */
+  function isReducedMotion() {
+    return document.documentElement.classList.contains("reduced-motion");
+  }
+
+  /** Clear all visible intro lines with fade-out (or hard cut) */
   function clearText() {
     var lines = textContainer.querySelectorAll(".intro-line");
     for (let i = 0; i < lines.length; i++) {
       lines[i].classList.add("fade-out");
       lines[i].classList.remove("visible");
     }
-    /* Remove faded lines after transition */
+    /* Remove faded lines after transition (instant in reduced-motion) */
+    var removeDelay = isReducedMotion() ? 0 : 900;
     var timer = setTimeout(() => {
       textContainer.innerHTML = "";
-    }, 900);
+    }, removeDelay);
     timers.push(timer);
   }
 
@@ -188,10 +194,13 @@
     document.removeEventListener("keydown", handleSkip);
     document.removeEventListener("click", handleSkipClick);
 
-    /* Fade out overlay */
-    overlay.style.transition = "opacity 1.2s ease-out";
+    /* Fade out overlay (hard cut when reduced motion) */
+    var fadeDelay = isReducedMotion() ? 0 : 1300;
+    if (!isReducedMotion()) {
+      overlay.style.transition = "opacity 1.2s ease-out";
+      skipEl.style.transition = "opacity 0.3s ease-out";
+    }
     overlay.style.opacity = "0";
-    skipEl.style.transition = "opacity 0.3s ease-out";
     skipEl.style.opacity = "0";
     flashEl.style.display = "none";
     staticEl.style.display = "none";
@@ -212,7 +221,7 @@
       if (onCompleteCallback) {
         onCompleteCallback();
       }
-    }, 1300);
+    }, fadeDelay);
     timers.push(timer);
   }
 
