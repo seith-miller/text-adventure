@@ -30,7 +30,7 @@ test.describe("session-export", () => {
     expect(session.version).toBe(1);
     expect(session.startedAt).toBeTruthy();
     expect(session.commandHistory).toContain("open emergency locker");
-    expect(session.transcript).toMatch(/You wake to/);
+    expect(session.transcript).toMatch(/You were sleeping/);
     expect(session.transcript).toMatch(/revealing a flashlight/i);
     expect(session.finalState.gameStarted).toBe(true);
   });
@@ -44,7 +44,6 @@ test.describe("session-export", () => {
     await page.waitForTimeout(500);
 
     const session = await page.evaluate(() => {
-      // biome-ignore lint/suspicious/noExplicitAny: window global
       return (window as any).MirsEnd.exportSession();
     });
 

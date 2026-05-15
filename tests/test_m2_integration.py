@@ -132,11 +132,11 @@ class TestStatusVariables:
         assert "o2: 100" in ui_js
 
     def test_inventory_tracked_in_both(self, story_source, ui_js):
-        """Inventory is displayed in both Inform 7 status and UI panel."""
+        """Inventory is displayed in both Inform 7 status and UI sidebar."""
         assert "inventory" in ui_js.lower()
-        assert 'id="inventory-list"' in open(
-            os.path.join(GAME_DIR, "play.html")
-        ).read()
+        # Post-#132: inventory is rendered in the pre-based sidebar via
+        # buildSidebar(), not a separate #inventory-list DOM element.
+        assert "INVENTORY" in ui_js
 
     def test_status_bar_in_inform7(self, story_source):
         """Inform 7 source emits MIRSEND status with oxygen + morale for the UI."""
@@ -360,8 +360,8 @@ class TestM1Regression:
         assert '"MIR\'S END"' in content
         assert "Crew Quarters is a room" in content
         assert "When play begins" in content
-        # Opening rewritten for the prologue impact ("You wake to a shout")
-        assert "You wake to" in content
+        # Opening: violent EMP, player asleep in bunk, head injury.
+        assert "You were sleeping" in content
 
     @pytest.mark.skipif(
         shutil.which("npx") is None,
