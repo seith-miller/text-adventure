@@ -243,6 +243,71 @@ html, body {
   font-style: italic;
 }
 
+/* ── System status lamps ── */
+#lamps-section {
+  margin-top: 0.6em;
+}
+
+#lamps-section h2 {
+  margin-bottom: 0.4em;
+}
+
+.lamp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 0.25em;
+  column-gap: 0.6em;
+  font-size: 12px;
+}
+
+.lamp-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.lamp {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  line-height: 1;
+  width: 1ch;
+  text-align: center;
+  user-select: none;
+}
+
+.lamp-label {
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  font-size: 11px;
+}
+
+/* Lamp color classes mirror the develop-branch <grn>/<amb>/<red>/<wht>/<off>
+   inline tag set so future text-grid renderers can reuse the same palette. */
+.lamp-grn {
+  color: var(--status-green);
+  text-shadow: 0 0 4px rgba(61, 220, 132, 0.4);
+}
+
+.lamp-amb {
+  color: var(--status-yellow);
+  text-shadow: 0 0 4px rgba(255, 193, 7, 0.4);
+}
+
+.lamp-red {
+  color: var(--status-red);
+  text-shadow: 0 0 4px rgba(255, 82, 82, 0.4);
+}
+
+.lamp-wht {
+  color: var(--text-primary);
+  text-shadow: 0 0 4px rgba(200, 214, 229, 0.3);
+}
+
+.lamp-off {
+  color: var(--text-dim);
+  opacity: 0.35;
+}
+
 /* ── Input bar (bottom) ── */
 #input-bar {
   grid-row: 2 / 3;

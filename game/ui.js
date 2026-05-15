@@ -31,6 +31,11 @@
     inventory: [],
     interpreterReady: false,
     gameStarted: false,
+    /* shipStatus mirrors a subset of lib/ship-state.js (#72).
+       null = no ship-state available yet; lamps render the static fallback
+       colors so an early-init render does not show six identical lamps.
+       Populated either by MIRSEND extension fields or MirsEnd.setShipStatus. */
+    shipStatus: null,
   };
 
   /* ── Save key for localStorage (inline quick-save fallback) ── */
@@ -51,6 +56,7 @@
   var titleScreen;
   var menuContinueBtn;
   var ingameMenuBtn;
+  var lampEls; // map of lamp-id → element, populated in init()
 
   /* ── ASCII art cache ── */
   var artCache = {};
@@ -68,6 +74,7 @@
     titleScreen = document.getElementById("title-screen");
     menuContinueBtn = document.getElementById("menu-continue");
     ingameMenuBtn = document.getElementById("ingame-menu-btn");
+    initLampEls();
 
     commandInput.addEventListener("keydown", handleKeyDown);
 
@@ -310,19 +317,112 @@
   /**
    * Match the machine-readable status line emitted by the Inform 7 every-turn
    * rule. Format: [MIRSEND o2=N morale=N inv=a,b,c]  (inv may be empty)
+   *
+   * The body is matched permissively so future fields (e.g. lamp-pwr=on,
+   * hull=breach) can be added on the Inform side without breaking the
+   * existing parser. parseMirsendBody extracts known fields by name from
+   * the captured body string.
    */
-  var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
+  var MIRSEND_STATUS_RE = /\[MIRSEND ([^\]]*)\]/;
+
+  function parseMirsendBody(body) {
+    var out = {};
+    /* o2 / morale are required by the v1 contract. */
+    var m = body.match(/o2=(-?\d+)/);
+    if (m) out.o2 = parseInt(m[1], 10);
+    m = body.match(/morale=(-?\d+)/);
+    if (m) out.morale = parseInt(m[1], 10);
+    /* Forward-compatible lamp / ship-state extension fields. Inform 7 may
+       add any of these in the same MIRSEND line in a future story.ni change;
+       absence here means "not provided this turn" and the lamp retains its
+       last known value (or the static fallback). These must come BEFORE
+       inv in the MIRSEND line so inv= can match greedily — printed-name
+       inventory items can contain spaces (e.g. "Yevgenia's flight
+       notebook"). */
+    m = body.match(/pwr=([a-z_-]+)/);
+    if (m) out.pwr = m[1];
+    m = body.match(/hull=([a-z_-]+)/);
+    if (m) out.hull = m[1];
+    m = body.match(/comm=([a-z_-]+)/);
+    if (m) out.comm = m[1];
+    m = body.match(/nav=([a-z_-]+)/);
+    if (m) out.nav = m[1];
+    m = body.match(/dock=([a-z_-]+)/);
+    if (m) out.dock = m[1];
+    /* inv last: greedily takes the rest of the body so multi-word
+       printed names survive intact. */
+    m = body.match(/inv=(.*)$/);
+    if (m) out.inv = m[1];
+    return out;
+  }
 
   function parseAndApplyMirsendStatus(text) {
     var m = text.match(MIRSEND_STATUS_RE);
     if (!m) return false;
-    var o2 = parseInt(m[1], 10);
-    var morale = parseInt(m[2], 10);
-    var invStr = (m[3] || "").trim();
-    var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
-    state.o2 = o2;
-    state.morale = morale;
-    state.inventory = inventory;
+    var fields = parseMirsendBody(m[1]);
+    var invStr;
+    var s;
+    if (typeof fields.o2 === "number") state.o2 = fields.o2;
+    if (typeof fields.morale === "number") state.morale = fields.morale;
+    if (typeof fields.inv === "string") {
+      invStr = fields.inv.trim();
+      state.inventory =
+        invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
+    }
+    /* If any lamp/ship-state field is present, lift it into shipStatus
+       using the lib/ship-state.js shape so updateLamps() reads from one
+       source regardless of who populated it. */
+    if (fields.pwr || fields.hull || fields.comm || fields.nav || fields.dock) {
+      s = state.shipStatus || {};
+      if (fields.pwr) {
+        s.power = s.power || {};
+        s.power.main_bus = fields.pwr === "on" ? "online" : "offline";
+      }
+      if (fields.hull) {
+        s.hull = s.hull || {};
+        /* intact | sealed | vented */
+        s.hull.central_node =
+          fields.hull === "vented"
+            ? "vented"
+            : fields.hull === "intact"
+              ? "intact"
+              : "breached, sealed";
+      }
+      if (fields.comm) {
+        s.comms = s.comms || { contacts: { freedom_station: {} } };
+        s.comms.contacts = s.comms.contacts || { freedom_station: {} };
+        s.comms.contacts.freedom_station =
+          s.comms.contacts.freedom_station || {};
+        if (fields.comm === "live") {
+          s.comms.contacts.freedom_station.live_channel = true;
+          s.comms.array = "patched to isolated bus";
+        } else if (fields.comm === "static") {
+          s.comms.contacts.freedom_station.live_channel = false;
+          s.comms.array = "patched to isolated bus";
+        } else {
+          s.comms.contacts.freedom_station.live_channel = false;
+          s.comms.array = "offline";
+        }
+      }
+      if (fields.nav) {
+        s.nav = s.nav || {};
+        s.nav.orientation_lock = fields.nav === "locked" ? "held" : "drifting";
+      }
+      if (fields.dock) {
+        s.docked = s.docked || {};
+        if (fields.dock === "locked") {
+          s.docked.soyuz = "nominal";
+          s.docked.soft_lock = true;
+        } else if (fields.dock === "docked") {
+          s.docked.soyuz = "nominal";
+          s.docked.soft_lock = false;
+        } else {
+          s.docked.soyuz = "detached";
+          s.docked.soft_lock = false;
+        }
+      }
+      state.shipStatus = s;
+    }
     updateStatus();
     return true;
   }
@@ -465,6 +565,175 @@
         inventoryList.appendChild(item);
       }
     }
+
+    updateLamps();
+  }
+
+  /* ── System status lamps ──
+   *
+   * Six lamps reflect real ship state. The shape mirrors lib/ship-state.js
+   * (#72). Each lamp picks a color class from the existing palette:
+   * grn / amb / red / wht / off (no new tag classes).
+   *
+   * When state.shipStatus is null (early init, no ship-state available)
+   * the lamps render their static fallback colors so the panel does not
+   * show six identical lamps. LIFE is special: even with no shipStatus
+   * we derive it from o2 because o2 is always present in MIRSEND v1.
+   *
+   * Mapping (from #173):
+   *   PWR  — power.main_bus              online → grn, offline → off
+   *   LIFE — life_support / o2           nominal → grn, degraded → amb, failing → red
+   *   COMM — comms / freedom_station     live → grn, static → amb, offline → off
+   *   NAV  — nav.orientation_lock        held → grn, drifting → amb
+   *   HULL — hull.central_node           intact → grn, breach-sealed → amb, vented → red
+   *   DOCK — docked.soyuz + soft_lock    locked → wht, docked → amb, detached → off
+   */
+
+  var LAMP_FALLBACK = {
+    pwr: "lamp-grn",
+    life: "lamp-grn",
+    comm: "lamp-amb",
+    nav: "lamp-off",
+    hull: "lamp-red",
+    dock: "lamp-wht",
+  };
+
+  var LAMP_COLOR_CLASSES = [
+    "lamp-grn",
+    "lamp-amb",
+    "lamp-red",
+    "lamp-wht",
+    "lamp-off",
+  ];
+
+  function initLampEls() {
+    lampEls = {
+      pwr: document.getElementById("lamp-pwr"),
+      life: document.getElementById("lamp-life"),
+      comm: document.getElementById("lamp-comm"),
+      nav: document.getElementById("lamp-nav"),
+      hull: document.getElementById("lamp-hull"),
+      dock: document.getElementById("lamp-dock"),
+    };
+  }
+
+  function setLampColor(id, colorClass) {
+    var el = lampEls[id];
+    var i;
+    if (!el) return;
+    for (i = 0; i < LAMP_COLOR_CLASSES.length; i++) {
+      el.classList.remove(LAMP_COLOR_CLASSES[i]);
+    }
+    el.classList.add(colorClass);
+    el.dataset.color = colorClass.replace("lamp-", "");
+  }
+
+  function deriveLifeColor(s) {
+    var o2gen;
+    var co2;
+    if (s && s.life_support) {
+      o2gen = s.life_support.o2_generator;
+      co2 = s.life_support.co2_trend;
+      if (o2gen === "online" && (co2 === "stable" || co2 === "rising slow")) {
+        return "lamp-grn";
+      }
+      if (co2 === "critical") return "lamp-red";
+      return "lamp-amb";
+    }
+    /* Derived from o2 when no shipStatus.life_support — MIRSEND v1
+       contract guarantees o2 is present every turn. */
+    if (state.o2 > 50) return "lamp-grn";
+    if (state.o2 > 25) return "lamp-amb";
+    return "lamp-red";
+  }
+
+  function deriveLampColors() {
+    var s = state.shipStatus;
+    if (!s) {
+      /* No ship-state yet — keep the documented static fallback so an
+         early-init render does not show six identical lamps. LIFE still
+         derives from o2 because o2 is part of MIRSEND v1. */
+      return Object.assign({}, LAMP_FALLBACK, { life: deriveLifeColor(null) });
+    }
+    var out = {};
+    var fs;
+    var soyuz;
+
+    /* PWR */
+    out.pwr =
+      s.power && s.power.main_bus === "online" ? "lamp-grn" : "lamp-off";
+
+    /* LIFE */
+    out.life = deriveLifeColor(s);
+
+    /* COMM */
+    if (s.comms && s.comms.contacts && s.comms.contacts.freedom_station) {
+      fs = s.comms.contacts.freedom_station;
+      if (fs.live_channel) {
+        out.comm = "lamp-grn";
+      } else if (s.comms.array && s.comms.array !== "offline") {
+        out.comm = "lamp-amb";
+      } else {
+        out.comm = "lamp-off";
+      }
+    } else {
+      out.comm = LAMP_FALLBACK.comm;
+    }
+
+    /* NAV */
+    if (s.nav && s.nav.orientation_lock) {
+      out.nav = s.nav.orientation_lock === "held" ? "lamp-grn" : "lamp-amb";
+    } else if (s.power && s.power.main_bus === "online") {
+      out.nav = "lamp-grn";
+    } else {
+      out.nav = LAMP_FALLBACK.nav;
+    }
+
+    /* HULL */
+    if (s.hull && s.hull.central_node) {
+      if (s.hull.central_node === "intact") out.hull = "lamp-grn";
+      else if (s.hull.central_node === "vented") out.hull = "lamp-red";
+      else out.hull = "lamp-amb"; /* "breached, sealed" or similar */
+    } else {
+      out.hull = LAMP_FALLBACK.hull;
+    }
+
+    /* DOCK */
+    if (s.docked) {
+      soyuz = s.docked.soyuz;
+      if (soyuz === "detached") {
+        out.dock = "lamp-off";
+      } else if (s.docked.soft_lock) {
+        out.dock = "lamp-wht";
+      } else {
+        out.dock = "lamp-amb";
+      }
+    } else {
+      out.dock = LAMP_FALLBACK.dock;
+    }
+
+    return out;
+  }
+
+  function updateLamps() {
+    if (!lampEls || !lampEls.pwr) return; /* DOM not ready */
+    var colors = deriveLampColors();
+    setLampColor("pwr", colors.pwr);
+    setLampColor("life", colors.life);
+    setLampColor("comm", colors.comm);
+    setLampColor("nav", colors.nav);
+    setLampColor("hull", colors.hull);
+    setLampColor("dock", colors.dock);
+  }
+
+  /**
+   * Public API: set the ship-status shape directly. Used by tests and by
+   * any future module that maintains a richer ship-state object outside
+   * the MIRSEND line. Re-renders on the same path as O2 / morale / inv.
+   */
+  function setShipStatus(newStatus) {
+    state.shipStatus = newStatus || null;
+    updateStatus();
   }
 
   /* ── Interpreter I/O bridge ── */
@@ -1000,8 +1269,11 @@
         state.inventory = newState.inventory;
       if (newState.currentRoom !== undefined)
         setCurrentRoom(newState.currentRoom);
+      if (newState.shipStatus !== undefined)
+        state.shipStatus = newState.shipStatus;
       updateStatus();
     },
+    setShipStatus: setShipStatus,
     showMenu: showMenu,
     hideMenu: hideMenu,
     saveGame: saveGame,
