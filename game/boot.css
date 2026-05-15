@@ -1,0 +1,106 @@
+/* MIR'S END — Soviet POST Boot Sequence Styles */
+
+/* ── Boot overlay — covers full screen ── */
+#boot-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: "Courier New", Courier, monospace;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 15vh 10vw;
+}
+
+#boot-overlay.hidden {
+  display: none;
+}
+
+/* ── Boot text container ── */
+#boot-text {
+  max-width: 620px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Individual POST lines ── */
+#boot-text .boot-line {
+  opacity: 0;
+  color: #3a7a3a;
+  font-size: 14px;
+  letter-spacing: 1px;
+  line-height: 1.8;
+  white-space: pre;
+  transition: opacity 0.15s ease-in;
+}
+
+#boot-text .boot-line.visible {
+  opacity: 1;
+}
+
+/* ── READY line gets a brighter treatment ── */
+#boot-text .boot-line.boot-ready {
+  color: #5b9bd5;
+  margin-top: 0.6em;
+  font-weight: bold;
+  letter-spacing: 3px;
+}
+
+/* ── Blinking cursor after READY ── */
+#boot-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: #3a7a3a;
+  vertical-align: text-bottom;
+  margin-left: 4px;
+  animation: boot-blink 0.7s step-end infinite;
+}
+
+@keyframes boot-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+/* ── Skip prompt ── */
+#boot-skip {
+  position: fixed;
+  bottom: 2em;
+  right: 2em;
+  color: #3a4a5a;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 1s ease-in;
+}
+
+#boot-skip.visible {
+  opacity: 1;
+}
+
+/* ── Scanline effect ── */
+#boot-overlay::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 3;
+}
