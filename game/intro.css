@@ -165,3 +165,42 @@
   50%  { opacity: 0.08; }
   100% { opacity: 0.02; }
 }
+
+/* ── Reduced-motion overrides ── */
+
+/* Hard cut instead of fade transitions */
+.reduced-motion #intro-text .intro-line {
+  transition: none;
+  opacity: 0;
+}
+
+.reduced-motion #intro-text .intro-line.visible {
+  opacity: 1;
+}
+
+.reduced-motion #intro-text .intro-line.fade-out {
+  transition: none;
+  opacity: 0;
+}
+
+/* Disable EMP flash animation — hard cut */
+.reduced-motion #intro-flash.flash {
+  animation: none;
+  opacity: 0;
+}
+
+/* Disable static flicker animation — keep static overlay visible but still */
+.reduced-motion #intro-static.active {
+  animation: none;
+  opacity: 0.04;
+}
+
+/* Skip prompt — no fade-in */
+.reduced-motion #intro-skip {
+  transition: none;
+}
+
+/* Overlay fade-out — hard cut */
+.reduced-motion #intro-overlay {
+  transition: none !important;
+}
