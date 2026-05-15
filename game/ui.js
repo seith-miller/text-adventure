@@ -1029,8 +1029,7 @@
     cycleBtn.textContent = "Change";
     cycleBtn.addEventListener("click", () => {
       if (window.MirsEndMotion) {
-        var next = window.MirsEndMotion.cycleMode();
-        valueSpan.textContent = next;
+        valueSpan.textContent = window.MirsEndMotion.cycleMode();
       }
     });
     row.appendChild(cycleBtn);

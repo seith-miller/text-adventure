@@ -21,8 +21,9 @@
 
   /** Read persisted preference, default to "auto". */
   function loadMode() {
+    var stored;
     try {
-      var stored = localStorage.getItem(STORAGE_KEY);
+      stored = localStorage.getItem(STORAGE_KEY);
       if (stored && VALID_MODES.indexOf(stored) !== -1) {
         return stored;
       }

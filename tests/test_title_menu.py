@@ -62,12 +62,12 @@ class TestTitleScreenHTML:
         assert 'id="menu-settings"' in html, "Missing Settings button"
         assert "Settings" in html, "Settings button text missing"
 
-    def test_settings_button_disabled_placeholder(self):
+    def test_settings_button_enabled(self):
         html = _read("play.html")
         match = re.search(r'<button[^>]*id="menu-settings"[^>]*>', html)
         assert match, "Settings button not found"
-        assert "disabled" in match.group(0), (
-            "Settings button should be disabled (placeholder)"
+        assert "disabled" not in match.group(0), (
+            "Settings button should be enabled now that settings are implemented"
         )
 
     def test_menu_buttons_have_menu_btn_class(self):
