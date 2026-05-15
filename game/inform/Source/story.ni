@@ -257,7 +257,7 @@ Instead of taking the mechanical watch:
 
 Chapter 5 - Command Module
 
-The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
+The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. On the port wall, ARGON-87's monitor. Dark for now. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
 
 Power-is-restored is a truth state that varies. Power-is-restored is false.
 Armament-bay-unlocked is a truth state that varies. Armament-bay-unlocked is false.
@@ -504,7 +504,7 @@ Instead of examining west when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
 		say "It is too dark to port to see.";
 	otherwise:
-		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if]"
+		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if][paragraph break]Beside the comms console, ARGON-87's monitor. A flat dark panel. Above it a small brass plate. АРГОН-87. The station computer. Dark tonight."
 
 Instead of examining east when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
@@ -844,6 +844,79 @@ Instead of taking the manual pressure gauges:
 
 Instead of taking the sleeping harness:
 	say "The sleeping harness is bolted to the bulkhead."
+
+Part 9B - Argon-87 AI Presence
+
+[The station's Ground Control Computer. The AI integration point for
+ later milestones (m8/m9). The prose has to give the player a hook so
+ the persona is observable in the first 15 turns. See issue #114.
+
+ Argon is a backdrop because the AI lives in the hull, not in a single
+ room. His monitor is a separate scenery object in the Command Module,
+ where the player can examine the physical artifact. Understand verbs
+ are split between the two so EXAMINE ARGON and EXAMINE MONITOR resolve
+ cleanly.]
+
+Argon is a backdrop. Argon is everywhere. The printed name of Argon is "ARGON-87". Understand "argon" or "argon-87" or "argon87" or "ai" or "station ai" or "station computer" or "ground control computer" or "softmind" as Argon. The description of Argon is "ARGON-87. The station's Ground Control Computer. The voice that wakes the watch. Logs the burns. Counts the hours. The Seven Directives plus the Softmind module. He has been on Mir-3 longer than anyone in the bunks ever was.[if power-is-restored is false] Tonight his bus is dark. Wherever he is, he is not listening.[otherwise] His bus came back when you restored power. He is listening again. After a fashion.[end if]"
+
+Argon-spoken-once is a truth state that varies. Argon-spoken-once is false.
+
+Instead of talking to Argon:
+	if argon-spoken-once is false:
+		now argon-spoken-once is true;
+		increase morale-level by 2;
+	if power-is-restored is false:
+		say "You speak his name. The station does not answer. Wherever he is tonight, the bus that feeds him is one of the ones the EMP took. Not until power returns.";
+	otherwise:
+		say "You speak his name. The dark monitor at the port wall of the Command Module flickers. A single cursor. Patient. The console grammar he can answer in tonight is small. Not zero."
+
+[ASK ARGON ABOUT X grammar. Inform's stock asking-it-about uses a
+ [someone] token that requires a person noun. ARGON-87 is a backdrop,
+ so we add a topic-only action with our own grammar. The topic itself
+ is unread for now. The point is that the player gets a coherent
+ in-voice response when they reach for the AI, instead of the parser
+ default.]
+Asking-the-station is an action applying to one topic.
+Understand "ask argon about [text]" as asking-the-station.
+Understand "ask argon-87 about [text]" as asking-the-station.
+Understand "ask argon87 about [text]" as asking-the-station.
+Understand "ask station about [text]" as asking-the-station.
+Understand "ask computer about [text]" as asking-the-station.
+Understand "ask ai about [text]" as asking-the-station.
+Understand "ask station ai about [text]" as asking-the-station.
+
+Carry out asking-the-station:
+	do nothing.
+
+Report asking-the-station:
+	if power-is-restored is false:
+		say "You ask the empty station. No answer. ARGON-87 is offline with the rest of the bus.";
+	otherwise:
+		say "You ask. The cursor on his dark screen blinks. Once. Then nothing more. Whatever ARGON-87 wants to say tonight, he is not yet ready to say it in words."
+
+[Physical monitor in the Command Module. Distinct from the AI backdrop.
+ Synonyms scoped to the physical artifact, no overlap with ARGON-87.]
+The argon monitor is scenery in the Command Module. Understand "monitor" or "screen" or "argon monitor" or "argon screen" or "port monitor" or "brass plate" as the argon monitor. The printed name of the argon monitor is "ARGON-87's monitor". The description of the argon monitor is "A flat-panel monitor at the port wall. Above it a small brass plate stamped АРГОН-87 in the formal Cyrillic of an older era of Soviet hardware. The console where ARGON-87 speaks to the watch. Logs the burns. Hands back the short answers a watchstander asks at three in the morning.[if power-is-restored is false] The screen is dark. The bus that feeds him is one of the ones the EMP took.[otherwise] The screen carries a single patient cursor. The bus is alive again. The grammar tonight is still small.[end if]"
+
+Instead of taking the argon monitor:
+	say "The monitor is bolted into the port wall. It is not going anywhere."
+
+Instead of switching on the argon monitor:
+	if power-is-restored is false:
+		say "Without power to his bus, the monitor stays dark. You would need to restore the isolated bus first.";
+	otherwise:
+		say "The monitor is already lit. A patient cursor. ARGON-87 listens."
+
+[First-time entry to the Main Corridor. The line is a relic burst from
+ stored capacitance. ARGON-87 is not online in the engineering sense
+ yet, so the cue does not contradict the dead-bus state. The Every
+ turn rule fires on the turn the player first stands in the corridor,
+ after the room description has already printed.]
+Argon-corridor-cue-shown is a truth state that varies. Argon-corridor-cue-shown is false.
+
+Every turn when the player is in the Main Corridor and argon-corridor-cue-shown is false:
+	now argon-corridor-cue-shown is true;
+	say "[paragraph break]A speaker in the maintenance panel clicks. Soft. Once.[paragraph break][italic type]I am still here, comrade. When you can hear me, I will hear you.[roman type][paragraph break]The voice is synthesized. Calm. Not unfamiliar. The speaker goes quiet. The bus that feeds him is dead with everything else. The words came out of stored capacitance and nothing more."
 
 Part 10 - Score Tracking
 
