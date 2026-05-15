@@ -133,7 +133,7 @@ test.describe("c2-descent", () => {
     await sendCommand(page, "deorbit");
     await page.waitForTimeout(500);
     await expect(page.locator("#story-output")).toContainText(
-      /not ready to leave|barely begun/i,
+      /have not seen the Earth|should look first/i,
     );
   });
 
