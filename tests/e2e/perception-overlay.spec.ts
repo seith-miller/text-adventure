@@ -180,7 +180,9 @@ test.describe("perception-overlay", () => {
     /* The closing screwdriver line in the same post-splice paragraph. */
     expect(visible).toContain("screwdriver she will never put down");
     /* The original opener must be REPLACED, not duplicated. */
-    expect(visible).not.toContain("She probably never registered what happened");
+    expect(visible).not.toContain(
+      "She probably never registered what happened",
+    );
     /* Marker stripped. */
     expect(visible).not.toMatch(/\[PERCEIVE/);
   });
