@@ -22,83 +22,79 @@ test.describe("e5-timer-guard", () => {
     await clearStorage(page);
   });
 
-  test(
-    "passive playthrough ends with E5 placeholder when oxygen runs out",
-    async ({ page }) => {
-      await startNewGame(page);
+  test("passive playthrough ends with E5 placeholder when oxygen runs out", {
+    timeout: 180_000,
+  }, async ({ page }) => {
+    await startNewGame(page);
 
-      // The player does nothing meaningful — just waits until O2 hits 0.
-      // O2 starts at 100 and decreases by 1 per turn, so we need ~100 waits.
-      // startNewGame already consumed a couple of turns.
-      for (let i = 0; i < 110; i++) {
-        await sendCommand(page, "wait");
-        // Small pause to let the interpreter catch up
-        await page.waitForTimeout(100);
-      }
+    // The player does nothing meaningful — just waits until O2 hits 0.
+    // O2 starts at 100 and decreases by 1 per turn, so we need ~100 waits.
+    // startNewGame already consumed a couple of turns.
+    for (let i = 0; i < 110; i++) {
+      await sendCommand(page, "wait");
+      // Small pause to let the interpreter catch up
+      await page.waitForTimeout(100);
+    }
 
-      // The E5 dispatcher should have fired with the placeholder text
-      const text = await storyText(page);
-      expect(text).toMatch(/TODO prose: #60/i);
-      expect(text).toMatch(/suffocated/i);
-    },
-    { timeout: 180_000 },
-  );
+    // The E5 dispatcher should have fired with the placeholder text
+    const text = await storyText(page);
+    expect(text).toMatch(/TODO prose: #60/i);
+    expect(text).toMatch(/suffocated/i);
+  });
 
-  test(
-    "player who transmits does NOT suffocate — climax guard stops O2 drain",
-    async ({ page }) => {
-      await startNewGame(page);
+  test("player who transmits does NOT suffocate — climax guard stops O2 drain", {
+    timeout: 120_000,
+  }, async ({ page }) => {
+    await startNewGame(page);
 
-      // Full walkthrough to TRANSMIT (C1 climax commitment)
-      const walkthrough = [
-        "open emergency locker",
-        "take chemical flashlight",
-        "switch on chemical flashlight",
-        "listen",
-        "pull lever",
-        "north", // Main Corridor
-        "examine yevgenia",
-        "take notebook",
-        "read notebook",
-        "east", // fails — armament bay locked
-        "examine viewport", // fails — not in cupola
-        "down", // Observation Cupola
-        "examine viewport",
-        "examine petrov",
-        "up", // Main Corridor
-        "north", // Command Module
-        "open toolkit",
-        "take multimeter",
-        "restore power",
-        "read log",
-        "listen", // hear distress call
-        "transmit", // C1 climax — responded-to-americans is now true
-      ];
+    // Full walkthrough to TRANSMIT (C1 climax commitment)
+    const walkthrough = [
+      "open emergency locker",
+      "take chemical flashlight",
+      "switch on chemical flashlight",
+      "listen",
+      "pull lever",
+      "north", // Main Corridor
+      "examine yevgenia",
+      "take notebook",
+      "read notebook",
+      "east", // fails — armament bay locked
+      "examine viewport", // fails — not in cupola
+      "down", // Observation Cupola
+      "examine viewport",
+      "examine petrov",
+      "up", // Main Corridor
+      "north", // Command Module
+      "open toolkit",
+      "take multimeter",
+      "restore power",
+      "read log",
+      "listen", // hear distress call
+      "transmit", // C1 climax — responded-to-americans is now true
+    ];
 
-      for (const cmd of walkthrough) {
-        await sendCommand(page, cmd);
-        await page.waitForTimeout(200);
-      }
+    for (const cmd of walkthrough) {
+      await sendCommand(page, cmd);
+      await page.waitForTimeout(200);
+    }
 
-      await waitForStoryText(page, /Begin preparations/i);
+    await waitForStoryText(page, /Begin preparations/i);
 
-      // Now record O2 level after climax commitment
-      const o2After = (await asMirsEnd(page)).o2;
+    // Now record O2 level after climax commitment
+    const o2After = (await asMirsEnd(page)).o2;
 
-      // Send several more turns — O2 should NOT decrease
-      for (let i = 0; i < 10; i++) {
-        await sendCommand(page, "wait");
-        await page.waitForTimeout(100);
-      }
+    // Send several more turns — O2 should NOT decrease
+    for (let i = 0; i < 10; i++) {
+      await sendCommand(page, "wait");
+      await page.waitForTimeout(100);
+    }
 
-      const o2Later = (await asMirsEnd(page)).o2;
-      // O2 should be unchanged since the guard prevents depletion
-      expect(o2Later).toBe(o2After);
+    const o2Later = (await asMirsEnd(page)).o2;
+    // O2 should be unchanged since the guard prevents depletion
+    expect(o2Later).toBe(o2After);
 
-      // And the suffocation text should NOT appear
-      const text = await storyText(page);
-      expect(text).not.toMatch(/suffocated/i);
-    },
-    { timeout: 120_000 },
-  );
+    // And the suffocation text should NOT appear
+    const text = await storyText(page);
+    expect(text).not.toMatch(/suffocated/i);
+  });
 });
