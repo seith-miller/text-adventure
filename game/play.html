@@ -17,7 +17,7 @@
     <nav id="title-menu">
       <button class="menu-btn" id="menu-new-game">New Game</button>
       <button class="menu-btn" id="menu-continue" disabled>Continue</button>
-      <button class="menu-btn" id="menu-settings" disabled>Settings</button>
+      <button class="menu-btn" id="menu-settings">Settings</button>
     </nav>
     <div id="title-footer">Press ESC during gameplay to return to this menu</div>
   </div>
@@ -179,6 +179,9 @@
     },
   };
 </script>
+
+<!-- Reduced-motion manager — must load before intro and UI shell -->
+<script src="reduced-motion.js"></script>
 
 <!-- Intro sequence — must load before UI shell -->
 <script src="intro.js"></script>

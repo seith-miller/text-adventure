@@ -76,6 +76,9 @@
       .getElementById("menu-new-game")
       .addEventListener("click", startNewGame);
     menuContinueBtn.addEventListener("click", continueGame);
+    document
+      .getElementById("menu-settings")
+      .addEventListener("click", showSettingsModal);
     ingameMenuBtn.addEventListener("click", showMenu);
 
     /* ESC key to toggle menu during gameplay */
@@ -985,6 +988,70 @@
     appendSystemText("[Session exported.]");
   }
 
+  /* ── Settings modal ── */
+
+  function showSettingsModal() {
+    closeSettingsModal();
+
+    var overlay = document.createElement("div");
+    overlay.id = "settings-overlay";
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeSettingsModal();
+    });
+
+    var modal = document.createElement("div");
+    modal.id = "settings-modal";
+
+    var title = document.createElement("h2");
+    title.textContent = "Settings";
+    modal.appendChild(title);
+
+    /* Reduced-motion toggle row */
+    var row = document.createElement("div");
+    row.className = "settings-row";
+
+    var label = document.createElement("span");
+    label.className = "settings-label";
+    label.textContent = "Reduced Motion";
+    row.appendChild(label);
+
+    var currentMode = window.MirsEndMotion
+      ? window.MirsEndMotion.getMode()
+      : "auto";
+    var valueSpan = document.createElement("span");
+    valueSpan.className = "settings-value";
+    valueSpan.id = "settings-motion-value";
+    valueSpan.textContent = currentMode;
+    row.appendChild(valueSpan);
+
+    var cycleBtn = document.createElement("button");
+    cycleBtn.className = "settings-cycle-btn";
+    cycleBtn.textContent = "Change";
+    cycleBtn.addEventListener("click", () => {
+      if (window.MirsEndMotion) {
+        var next = window.MirsEndMotion.cycleMode();
+        valueSpan.textContent = next;
+      }
+    });
+    row.appendChild(cycleBtn);
+
+    modal.appendChild(row);
+
+    var closeBtn = document.createElement("button");
+    closeBtn.id = "settings-close";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", closeSettingsModal);
+    modal.appendChild(closeBtn);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  function closeSettingsModal() {
+    var existing = document.getElementById("settings-overlay");
+    if (existing) existing.remove();
+  }
+
   /* ── Public API for interpreter integration ── */
   window.MirsEnd = {
     appendStoryText: appendStoryText,
@@ -1013,6 +1080,8 @@
     quickSave: quickSave,
     quickLoad: quickLoad,
     continueGame: continueGame,
+    showSettings: showSettingsModal,
+    closeSettings: closeSettingsModal,
   };
 
   /* ── Boot ── */
