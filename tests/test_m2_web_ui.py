@@ -130,7 +130,7 @@ class TestStatusPanel:
 
     def test_sidebar_shows_inventory(self, ui_js):
         """Inventory is displayed in the sidebar."""
-        assert "INVENTORY" in ui_js
+        assert "ИНВЕНТАРЬ" in ui_js
 
     def test_update_status_function(self, ui_js):
         """JS updates status display dynamically."""
@@ -147,8 +147,8 @@ class TestStatusPanel:
     def test_compose_builds_sidebar(self, ui_js):
         """compose() includes sidebar with vitals and systems."""
         assert "buildSidebar" in ui_js
-        assert "VITALS" in ui_js
-        assert "SYSTEMS" in ui_js
+        assert "СОСТОЯНИЕ" in ui_js
+        assert "СИСТЕМЫ" in ui_js
 
 
 # ── Text Input ────────────────────────────────────────────────────────

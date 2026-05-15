@@ -136,7 +136,10 @@ class TestStatusVariables:
         assert "inventory" in ui_js.lower()
         # Post-#132: inventory is rendered in the pre-based sidebar via
         # buildSidebar(), not a separate #inventory-list DOM element.
-        assert "INVENTORY" in ui_js
+        # Post-#191: header is Cyrillic-only (ИНВЕНТАРЬ) — Latin glyph
+        # widths and Cyrillic glyph widths in IBM Plex Mono diverged
+        # enough to break the 80-col grid padding when both ran together.
+        assert "ИНВЕНТАРЬ" in ui_js
 
     def test_status_bar_in_inform7(self, story_source):
         """Inform 7 source emits MIRSEND status with oxygen + morale for the UI."""
