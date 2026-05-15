@@ -6,6 +6,7 @@
   <meta name="game-version" content="unknown">
   <title>MIR'S END — An Interactive Survival Story</title>
   <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="boot.css">
   <link rel="stylesheet" href="intro.css">
 </head>
 <body>
@@ -203,6 +204,21 @@
         });
     },
   };
+</script>
+
+<!-- Soviet POST boot sequence — runs on page load while interpreter initializes -->
+<script src="boot.js"></script>
+<script>
+  /* Start boot sequence immediately; it runs in parallel with Glulx init.
+     On completion, show the title screen. */
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.MirsEndBoot_POST) {
+      MirsEndBoot_POST.run(function () {
+        var titleScreen = document.getElementById("title-screen");
+        if (titleScreen) titleScreen.style.display = "";
+      });
+    }
+  });
 </script>
 
 <!-- Intro sequence — must load before UI shell -->
