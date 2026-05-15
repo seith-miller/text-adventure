@@ -231,5 +231,9 @@
 <!-- UI Shell — must load after interpreter scripts -->
 <script src="ui.js"></script>
 
+<!-- Live playthrough tail — only active when served from localhost. No-op
+     if the tail server (127.0.0.1:8788) isn't running. -->
+<script src="tail.js"></script>
+
 </body>
 </html>
