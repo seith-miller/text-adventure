@@ -126,3 +126,14 @@
     when the player has scrolled up to read history, new arriving
     content does not yank the viewport back to the bottom.
   surfaces: [dom, state]
+
+- id: bezel-version
+  area: ui
+  demonstrates: >
+    The bezel `#brand` block surfaces the current build's version
+    (`FW <semver>+<sha>`) read from `game/dist/version.json`, and
+    appends ` · <branch>` when the working tree is on a feature
+    branch — so a side-by-side reviewer can tell at a glance which
+    build is running. Element hides itself when version.json is
+    missing.
+  surfaces: [dom]

@@ -1020,6 +1020,32 @@
     return meta ? meta.getAttribute("content") || "unknown" : "unknown";
   }
 
+  /* Branches we treat as "version string is enough." On develop or main,
+     no branch suffix appears on the bezel. Anything else gets
+     " · <branch>" appended so a side-by-side reviewer can tell at a
+     glance which feature branch is being played. */
+  var BEZEL_VERSION_TRUNK_BRANCHES = [
+    "develop",
+    "main",
+    "master",
+    "HEAD",
+    "unknown",
+  ];
+
+  function renderBezelVersion(data) {
+    var el = document.getElementById("bezel-version");
+    if (!el) return;
+    if (!data || typeof data.version_string !== "string") return;
+    var label = `FW ${data.version_string}`;
+    if (
+      typeof data.git_branch === "string" &&
+      BEZEL_VERSION_TRUNK_BRANCHES.indexOf(data.git_branch) === -1
+    ) {
+      label += ` · ${data.git_branch}`;
+    }
+    el.textContent = label;
+  }
+
   function loadVersionJson() {
     fetch("dist/version.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -1028,10 +1054,12 @@
           _versionString = data.version_string;
           const meta = document.querySelector('meta[name="game-version"]');
           if (meta) meta.setAttribute("content", _versionString);
+          renderBezelVersion(data);
         }
       })
       .catch(() => {
-        /* Ignore: detectGameVersion() falls back to the meta tag. */
+        /* Ignore: detectGameVersion() falls back to the meta tag, and
+           the bezel #brand .version element hides itself when empty. */
       });
   }
 
