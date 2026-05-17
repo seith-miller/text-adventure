@@ -23,6 +23,20 @@ test.describe("bezel version display", () => {
   });
 
   test("renders FW <version> once version.json loads", async ({ page }) => {
+    // Mock the version.json fetch so the test doesn't depend on whether
+    // `scripts/make_version.py` has run on this CI worker yet.
+    await page.route("**/dist/version.json", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          semver: "0.1.0",
+          git_sha: "ce04a69",
+          git_branch: "develop",
+          dirty: false,
+          version_string: "0.1.0+ce04a69",
+        }),
+      }),
+    );
     await page.goto("/play.html");
     await page
       .locator("#bezel-version")
