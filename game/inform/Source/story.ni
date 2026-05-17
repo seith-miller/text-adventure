@@ -299,6 +299,7 @@ Carry out asking-for-help:
 	say "Common commands:[line break]";
 	say "  LOOK            see your surroundings[line break]";
 	say "  EXAMINE [bracket]thing[close bracket]  look at something closely[line break]";
+	say "  READ [bracket]thing[close bracket]     read text on a notebook, log, or placard[line break]";
 	say "  INVENTORY (I)   list what you carry[line break]";
 	say "  STATUS          show O2, morale, score, inventory[line break]";
 	say "  TAKE [bracket]thing[close bracket]    pick something up[line break]";
@@ -306,8 +307,11 @@ Carry out asking-for-help:
 	say "  EAT [bracket]thing[close bracket]     consume food, restores morale[line break]";
 	say "  REST or SLEEP   recover morale, costs O2 (Crew Quarters only)[line break]";
 	say "  PULL [bracket]thing[close bracket]    operate a lever or valve[line break]";
+	say "  TALK TO [bracket]someone[close bracket] speak with another character[line break]";
 	say "  Movement        N S E W (or fore aft port starboard), UP / DOWN[line break]";
-	say "  SAVE / LOAD     save or load progress[line break]".
+	say "  SAVE / LOAD     save or load progress[line break]";
+	say "[line break]";
+	say "Tip: when something is in your way, EXAMINE it first.[line break]".
 
 Chapter 2 - The Sealed Hatch
 
@@ -336,6 +340,25 @@ Carry out opening the pressure valve:
 
 Report opening the pressure valve:
 	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]You have just shared half your air with a vacuum. It had to be done."
+
+[The custom Understand patterns above match only the article-less forms
+ ("pull valve", "turn lever"). When the player adds "the" — "pull the
+ valve", "turn the lever" — the parse falls through to the standard
+ library's pulling/pushing/turning actions, whose check rules respond
+ "It is fixed in place." for scenery objects, which is misleading: the
+ valve IS the operable thing. These Instead rules route any of those
+ standard manipulation verbs on the pressure valve into the existing
+ custom action so the player gets the right outcome regardless of
+ article or verb choice.]
+
+Instead of pulling the pressure valve:
+	try opening the pressure valve.
+
+Instead of pushing the pressure valve:
+	try opening the pressure valve.
+
+Instead of turning the pressure valve:
+	try opening the pressure valve.
 
 Chapter 3 - Main Corridor
 
