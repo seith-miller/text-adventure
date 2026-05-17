@@ -1103,7 +1103,7 @@ Check transmitting:
 	if distress-call-heard is false:
 		say "You turn on the radio but hear only static. Perhaps you should listen more carefully first." instead;
 	if b1-beats-completed < 3 and b2-beats-completed < 3:
-		say "You reach for the microphone but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to answer." instead;
+		say "You reach for the mic. You do not know yet what you would say. Not into a war." instead;
 	if responded-to-americans is true:
 		say "You are already in contact with Freedom Station. Commander Chen's crew is standing by." instead;
 	if chose-silence is true:
@@ -1246,7 +1246,7 @@ Check deorbiting:
 	if the player is not in the Soyuz Ferry:
 		say "You would need to be aboard the Soyuz ferry to initiate a de-orbit sequence." instead;
 	if b1-beats-completed < 3 and b2-beats-completed < 3:
-		say "You reach for the de-orbit console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to leave." instead;
+		say "You reach for the de-orbit console and hesitate. You have not seen the Earth since the impact. You should look first." instead;
 	if responded-to-americans is true:
 		say "You have already committed to the Selengrad plan with Freedom Station. The de-orbit path is closed to you now." instead.
 
@@ -1305,7 +1305,7 @@ Check firing the cannon:
 	if the player is not in the Armament Bay:
 		say "You would need to be in the armament bay to fire the cannon." instead;
 	if b1-beats-completed < 3 and b2-beats-completed < 3:
-		say "You reach for the fire-control console but something holds you back. You have barely begun to understand what has happened here. The station still has secrets. The dead still have things to tell you. You are not ready to fire." instead.
+		say "The trigger is still cold. You do not have a reason yet. Not one you could name." instead.
 
 Report firing the cannon:
 	say "The fire-control console is dark. The cannon is inert. Whatever feeds its armored power line is not live tonight."
