@@ -99,7 +99,7 @@ test.describe("act2-gate", () => {
     await sendCommand(page, "transmit");
     await page.waitForTimeout(500);
     await expect(page.locator("#story-output")).toContainText(
-      /not ready to answer|barely begun/i,
+      /do not know yet what you would say|Not into a war/i,
     );
   });
 
@@ -130,7 +130,7 @@ test.describe("act2-gate", () => {
     await sendCommand(page, "deorbit");
     await page.waitForTimeout(500);
     await expect(page.locator("#story-output")).toContainText(
-      /not ready to leave|barely begun/i,
+      /have not seen the Earth since the impact|should look first/i,
     );
   });
 
