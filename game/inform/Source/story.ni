@@ -134,7 +134,7 @@ Part 2 - The Station
 
 Chapter 1 - Crew Quarters
 
-The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam. Personal effects drift in zero-g. A photograph. A pen. A sachet of reconstituted borscht. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. A second hatch aft, trefoil-marked, to the Reactor Module."
+The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam. Personal effects drift in zero-g. A photograph. A pen. A sachet of reconstituted borscht. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. Beside it, a red-painted lever set into the bulkhead and a placard stenciled in three languages. A second hatch aft, trefoil-marked, to the Reactor Module."
 
 The player is in the Crew Quarters.
 
