@@ -1,9 +1,23 @@
 /**
  * MIR'S END — Web UI Shell
- * Hitchhiker's Guide-style layout with interpreter I/O interception.
+ * Soviet terminal visual language (#132).
+ *
+ * Renders an 80×25 character grid into a single <pre id="display">.
+ * Story text fills the left 48-char column; status fills the right 25-char
+ * sidebar. Box-drawing characters form all borders.
+ *
+ * All existing runtime hooks (Argon-87 AI, session recording, save/load,
+ * interpreter bridge, title screen state machine) are preserved.
  */
 
 (() => {
+  /* ── Grid constants (docs/ui-design.md) ── */
+  var TOTAL_W = 80;
+  var STORY_W = 48;
+  var SIDE_W = 25;
+  var HEADER_W = 76; // inside outer borders + 1-char pad each side
+  var BODY_ROWS = 19; // story/sidebar row count
+
   /* ── Room-to-asset mapping ── */
   var ROOM_ART = {
     "crew quarters": "assets/ascii/bunks.txt",
@@ -13,13 +27,52 @@
     darkness: "assets/ascii/darkness.txt",
   };
 
-  /* ── Known room names for location detection ── */
+  /* ── Known room names for location detection ──
+     Must match the printed name from story.ni exactly. When a room
+     prints its name as a buffer line we update the SYS header and
+     emit a bilingual heading. */
   var KNOWN_ROOMS = [
     "Crew Quarters",
     "Main Corridor",
     "Command Module",
     "Observation Cupola",
+    "Life Support Module",
+    "Hydroponics Lab",
+    "Armament Bay",
+    "Reactor Module",
+    "Progress Ferry",
+    "Soyuz Ferry",
+    "Soyuz Reentry Capsule",
   ];
+
+  // Cyrillic shadow labels for the room-name heading. Keys must match
+  // KNOWN_ROOMS exactly. Missing entries fall back to Latin only.
+  var ROOM_CYRILLIC = {
+    "Crew Quarters": "ОТСЕК ЭКИПАЖА",
+    "Main Corridor": "ГЛАВНЫЙ КОРИДОР",
+    "Command Module": "КОМАНДНЫЙ МОДУЛЬ",
+    "Observation Cupola": "НАБЛЮДАТЕЛЬНЫЙ КУПОЛ",
+    "Life Support Module": "СИСТЕМА ЖИЗНЕОБЕСПЕЧЕНИЯ",
+    "Hydroponics Lab": "ГИДРОПОННАЯ ЛАБОРАТОРИЯ",
+    "Armament Bay": "ОРУЖЕЙНЫЙ ОТСЕК",
+    "Reactor Module": "РЕАКТОРНЫЙ МОДУЛЬ",
+    "Progress Ferry": "ГРУЗОВОЙ КОРАБЛЬ ПРОГРЕСС",
+    "Soyuz Ferry": "СОЮЗ",
+    "Soyuz Reentry Capsule": "СПУСКАЕМЫЙ АППАРАТ СОЮЗ",
+  };
+
+  /* ── Warm AI feature flag ── */
+  var AI_ENABLED = (function readAiFlag() {
+    var raw =
+      typeof window.MIRSEND_AI_ENABLED !== "undefined"
+        ? window.MIRSEND_AI_ENABLED
+        : 0;
+    return raw === 1 || raw === "1" || raw === true || raw === "true";
+  })();
+
+  var AI_PROXY_URL = "http://localhost:8787";
+  var AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
+  var AI_CANNED_LINE = "The AI channel is dead. Argon-87's console is dark.";
 
   /* ── State ── */
   var state = {
@@ -40,36 +93,328 @@
   var _saveLoadModalOpen = false;
 
   /* ── DOM references ── */
-  var storyOutput;
-  var sceneArt;
+  var storyOutput; // hidden #story-output (for session recording + e2e)
   var commandInput;
-  var statusO2;
-  var statusMorale;
-  var barO2Fill;
-  var barMoraleFill;
-  var inventoryList;
   var titleScreen;
   var menuContinueBtn;
   var ingameMenuBtn;
+  var displayPre; // the visible <pre id="display">
 
   /* ── ASCII art cache ── */
   var artCache = {};
 
+  /* ── Perception variant bank (m5 #41). Loaded once at boot from
+       game/perceptions.json. See docs/perception-buckets.md. ── */
+  var perceptionBank = null;
+
+  /* ── Story lines buffer (word-wrapped at STORY_W chars) ── */
+  var storyLines = [];
+  /* Lines above the bottom we've scrolled back. 0 = pinned to bottom. */
+  var _storyScrollOffset = 0;
+  var SCROLL_PAGE = 10;
+
+  /* Push a line into the story buffer, advancing the scroll offset when the
+     user has scrolled back so their visible window stays anchored on the
+     same content as new lines arrive. */
+  function pushStoryLine(line) {
+    var maxOffset;
+    storyLines.push(line);
+    if (_storyScrollOffset > 0) {
+      maxOffset = Math.max(0, storyLines.length - BODY_ROWS);
+      _storyScrollOffset = Math.min(_storyScrollOffset + 1, maxOffset);
+    }
+  }
+
+  function scrollUp(lines) {
+    var maxOffset = Math.max(0, storyLines.length - BODY_ROWS);
+    _storyScrollOffset = Math.min(_storyScrollOffset + lines, maxOffset);
+    renderDisplay();
+  }
+
+  function scrollDown(lines) {
+    _storyScrollOffset = Math.max(0, _storyScrollOffset - lines);
+    renderDisplay();
+  }
+
+  function scrollToTop() {
+    _storyScrollOffset = Math.max(0, storyLines.length - BODY_ROWS);
+    renderDisplay();
+  }
+
+  /* ── Current input text (for rendering the input line in the grid) ── */
+  var currentInputText = "";
+
+  /* ── Text helper functions (from v3-textmode mockup) ── */
+  function visLen(s) {
+    return s.replace(/<[^>]+>/g, "").replace(/&[a-zA-Z0-9#]+;/g, "X").length;
+  }
+  function pad(s, w) {
+    var n = w - visLen(s);
+    return n > 0 ? s + " ".repeat(n) : s;
+  }
+  function cells(left, right, w) {
+    var fill = w - visLen(left) - visLen(right);
+    return left + " ".repeat(Math.max(0, fill)) + right;
+  }
+
+  /**
+   * Escape HTML special characters for safe insertion into the <pre>.
+   * Leaves our custom inline tags (<hd>, <bri>, etc.) intact.
+   */
+  function escHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /**
+   * Word-wrap text to a given width. Returns an array of lines.
+   * Respects existing newlines in the input.
+   */
+  function wordWrap(text, width) {
+    var result = [];
+    var paragraphs = text.split("\n");
+    for (let p = 0; p < paragraphs.length; p++) {
+      const para = paragraphs[p];
+      if (para.length === 0) {
+        result.push("");
+        continue;
+      }
+      const words = para.split(/(\s+)/);
+      let line = "";
+      for (let i = 0; i < words.length; i++) {
+        let word = words[i];
+        if (line.length + word.length <= width) {
+          line += word;
+        } else if (line.length === 0) {
+          // Word longer than width — force break
+          while (word.length > width) {
+            result.push(word.substring(0, width));
+            word = word.substring(width);
+          }
+          line = word;
+        } else {
+          result.push(line.replace(/\s+$/, ""));
+          line = word.replace(/^\s+/, "");
+        }
+      }
+      if (line.length > 0) {
+        result.push(line.replace(/\s+$/, ""));
+      }
+    }
+    return result;
+  }
+
+  /* ── Build sidebar column ── */
+  function buildSidebar() {
+    var rows = [];
+
+    rows.push("<hd>СОСТОЯНИЕ</hd>");
+    rows.push("");
+
+    // O2
+    var o2Pct = Math.max(0, Math.min(100, state.o2));
+    var o2Str = `${o2Pct}%`;
+    var o2Tag = o2Pct > 50 ? "bri" : o2Pct > 25 ? "amb" : "red";
+    rows.push(cells("O2 LEVEL", `<${o2Tag}>${o2Str}</${o2Tag}>`, SIDE_W));
+    var o2Lit = Math.round((o2Pct / 100) * SIDE_W);
+    var o2Bar =
+      "<bri>" +
+      "\u2588".repeat(o2Lit) +
+      "</bri>" +
+      "<dim>" +
+      "\u2591".repeat(SIDE_W - o2Lit) +
+      "</dim>";
+    rows.push(o2Bar);
+
+    // Morale
+    var moralePct = Math.max(0, Math.min(100, state.morale));
+    var moraleStr = `${moralePct}%`;
+    var moraleTag = moralePct > 50 ? "bri" : moralePct > 25 ? "amb" : "red";
+    rows.push(
+      cells("MORALE", `<${moraleTag}>${moraleStr}</${moraleTag}>`, SIDE_W),
+    );
+    var moraleLit = Math.round((moralePct / 100) * SIDE_W);
+    var moraleBar =
+      "<bri>" +
+      "\u2588".repeat(moraleLit) +
+      "</bri>" +
+      "<dim>" +
+      "\u2591".repeat(SIDE_W - moraleLit) +
+      "</dim>";
+    rows.push(moraleBar);
+
+    rows.push("");
+    rows.push("<hd>СИСТЕМЫ</hd>");
+    rows.push("");
+
+    // System status lamps (static for now — wiring is #133)
+    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
+    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
+    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
+
+    rows.push("");
+    rows.push("<hd>ИНВЕНТАРЬ</hd>");
+    rows.push("");
+
+    if (state.inventory.length === 0) {
+      rows.push("<dim>(Nothing carried)</dim>");
+    } else {
+      for (let i = 0; i < state.inventory.length; i++) {
+        let item = state.inventory[i];
+        if (item.length > SIDE_W - 2) {
+          item = item.substring(0, SIDE_W - 2);
+        }
+        rows.push(`> ${item}`);
+      }
+    }
+
+    return rows;
+  }
+
+  /* ── Build the visible story rows ── */
+  function buildStoryColumn() {
+    var totalLines = storyLines.length;
+    var maxOffset = Math.max(0, totalLines - BODY_ROWS);
+    var offset = Math.min(_storyScrollOffset, maxOffset);
+    var end = totalLines - offset;
+    var start = Math.max(0, end - BODY_ROWS);
+    var rows = [];
+    for (let i = start; i < end; i++) {
+      rows.push(storyLines[i]);
+    }
+    while (rows.length < BODY_ROWS) rows.push("");
+    return rows;
+  }
+
+  /* ── Compose the full 80×25 screen ── */
+  function compose() {
+    var out = [];
+    var storyCol = buildStoryColumn();
+    var sideCol = buildSidebar();
+
+    // Top border
+    out.push(`\u2554${"\u2550".repeat(TOTAL_W - 2)}\u2557`);
+
+    // Header line. Shows metadata only (location + console + diegetic
+    // date/time). Gauges live in the sidebar so we don't double-display.
+    var roomLabel = state.currentRoom
+      ? escHtml(state.currentRoom.toUpperCase())
+      : "TERM-04";
+    var header =
+      "SYS <bri>\u041C\u0418\u0420-2/" +
+      roomLabel +
+      "</bri>   " +
+      "CONSOLE <bri>04</bri>   " +
+      "<bri>17.03.1988</bri>   " +
+      "<bri>02:14 \u041C\u0421\u041A</bri>";
+    out.push(`\u2551 ${pad(header, HEADER_W)} \u2551`);
+
+    // Separator under header
+    out.push(
+      "\u2560" +
+        "\u2550".repeat(STORY_W + 2) +
+        "\u2564" +
+        "\u2550".repeat(SIDE_W + 2) +
+        "\u2563",
+    );
+
+    // Body rows
+    var bodyRows = Math.max(storyCol.length, sideCol.length, BODY_ROWS);
+    for (let i = 0; i < bodyRows; i++) {
+      const left = storyCol[i] || "";
+      const right = sideCol[i] || "";
+      // storyLines entries are pre-escaped at push-time (see
+      // appendStoryText / appendPlayerInput), so trusted tags like <hd>
+      // and <echo> survive into the rendered output.
+      out.push(
+        "\u2551 " +
+          pad(left, STORY_W) +
+          " \u2502 " +
+          pad(right, SIDE_W) +
+          " \u2551",
+      );
+    }
+
+    // Separator above input
+    out.push(
+      "\u2560" +
+        "\u2550".repeat(STORY_W + 2) +
+        "\u2567" +
+        "\u2550".repeat(SIDE_W + 2) +
+        "\u2563",
+    );
+
+    // Input line
+    var inputText = escHtml(currentInputText);
+    var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
+    out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
+
+    // Bottom border
+    out.push(`\u255A${"\u2550".repeat(TOTAL_W - 2)}\u255D`);
+
+    return out.join("\n");
+  }
+
+  /* ── Render the display ── */
+  function renderDisplay() {
+    if (!displayPre) return;
+    displayPre.innerHTML = compose();
+    fitDisplay();
+  }
+
+  /* ── Auto-scale <pre> to fill screen ── */
+  function fitDisplay() {
+    if (!displayPre) return;
+    var screen = document.getElementById("screen");
+    if (!screen) return;
+    displayPre.style.fontSize = "10px";
+    var rect = displayPre.getBoundingClientRect();
+    var cw = screen.clientWidth - 32;
+    var ch = screen.clientHeight - 24;
+    var scaleW = cw / rect.width;
+    var scaleH = ch / rect.height;
+    var scale = Math.min(scaleW, scaleH);
+    displayPre.style.fontSize = `${10 * scale}px`;
+  }
+
+  /* ── Sweeping scanline animation ── */
+  function initScanline() {
+    var bar = document.getElementById("scan-line");
+    var screen = document.getElementById("screen");
+    if (!bar || !screen) return;
+    function rand(a, b) {
+      return a + Math.random() * (b - a);
+    }
+    function sweep() {
+      var h = screen.clientHeight;
+      var dur = rand(900, 4200);
+      var op = rand(0.35, 1.0);
+      bar.style.transition = "none";
+      bar.style.transform = "translateY(-12px)";
+      bar.style.opacity = "0";
+      bar.offsetHeight;
+      bar.style.transition = `transform ${dur}ms linear, opacity 200ms ease-in`;
+      bar.style.opacity = String(op);
+      bar.style.transform = `translateY(${h + 8}px)`;
+      setTimeout(() => {
+        bar.style.opacity = "0";
+      }, dur - 180);
+      var gap = Math.random() < 0.25 ? rand(150, 600) : rand(2500, 9000);
+      setTimeout(sweep, dur + gap);
+    }
+    setTimeout(sweep, 600);
+  }
+
   /* ── Initialization ── */
   function init() {
     storyOutput = document.getElementById("story-output");
-    sceneArt = document.getElementById("scene-art");
     commandInput = document.getElementById("command-input");
-    statusO2 = document.getElementById("status-o2");
-    statusMorale = document.getElementById("status-morale");
-    barO2Fill = document.querySelector("#status-bar-o2 .bar-fill");
-    barMoraleFill = document.querySelector("#status-bar-morale .bar-fill");
-    inventoryList = document.getElementById("inventory-list");
     titleScreen = document.getElementById("title-screen");
     menuContinueBtn = document.getElementById("menu-continue");
     ingameMenuBtn = document.getElementById("ingame-menu-btn");
+    displayPre = document.getElementById("display");
 
     commandInput.addEventListener("keydown", handleKeyDown);
+    commandInput.addEventListener("input", handleInputChange);
 
     /* Menu button handlers */
     document
@@ -94,6 +439,56 @@
       }
     });
 
+    /* Scrollback through the story buffer. PageUp/Down step by half a
+       screen; Home/End jump to the ends. The hidden #command-input
+       captures most keys but ignores these, so the document handler
+       sees them. Suppressed during the title screen and intro. */
+    document.addEventListener("keydown", (e) => {
+      if (!state.gameStarted) return;
+      if (window.MirsEndIntro?.isActive()) return;
+      if (titleScreen && !titleScreen.classList.contains("hidden")) return;
+      if (e.key === "PageUp") {
+        e.preventDefault();
+        scrollUp(SCROLL_PAGE);
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        scrollDown(SCROLL_PAGE);
+      } else if (e.key === "Home" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        scrollToTop();
+      } else if (e.key === "End" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        scrollToBottom();
+      }
+    });
+
+    /* Mouse-wheel scrollback over the visible screen. Trackpad gestures
+       generate many wheel events per second; deltaY is divided so a
+       full notch ≈ 1–2 lines, with a per-event cap so a hard fling
+       can't jump past the buffer. */
+    var screen = document.getElementById("screen");
+    if (screen) {
+      screen.addEventListener(
+        "wheel",
+        (e) => {
+          if (!state.gameStarted) return;
+          if (titleScreen && !titleScreen.classList.contains("hidden")) return;
+          var lines = Math.max(
+            1,
+            Math.min(BODY_ROWS, Math.round(Math.abs(e.deltaY) / 20)),
+          );
+          if (e.deltaY < 0) {
+            e.preventDefault();
+            scrollUp(lines);
+          } else if (e.deltaY > 0) {
+            e.preventDefault();
+            scrollDown(lines);
+          }
+        },
+        { passive: false },
+      );
+    }
+
     /* Focus input on click anywhere (only when game is active, not during intro) */
     document.addEventListener("click", (e) => {
       if (window.MirsEndIntro?.isActive()) return;
@@ -108,16 +503,34 @@
       }
     });
 
-    updateStatus();
-
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
 
     /* Record the playtest session on every change to #story-output. */
     initSessionRecorder();
 
+    /* Fetch the version descriptor produced by scripts/make_version.py
+       so session payloads can carry the exact code state. */
+    loadVersionJson();
+
+    /* Fetch the perception variant bank (m5 #41). */
+    loadPerceptionBank();
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
+
+    /* Warm AI: badge + first-run onboarding */
+    initAiBadge();
+    if (AI_ENABLED) {
+      showAiOnboardingModal();
+    }
+
+    /* Render initial display */
+    renderDisplay();
+
+    /* Start animations */
+    window.addEventListener("resize", fitDisplay);
+    initScanline();
 
     /* Show title screen on launch */
     showMenu();
@@ -165,12 +578,21 @@
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
+    /* Reset playthrough-db session tracking (m11). */
+    sessionId = generateUUID();
+    _gameEndPosted = false;
+
     /* Clear story output */
     storyOutput.innerHTML = "";
+    storyLines = [];
+    _storyScrollOffset = 0;
+    currentInputText = "";
 
     hideMenu();
-    updateStatus();
+    renderDisplay();
     loadSceneArt("darkness");
+
+    if (window.StationAI) window.StationAI.resetConversation();
 
     /* Play intro sequence if available, then hook the interpreter */
     if (window.MirsEndIntro) {
@@ -191,8 +613,6 @@
       const recent = window.SaveManager.getMostRecentSave();
       if (recent) {
         window.SaveManager.applyState(recent.data);
-        /* applyState covers o2/morale/inventory/currentRoom but not history;
-           restore those here so the UI matches the inline-SAVE_KEY path. */
         if (recent.data.commandHistory !== undefined) {
           state.commandHistory = recent.data.commandHistory;
           state.historyIndex = state.commandHistory.length;
@@ -201,8 +621,11 @@
         state.sessionStartedAt =
           state.sessionStartedAt || new Date().toISOString();
         storyOutput.innerHTML = "";
+        storyLines = [];
+        _storyScrollOffset = 0;
+        currentInputText = "";
         hideMenu();
-        updateStatus();
+        renderDisplay();
         loadSceneArt(
           state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
         );
@@ -236,9 +659,12 @@
 
     /* Clear story output and show restored message */
     storyOutput.innerHTML = "";
+    storyLines = [];
+    _storyScrollOffset = 0;
+    currentInputText = "";
 
     hideMenu();
-    updateStatus();
+    renderDisplay();
 
     loadSceneArt(
       state.currentRoom ? state.currentRoom.toLowerCase() : "darkness",
@@ -263,14 +689,98 @@
         commandHistory: state.commandHistory,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      /* Mirror to SaveManager's autosave slot so continueGame (which
-         prefers SaveManager) sees the latest data. */
       if (window.SaveManager?.autoSave) {
         window.SaveManager.autoSave();
       }
     } catch (_e) {
       /* localStorage may be unavailable */
     }
+  }
+
+  /* ── Argon-87 AI command detection ── */
+  var ARGON_CMD_RE =
+    /^(talk\s+to|speak\s+to|speak\s+with|ask)\s+argon(-?\s*87)?$/i;
+
+  function isArgonCommand(cmd) {
+    return ARGON_CMD_RE.test(cmd.trim());
+  }
+
+  function checkProxy() {
+    return fetch(AI_PROXY_URL, { method: "HEAD", mode: "no-cors" })
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  function handleArgonCommand() {
+    checkProxy().then((reachable) => {
+      if (!reachable) {
+        console.warn(
+          "[MirsEnd] AI proxy unreachable — falling back to canned line.",
+        );
+        appendStoryText(AI_CANNED_LINE);
+        return;
+      }
+      appendStoryText("Argon-87's console flickers. A cursor blinks, waiting.");
+    });
+  }
+
+  /* ── First-run AI onboarding modal ── */
+  function showAiOnboardingModal() {
+    var seen = false;
+    try {
+      seen = localStorage.getItem(AI_ONBOARDING_KEY) === "1";
+    } catch (_e) {
+      /* localStorage unavailable */
+    }
+    if (seen) return;
+
+    var overlay = document.createElement("div");
+    overlay.id = "ai-onboarding-overlay";
+
+    var modal = document.createElement("div");
+    modal.id = "ai-onboarding-modal";
+
+    modal.innerHTML =
+      "<h2>Argon-87 AI Features</h2>" +
+      "<p>This session has <strong>warm AI</strong> enabled. " +
+      "You can speak with <strong>Argon-87</strong>, the station's dormant AI, " +
+      "using commands like <code>TALK TO ARGON</code>.</p>" +
+      "<p>AI responses are generated via a local proxy server and may incur " +
+      "API usage costs. You can disable this feature at any time by setting " +
+      "<code>MIRSEND_AI_ENABLED=0</code> in the game configuration.</p>" +
+      "<p>The core story is fully playable without AI features.</p>" +
+      '<button id="ai-onboarding-dismiss">Understood</button>';
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document
+      .getElementById("ai-onboarding-dismiss")
+      .addEventListener("click", () => {
+        overlay.remove();
+        try {
+          localStorage.setItem(AI_ONBOARDING_KEY, "1");
+        } catch (_e) {
+          /* ignore */
+        }
+      });
+  }
+
+  /* ── AI online badge (appended to hidden game-shell) ── */
+  function initAiBadge() {
+    if (!AI_ENABLED) return;
+    var panel = document.getElementById("game-shell");
+    if (!panel) return;
+    var badge = document.createElement("div");
+    badge.id = "ai-status-badge";
+    badge.textContent = "AI online";
+    panel.appendChild(badge);
+  }
+
+  /* ── Input change handler — update display on every keystroke ── */
+  function handleInputChange() {
+    currentInputText = commandInput.value;
+    renderDisplay();
   }
 
   /* ── Command history & input handling ── */
@@ -282,17 +792,27 @@
       state.commandHistory.push(cmd);
       state.historyIndex = state.commandHistory.length;
       commandInput.value = "";
+      currentInputText = "";
 
       appendPlayerInput(cmd);
-      sendToInterpreter(cmd);
-      /* Session persistence is handled by a MutationObserver on
-         #story-output — it fires for any input path, including the
-         Playwright helpers that drive GlkOte's input directly. */
+
+      /* Gate Argon-87 commands on the AI feature flag. */
+      if (isArgonCommand(cmd)) {
+        if (AI_ENABLED) {
+          handleArgonCommand();
+        } else {
+          appendStoryText(AI_CANNED_LINE);
+        }
+      } else {
+        sendToInterpreter(cmd);
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (state.historyIndex > 0) {
         state.historyIndex--;
         commandInput.value = state.commandHistory[state.historyIndex];
+        currentInputText = commandInput.value;
+        renderDisplay();
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -303,15 +823,32 @@
         state.historyIndex = state.commandHistory.length;
         commandInput.value = "";
       }
+      currentInputText = commandInput.value;
+      renderDisplay();
     }
   }
 
   /* ── Display functions ── */
-  /**
-   * Match the machine-readable status line emitted by the Inform 7 every-turn
-   * rule. Format: [MIRSEND o2=N morale=N inv=a,b,c]  (inv may be empty)
-   */
-  var MIRSEND_STATUS_RE = /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=([^\]]*)\]/;
+
+  // The Inform 7 status line is currently:
+  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH]
+  // The trailing fields (b1/b2/act2) are story-state instrumentation, not
+  // inventory. Capture inv=... non-greedily and let the optional trailing
+  // " key=value..." block be discarded.
+  var MIRSEND_STATUS_RE =
+    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)(?:\s+\w+=[^\]]*)?\]/;
+
+  function interceptAiPrompt(text) {
+    if (!window.StationAI) return false;
+    var match = window.StationAI.matchAiPromptTag(text);
+    if (!match) return false;
+    if (!AI_ENABLED) {
+      appendStoryText(AI_CANNED_LINE);
+      return true;
+    }
+    window.StationAI.handleAiPrompt(match);
+    return true;
+  }
 
   function parseAndApplyMirsendStatus(text) {
     var m = text.match(MIRSEND_STATUS_RE);
@@ -327,43 +864,303 @@
     return true;
   }
 
+  /* ── Perception variant overlay (m5 #41) ──
+     Inform 7 emits [PERCEIVE key] at the head of variant-eligible descriptions.
+     Glulxe/GlkOte may flush the marker and the body paragraph in separate
+     stream chunks (the [line break] after the marker forces a flush), so we
+     can't always substitute inline. Instead the marker arms a "pending trap"
+     that fires on the next chunk with body content, replacing its first
+     paragraph with the bucketed variant. Inline marker+body works too —
+     the trap fires on the same chunk after the marker is stripped. */
+
+  var PERCEIVE_MARKER_RE = /\[PERCEIVE ([\w-]+)\][ \t]*\n?/g;
+  var pendingPerceptionVariant = null;
+
+  function currentBucket() {
+    /* Test/dev override hatch (parallels MIRSEND_AI_ENABLED, MIRSEND_PLAYER_KIND). */
+    var override =
+      typeof window.MIRSEND_PERCEPTION_BUCKET === "string"
+        ? window.MIRSEND_PERCEPTION_BUCKET
+        : null;
+    if (override === "low" || override === "mid" || override === "high") {
+      return `morale:${override}`;
+    }
+    /* Thresholds match the sidebar morale color buckets (>50 / >25 / ≤25). */
+    var m = state.morale;
+    if (m <= 25) return "morale:low";
+    if (m <= 50) return "morale:mid";
+    return "morale:high";
+  }
+
+  function resolveVariant(key) {
+    if (!perceptionBank) return null;
+    var variants = perceptionBank[key]?.variants;
+    if (!variants) return null;
+    var v = variants[currentBucket()];
+    return v && v.length > 0 ? v : null;
+  }
+
+  function applyPerception(text) {
+    /* Strip any markers in this chunk; arm the trap for the next body chunk. */
+    text = text.replace(PERCEIVE_MARKER_RE, (_match, key) => {
+      var variant = resolveVariant(key);
+      if (variant !== null) pendingPerceptionVariant = variant;
+      return "";
+    });
+    /* Fire the trap on the first chunk with body content. */
+    if (
+      pendingPerceptionVariant !== null &&
+      text.replace(/\s+/g, "").length > 0
+    ) {
+      const v = pendingPerceptionVariant;
+      pendingPerceptionVariant = null;
+      const firstBreak = text.indexOf("\n\n");
+      text = firstBreak === -1 ? v : v + text.slice(firstBreak);
+    }
+    return text;
+  }
+
+  function loadPerceptionBank() {
+    fetch("perceptions.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => {
+        perceptionBank = b;
+      })
+      .catch(() => {
+        perceptionBank = null;
+      });
+  }
+
   function appendStoryText(text) {
     /* Intercept status lines before they reach the DOM. */
     if (parseAndApplyMirsendStatus(text)) return;
+
+    /* Intercept AI-PROMPT tags from Inform 7 and route to Station AI. */
+    if (interceptAiPrompt(text)) return;
+
+    /* Substitute perception variants and strip [PERCEIVE …] markers. */
+    text = applyPerception(text);
+
+    /* Add to hidden #story-output DOM (for session recording + e2e tests) */
     var span = document.createElement("span");
     span.className = "story-text";
     span.textContent = `${text}\n\n`;
     storyOutput.appendChild(span);
-    scrollToBottom();
+
+    /* Room-name lines arrive on their own — render as a bright-phosphor
+       Cyrillic heading. Latin-only fallback if no Cyrillic gloss exists
+       for this room. The bilingual `LATIN / CYRILLIC` treatment was
+       dropped because IBM Plex Mono's Cyrillic glyph widths don't match
+       its Latin widths, which threw off the 80×25 grid padding whenever
+       a Cyrillic gloss sat next to a Latin label. */
+    const trimmed = text.trim();
+    if (KNOWN_ROOMS.indexOf(trimmed) !== -1) {
+      const cyr = ROOM_CYRILLIC[trimmed];
+      const heading = cyr
+        ? `<hd>${cyr}</hd>`
+        : `<hd>${trimmed.toUpperCase()}</hd>`;
+      pushStoryLine(heading);
+      pushStoryLine("");
+      renderDisplay();
+      detectRoomChange(text);
+      return;
+    }
+
+    /* Add to visible story column. Each wrapped line is HTML-escaped
+       at push-time so Glulx prose containing <, >, & renders as text
+       rather than as injected markup. Trusted tags (room headings,
+       echoes, cursor) are pushed pre-formatted via other paths. */
+    var wrapped = wordWrap(text, STORY_W);
+    for (let i = 0; i < wrapped.length; i++) {
+      pushStoryLine(escHtml(wrapped[i]));
+    }
+    pushStoryLine(""); // blank line between paragraphs
+
+    renderDisplay();
     detectRoomChange(text);
+    checkForGameEnd(text);
+  }
+
+  /* ── Session ingest (m11) ── */
+
+  var SESSION_INGEST_URL = "http://localhost:8787/v1/sessions";
+  var sessionId = null;
+  var _gameEndPosted = false;
+
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      var r = (Math.random() * 16) | 0;
+      var v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function detectPlayerKind() {
+    if (typeof window.MIRSEND_PLAYER_KIND === "string") {
+      return window.MIRSEND_PLAYER_KIND;
+    }
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const player = params.get("player");
+      if (player) return player;
+    } catch (_e) {
+      /* ignore */
+    }
+    return "human";
+  }
+
+  var _versionString = null;
+
+  function detectGameVersion() {
+    if (_versionString) return _versionString;
+    const meta = document.querySelector('meta[name="game-version"]');
+    return meta ? meta.getAttribute("content") || "unknown" : "unknown";
+  }
+
+  /* Branches we treat as "version string is enough." On develop or main,
+     no branch suffix appears on the bezel. Anything else gets
+     " · <branch>" appended so a side-by-side reviewer can tell at a
+     glance which feature branch is being played. */
+  var BEZEL_VERSION_TRUNK_BRANCHES = [
+    "develop",
+    "main",
+    "master",
+    "HEAD",
+    "unknown",
+  ];
+
+  function renderBezelVersion(data) {
+    var el = document.getElementById("bezel-version");
+    if (!el) return;
+    if (!data || typeof data.version_string !== "string") return;
+    var label = `FW ${data.version_string}`;
+    if (
+      typeof data.git_branch === "string" &&
+      BEZEL_VERSION_TRUNK_BRANCHES.indexOf(data.git_branch) === -1
+    ) {
+      label += ` · ${data.git_branch}`;
+    }
+    el.textContent = label;
+  }
+
+  function loadVersionJson() {
+    fetch("dist/version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && typeof data.version_string === "string") {
+          _versionString = data.version_string;
+          const meta = document.querySelector('meta[name="game-version"]');
+          if (meta) meta.setAttribute("content", _versionString);
+          renderBezelVersion(data);
+        }
+      })
+      .catch(() => {
+        /* Ignore: detectGameVersion() falls back to the meta tag, and
+           the bezel #brand .version element hides itself when empty. */
+      });
+  }
+
+  function buildSessionPayload() {
+    const session = snapshotSession();
+    return {
+      session_id: sessionId,
+      player_kind: detectPlayerKind(),
+      game_version: detectGameVersion(),
+      started_at: session.startedAt,
+      ended_at: session.exportedAt,
+      status: _gameEndPosted ? "completed" : "in_progress",
+      turns: session.turnCount,
+      command_history: session.commandHistory,
+      transcript: session.transcript,
+      final_state: session.finalState,
+    };
+  }
+
+  function postSession() {
+    if (!sessionId) return;
+    try {
+      const payload = buildSessionPayload();
+      fetch(SESSION_INGEST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => {
+          if (res.status >= 400 && res.status < 500) {
+            console.warn(`[MirsEnd] Session POST returned ${res.status}`);
+          } else if (res.status >= 500) {
+            console.warn(`[MirsEnd] Session POST server error: ${res.status}`);
+          }
+        })
+        .catch((_err) => {
+          /* Proxy unreachable - swallow silently. */
+        });
+    } catch (_e) {
+      /* Swallow any synchronous errors. */
+    }
+  }
+
+  function checkForGameEnd(text) {
+    if (_gameEndPosted) return;
+    if (
+      typeof text === "string" &&
+      (text.indexOf("[Game ended]") !== -1 ||
+        text.indexOf("suffocate") !== -1 ||
+        text.indexOf("SUFFOCATE") !== -1)
+    ) {
+      _gameEndPosted = true;
+      postSession();
+    }
   }
 
   function appendPlayerInput(text) {
+    /* Hidden DOM for session recording */
     var span = document.createElement("span");
     span.className = "player-input";
     span.textContent = `> ${text}\n`;
     storyOutput.appendChild(span);
+
+    /* Visible story column — show as dim echo. The `>` is pushed as a
+       trusted bri-tag; user text is escaped before injection. */
+    pushStoryLine(`<echo>&gt; ${escHtml(text)}</echo>`);
+
+    /* Typing a command always returns the viewport to the bottom — the
+       player wants to see the response to what they just submitted. */
     scrollToBottom();
   }
 
   function appendSystemText(text) {
+    /* Hidden DOM for session recording */
     var span = document.createElement("span");
     span.className = "system-text";
     span.textContent = `${text}\n`;
     storyOutput.appendChild(span);
-    scrollToBottom();
+
+    /* Visible story column. Wrapped chunks are escaped at push-time. */
+    var wrapped = wordWrap(text, STORY_W);
+    for (let i = 0; i < wrapped.length; i++) {
+      pushStoryLine(`<dim>${escHtml(wrapped[i])}</dim>`);
+    }
+
+    renderDisplay();
   }
 
   function scrollToBottom() {
-    var panel = document.getElementById("story-panel");
-    panel.scrollTop = panel.scrollHeight;
+    _storyScrollOffset = 0;
+    renderDisplay();
+  }
+
+  function updateStatus() {
+    renderDisplay();
   }
 
   /* ── Room detection from story output ── */
   function detectRoomChange(text) {
     for (let i = 0; i < KNOWN_ROOMS.length; i++) {
       const room = KNOWN_ROOMS[i];
-      /* Match room name at start of line or as standalone line */
       if (
         text.indexOf(room) !== -1 &&
         (text.indexOf(`${room}\n`) !== -1 ||
@@ -390,104 +1187,43 @@
     }
   }
 
-  /* ── Scene art loading ── */
+  /* ── Scene art loading (cached, fetched on room change) ── */
   function loadSceneArt(key) {
     var path = ROOM_ART[key];
     if (!path) return;
 
     if (artCache[key]) {
-      sceneArt.textContent = artCache[key];
       return;
     }
 
     fetch(path)
       .then((response) => {
-        if (!response.ok) {
-          sceneArt.textContent = "[No signal]";
-          return;
-        }
+        if (!response.ok) return;
         return response.text();
       })
       .then((text) => {
         if (text) {
           artCache[key] = text;
-          sceneArt.textContent = text;
         }
       })
       .catch(() => {
-        sceneArt.textContent = "[No signal]";
+        /* Silent failure */
       });
-  }
-
-  /* ── Status panel updates ── */
-  function updateStatus() {
-    /* O2 */
-    statusO2.textContent = `${state.o2}%`;
-    statusO2.className = "status-value";
-    if (state.o2 > 50) {
-      statusO2.classList.add("good");
-      barO2Fill.style.background = "var(--status-green)";
-    } else if (state.o2 > 25) {
-      statusO2.classList.add("warning");
-      barO2Fill.style.background = "var(--status-yellow)";
-    } else {
-      statusO2.classList.add("danger");
-      barO2Fill.style.background = "var(--status-red)";
-    }
-    barO2Fill.style.width = `${state.o2}%`;
-
-    /* Morale */
-    statusMorale.textContent = `${state.morale}%`;
-    statusMorale.className = "status-value";
-    if (state.morale > 50) {
-      statusMorale.classList.add("good");
-      barMoraleFill.style.background = "var(--status-green)";
-    } else if (state.morale > 25) {
-      statusMorale.classList.add("warning");
-      barMoraleFill.style.background = "var(--status-yellow)";
-    } else {
-      statusMorale.classList.add("danger");
-      barMoraleFill.style.background = "var(--status-red)";
-    }
-    barMoraleFill.style.width = `${state.morale}%`;
-
-    /* Inventory */
-    inventoryList.innerHTML = "";
-    if (state.inventory.length === 0) {
-      const li = document.createElement("li");
-      li.className = "empty-inventory";
-      li.textContent = "Nothing carried";
-      inventoryList.appendChild(li);
-    } else {
-      for (let i = 0; i < state.inventory.length; i++) {
-        const item = document.createElement("li");
-        item.textContent = state.inventory[i];
-        inventoryList.appendChild(item);
-      }
-    }
   }
 
   /* ── Interpreter I/O bridge ── */
 
-  /**
-   * Hook into Quixe/GlkOte to intercept interpreter output.
-   * The interpreter writes to GlkOte windows; we intercept
-   * the update callback to route text to our custom panels.
-   */
   function hookInterpreter() {
-    /* Check if GlkOte is loaded (Quixe) */
     if (typeof window.GlkOte !== "undefined") {
       hookGlkOte();
       return;
     }
 
-    /* Check if parchment is loaded */
     if (typeof window.parchment !== "undefined") {
       hookParchment();
       return;
     }
 
-    /* No interpreter loaded — run in standalone shell mode */
     appendSystemText(
       "[MIR'S END — UI Shell loaded. Waiting for interpreter...]",
     );
@@ -495,7 +1231,6 @@
       "[Load a Glulx interpreter (Quixe or Parchment) to play the story.]",
     );
 
-    /* Poll for interpreter availability */
     var pollCount = 0;
     var pollInterval = setInterval(() => {
       pollCount++;
@@ -513,15 +1248,8 @@
 
   function hookGlkOte() {
     state.interpreterReady = true;
-
-    /* Observe the offscreen #windowport where GlkOte renders the story.
-       We can't reliably wrap GlkOte.update (Quixe caches an internal
-       reference), so mirror DOM changes instead. */
     observeWindowport();
-
     appendSystemText("[Interpreter connected.]");
-
-    /* Boot the story now that our hook is installed. */
     if (window.MirsEndBoot) {
       window.MirsEndBoot.start();
     }
@@ -532,11 +1260,6 @@
     appendSystemText("[Parchment interpreter connected.]");
   }
 
-  /**
-   * Mirror text from the offscreen GlkOte windowport into our visible
-   * #story-output panel. We deduplicate by tracking seen line indices so
-   * each line is appended exactly once.
-   */
   function observeWindowport() {
     var windowport = document.getElementById("windowport");
     if (!windowport) {
@@ -548,15 +1271,17 @@
     var seen = new Set();
 
     var flush = () => {
-      /* GlkOte creates buffer windows with class .WindowBuffer and within them
-         a sequence of .BufferLine divs. Take each line's text, append if new. */
       const lines = windowport.querySelectorAll(".BufferLine");
       for (let i = 0; i < lines.length; i++) {
         const key = `line-${i}`;
         if (seen.has(key)) continue;
         const text = lines[i].textContent || "";
-        /* Skip empty paragraph breaks but honor real content. */
-        if (text.trim().length > 0) {
+        // Inform 7 emits a bare ">" prompt buffer line at the end of every
+        // turn (with a trailing zero-width joiner U+200D). Our visible UI
+        // has its own input row, so the inline prompt is just visual noise.
+        // Strip ZWJ + standard whitespace, then drop empty / pure ">" lines.
+        const trimmed = text.replace(/[‍​‌﻿]/g, "").trim();
+        if (trimmed.length > 0 && trimmed !== ">") {
           appendStoryText(text);
         }
         seen.add(key);
@@ -571,7 +1296,6 @@
       subtree: true,
       characterData: true,
     });
-    /* Initial flush in case content was already painted. */
     flush();
   }
 
@@ -589,22 +1313,10 @@
     return text;
   }
 
-  /**
-   * Send player command to the interpreter.
-   * If no interpreter is loaded, echo a demo response.
-   *
-   * GlkOte creates an `<input class="Input LineInput">` inside its
-   * current buffer window when a line event is pending. We drive that
-   * input directly — set value, dispatch Enter — which is the same path
-   * a real keyboard user exercises.
-   */
   function sendToInterpreter(cmd) {
     if (state.interpreterReady) {
       const glkInput = document.querySelector("#windowport input.LineInput");
       if (glkInput) {
-        /* GlkOte listens for keydown on the LineInput (bound via jQuery).
-           Set the value, focus, and fire a complete event sequence with
-           both native and jQuery paths to cover either binding style. */
         glkInput.value = cmd;
         glkInput.focus();
 
@@ -616,7 +1328,6 @@
           bubbles: true,
           cancelable: true,
         });
-        /* keyCode/which are non-writable on native events unless we force them. */
         Object.defineProperty(native, "keyCode", { value: 13 });
         Object.defineProperty(native, "which", { value: 13 });
         glkInput.dispatchEvent(native);
@@ -631,16 +1342,11 @@
           $input.trigger(jqEvt);
         }
 
-        /* Return focus to the visible #command-input so the player can
-           keep typing without clicking. Defer slightly: GlkOte may
-           re-focus its own LineInput when it renders the next prompt,
-           so we wait one frame plus a small timeout to win the race. */
         setTimeout(() => commandInput.focus(), 0);
         setTimeout(() => commandInput.focus(), 50);
         return;
       }
     }
-    /* Standalone shell mode — handle basic commands for demo */
     handleShellCommand(cmd);
   }
 
@@ -663,7 +1369,7 @@
     } else if (lower === "look" || lower === "l") {
       if (!state.currentRoom || state.currentRoom === "darkness") {
         appendStoryText(
-          "You wake to nothing.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
+          "You are coming to. Your face is wet. Your head hurts. The dark is absolute.\n\nNo hum of ventilation. No green glow of status panels. Just the hammering of your own pulse and a darkness so complete you cannot tell if your eyes are open.\n\nSomething has gone terribly wrong.",
         );
       } else {
         appendStoryText(`You look around ${state.currentRoom}.`);
@@ -737,18 +1443,12 @@
         "I didn't understand that command. Type 'help' for available commands.",
       );
     }
-
-    updateStatus();
   }
 
   /* ── Save/Load UI ── */
 
-  /**
-   * Show the save/load modal overlay.
-   * @param {string} mode - "save" or "load"
-   */
   function showSaveLoadModal(mode) {
-    closeSaveLoadModal(); // remove any existing modal
+    closeSaveLoadModal();
     _saveLoadModalOpen = true;
 
     var overlay = document.createElement("div");
@@ -841,9 +1541,6 @@
     if (existing) existing.remove();
   }
 
-  /**
-   * Quick-save to slot 1 (for command-line SAVE).
-   */
   function quickSave() {
     if (!window.SaveManager) {
       appendSystemText("[Save system not available.]");
@@ -853,9 +1550,6 @@
     appendSystemText(`[${result.message}]`);
   }
 
-  /**
-   * Quick-load from slot 1 or most recent save (for command-line RESTORE).
-   */
   function quickLoad() {
     if (!window.SaveManager) {
       appendSystemText("[Save system not available.]");
@@ -916,8 +1610,6 @@
   var SESSION_FORMAT_VERSION = 1;
   var sessionPersistTimer = null;
 
-  /* Persist the session to localStorage on every turn so a page crash or
-     reload doesn't lose the playtest record. */
   function persistSession() {
     if (!state.gameStarted) return;
     try {
@@ -928,9 +1620,6 @@
     }
   }
 
-  /* Observe the story panel for any update (new command echo, new
-     interpreter response) and persist the session. Debounced so a burst
-     of paragraphs from one response produces a single write. */
   function initSessionRecorder() {
     if (!storyOutput) return;
     var observer = new MutationObserver(() => {
@@ -968,6 +1657,7 @@
 
   function downloadSession() {
     var session = snapshotSession();
+    postSession();
     var json = JSON.stringify(session, null, 2);
     var blob = new Blob([json], { type: "application/json" });
     var url = URL.createObjectURL(blob);
@@ -987,6 +1677,9 @@
 
   /* ── Public API for interpreter integration ── */
   window.MirsEnd = {
+    config: {
+      aiEnabled: AI_ENABLED,
+    },
     appendStoryText: appendStoryText,
     appendPlayerInput: appendPlayerInput,
     appendSystemText: appendSystemText,
@@ -1013,6 +1706,12 @@
     quickSave: quickSave,
     quickLoad: quickLoad,
     continueGame: continueGame,
+    scrollUp: scrollUp,
+    scrollDown: scrollDown,
+    scrollToTop: scrollToTop,
+    scrollToBottom: scrollToBottom,
+    getScrollOffset: () => _storyScrollOffset,
+    getStoryLineCount: () => storyLines.length,
   };
 
   /* ── Boot ── */

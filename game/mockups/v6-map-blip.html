@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIR'S END — UI Mockup v6 (Station-Map Blip)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bezel-paint: #6b7560;
+    --bezel-paint-lit: #8a937c;
+    --bezel-paint-shadow: #3f4639;
+    --screen-bg: #0a1408;
+    --screen-bg-deep: #050a04;
+    --phosphor: #6cf06b;
+    --phosphor-dim: #3a8a39;
+    --phosphor-bright: #b6ffb5;
+    --phosphor-glow: rgba(108, 240, 107, 0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; min-height: 100%;
+    background: #15171a;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--phosphor-dim);
+  }
+
+  body { padding: 18px; }
+
+  h1 { color: var(--phosphor-bright); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* Picker row */
+  #controls {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    padding: 12px; margin-bottom: 16px;
+    background: var(--bezel-paint-shadow);
+    border-radius: 6px;
+    color: var(--phosphor-bright);
+    font-size: 12px;
+  }
+  #controls label { display: flex; flex-direction: column; gap: 4px; }
+  #controls select,
+  #controls button {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 8px;
+    background: #1a1d18;
+    color: var(--phosphor);
+    border: 1px solid var(--bezel-paint);
+    border-radius: 3px;
+  }
+  #controls button { cursor: pointer; }
+  #controls button:hover { background: var(--bezel-paint); }
+  #controls .info { color: var(--phosphor-dim); font-size: 11px; }
+
+  /* Screen — small CRT, room for the 76×19 map plus padding */
+  #screen {
+    position: relative;
+    width: 100%; max-width: 1100px;
+    aspect-ratio: 76 / 19;
+    background: radial-gradient(ellipse at center, var(--screen-bg) 0%, var(--screen-bg-deep) 100%);
+    border: 3px solid #1a1d18;
+    border-radius: 8px;
+    color: var(--phosphor);
+    text-shadow: 0 0 4px var(--phosphor-glow);
+    overflow: hidden;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.7), inset 0 0 8px rgba(108, 240, 107, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #display {
+    font-family: 'IBM Plex Mono', 'DejaVu Sans Mono', 'Consolas', 'Courier New', monospace;
+    font-feature-settings: "liga" 0, "calt" 0;
+    font-variant-ligatures: none;
+    font-size: 14px;
+    line-height: 1.2;
+    white-space: pre;
+    color: var(--phosphor);
+    letter-spacing: 0;
+  }
+
+  dim    { color: var(--phosphor-dim); }
+  bri    { color: var(--phosphor-bright); }
+
+  #log {
+    margin-top: 14px;
+    padding: 8px 12px;
+    background: var(--bezel-paint-shadow);
+    border-radius: 4px;
+    color: var(--phosphor-dim);
+    font-size: 11px;
+  }
+  #log .room { color: var(--phosphor-bright); }
+</style>
+</head>
+<body>
+
+<h1>MIR-3 Station-Map Blip Demo (m13 #161)</h1>
+
+<div id="controls">
+  <label>
+    From
+    <select id="from-room"></select>
+  </label>
+  <label>
+    To
+    <select id="to-room"></select>
+  </label>
+  <button id="play-btn">Play transition</button>
+  <button id="next-pair-btn">Next pair →</button>
+  <button id="prev-pair-btn">← Prev pair</button>
+  <span class="info">Frames: <span id="frame-count">14</span> @ 12fps · cycles all 11 rooms</span>
+</div>
+
+<div id="screen">
+  <pre id="display"></pre>
+</div>
+
+<div id="log">
+  <span class="room" id="log-from">—</span>
+  →
+  <span class="room" id="log-to">—</span>
+  <span id="log-path"></span>
+</div>
+
+<script type="module">
+import {
+  MIR3_MAP_BASE,
+  ROOM_NAMES,
+  ROOM_COORDS,
+  renderMapFrame,
+  generateTransitionFrames,
+  debugPath,
+} from "../station-map.mjs";
+
+const FPS = 12;
+const FRAME_COUNT = 14;
+
+const display = document.getElementById("display");
+const fromSelect = document.getElementById("from-room");
+const toSelect = document.getElementById("to-room");
+const playBtn = document.getElementById("play-btn");
+const nextBtn = document.getElementById("next-pair-btn");
+const prevBtn = document.getElementById("prev-pair-btn");
+const logFrom = document.getElementById("log-from");
+const logTo = document.getElementById("log-to");
+const logPath = document.getElementById("log-path");
+
+/* Populate the pickers. Default the From/To to a room pair the
+   playtester can immediately appreciate. */
+for (const name of ROOM_NAMES) {
+  const opt1 = document.createElement("option");
+  opt1.value = name;
+  opt1.textContent = name;
+  fromSelect.appendChild(opt1);
+  const opt2 = opt1.cloneNode(true);
+  toSelect.appendChild(opt2);
+}
+fromSelect.value = "Crew Quarters";
+toSelect.value = "Command Module";
+
+/* Auto-scale the <pre> to fill the screen exactly, like v5-cutscene. */
+function fit() {
+  display.style.fontSize = "10px";
+  const screen = document.getElementById("screen");
+  const rect = display.getBoundingClientRect();
+  const cw = screen.clientWidth - 16;
+  const ch = screen.clientHeight - 16;
+  const scaleW = cw / rect.width;
+  const scaleH = ch / rect.height;
+  const scale = Math.min(scaleW, scaleH);
+  display.style.fontSize = (10 * scale) + "px";
+}
+window.addEventListener("resize", fit);
+
+/* Render the initial frame so the layout is visible before any
+   transition. Holds the blip on the "from" room. */
+function showStill(from, to) {
+  display.innerHTML = renderMapFrame(from, to, 0);
+  fit();
+  logFrom.textContent = from;
+  logTo.textContent = to;
+  const path = debugPath(from, to);
+  logPath.textContent = path ? ` (${path.length} cells along the corridor)` : " (no path)";
+}
+
+let playing = false;
+function playTransition(from, to) {
+  if (playing) return;
+  playing = true;
+  const frames = generateTransitionFrames(from, to, FRAME_COUNT);
+  let i = 0;
+  let last = performance.now();
+  function tick(now) {
+    if (now - last >= 1000 / FPS) {
+      display.innerHTML = frames[i];
+      i++;
+      last = now;
+      if (i >= frames.length) {
+        playing = false;
+        return;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener("click", () => {
+  playTransition(fromSelect.value, toSelect.value);
+});
+
+/* Cycle through every ordered pair of distinct rooms — the manual
+   visual confirmation called out in the acceptance criteria. The
+   selected pair becomes the Next/Prev base; the Play button reuses
+   the current From/To values. */
+let pairIdx = 0;
+const allPairs = (() => {
+  const out = [];
+  for (const a of ROOM_NAMES)
+    for (const b of ROOM_NAMES)
+      if (a !== b) out.push([a, b]);
+  return out;
+})();
+
+function applyPair(delta) {
+  pairIdx = (pairIdx + delta + allPairs.length) % allPairs.length;
+  const [a, b] = allPairs[pairIdx];
+  fromSelect.value = a;
+  toSelect.value = b;
+  showStill(a, b);
+  playTransition(a, b);
+}
+
+nextBtn.addEventListener("click", () => applyPair(1));
+prevBtn.addEventListener("click", () => applyPair(-1));
+
+fromSelect.addEventListener("change", () => showStill(fromSelect.value, toSelect.value));
+toSelect.addEventListener("change", () => showStill(fromSelect.value, toSelect.value));
+
+showStill(fromSelect.value, toSelect.value);
+document.getElementById("frame-count").textContent = String(FRAME_COUNT);
+</script>
+
+</body>
+</html>

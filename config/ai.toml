@@ -1,0 +1,21 @@
+# Mir's End — AI configuration
+#
+# All cost values in USD. Override caps with environment variables:
+#   MIRSEND_CAP_PER_CALL   (float, e.g. "0.02")
+#   MIRSEND_CAP_PER_SESSION (float, e.g. "0.25")
+#   MIRSEND_CAP_PER_DAY     (float, e.g. "5.00")
+#
+# Override the model with MIRSEND_MODEL (string).
+
+[caps]
+per_call    = 0.02    # Max USD for a single Claude call
+per_session = 0.25    # Max USD within one playthrough
+per_day     = 5.00    # Max USD across all sessions in a rolling 24-hour window
+
+[model]
+# Default model for in-game Argon-87 and any call_claude call site that
+# doesn't pass model explicitly. Resolution precedence:
+#   1. MIRSEND_MODEL env var (most specific)
+#   2. This TOML value
+#   3. Hardcoded "claude-haiku-4-5" fallback
+default = "claude-haiku-4-5"

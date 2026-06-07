@@ -1,12 +1,13 @@
 """M2 integration tests: Web UI — playable prototype verification.
 
+Updated for #132: Soviet terminal visual language port.
+
 Validates that the web UI shell forms a complete, playable interface:
-- Text panel displays story output and echoes player input
-- Scene art panel updates when player changes rooms
-- Status panel shows O2, Morale, and inventory
+- Story text is rendered in the 80×25 phosphor terminal grid
+- Status data (O2, Morale, inventory) displayed in the sidebar column
 - Text input accepts commands and supports history (up/down arrow)
-- Layout matches Hitchhiker's-style spec (left text, right art/status)
-- Dark theme renders correctly
+- Terminal bezel layout with phosphor screen
+- Dark theme with phosphor green palette
 """
 
 import os
@@ -40,13 +41,14 @@ def ui_js():
 
 
 class TestTextPanel:
-    """Text panel displays story output and echoes player input."""
+    """Story text is rendered in the 80×25 pre-based terminal grid."""
 
     def test_story_output_container_exists(self, play_html):
         assert 'id="story-output"' in play_html
 
-    def test_story_panel_is_scrollable(self, ui_css):
-        assert "overflow-y: auto" in ui_css or "overflow-y:auto" in ui_css
+    def test_display_pre_exists(self, play_html):
+        """The <pre id="display"> element renders the terminal grid."""
+        assert 'id="display"' in play_html
 
     def test_story_text_class_styled(self, ui_css):
         assert ".story-text" in ui_css
@@ -69,24 +71,16 @@ class TestTextPanel:
         # Should prefix with ">"
         assert "> " in ui_js
 
-    def test_scroll_to_bottom_on_new_text(self, ui_js):
-        """Story panel auto-scrolls to latest text."""
-        assert "scrollToBottom" in ui_js
-        assert "scrollTop" in ui_js
-        assert "scrollHeight" in ui_js
+    def test_render_display_function(self, ui_js):
+        """JS has renderDisplay for updating the <pre> grid."""
+        assert "renderDisplay" in ui_js
 
 
-# ── Scene Art Panel ───────────────────────────────────────────────────
+# ── Scene Art ────────────────────────────────────────────────────────
 
 
 class TestSceneArtPanel:
-    """Scene art panel updates when player changes rooms."""
-
-    def test_scene_art_element_exists(self, play_html):
-        assert 'id="scene-art"' in play_html
-
-    def test_scene_panel_exists(self, play_html):
-        assert 'id="scene-panel"' in play_html
+    """Scene art is loaded and cached on room changes."""
 
     def test_room_art_mapping_covers_all_rooms(self, ui_js):
         """ROOM_ART maps every game room to an ASCII art file."""
@@ -110,7 +104,6 @@ class TestSceneArtPanel:
     def test_room_change_triggers_art_load(self, ui_js):
         """setCurrentRoom triggers loadSceneArt."""
         assert "loadSceneArt" in ui_js
-        # setCurrentRoom should call loadSceneArt
         set_room_fn = ui_js[ui_js.find("function setCurrentRoom"):]
         set_room_fn = set_room_fn[:set_room_fn.find("\n  }") + 4]
         assert "loadSceneArt" in set_room_fn
@@ -121,57 +114,41 @@ class TestSceneArtPanel:
         assert "KNOWN_ROOMS" in ui_js
 
 
-# ── Status Panel ──────────────────────────────────────────────────────
+# ── Status Display ──────────────────────────────────────────────────
 
 
 class TestStatusPanel:
-    """Status panel shows O2, Morale, and inventory."""
+    """Status data (O2, morale, inventory) is rendered in the sidebar column."""
 
-    def test_o2_display_exists(self, play_html):
-        assert 'id="status-o2"' in play_html
+    def test_sidebar_shows_o2(self, ui_js):
+        """O2 is displayed in the sidebar via compose()."""
+        assert "O2 LEVEL" in ui_js or "o2" in ui_js.lower()
 
-    def test_morale_display_exists(self, play_html):
-        assert 'id="status-morale"' in play_html
+    def test_sidebar_shows_morale(self, ui_js):
+        """Morale is displayed in the sidebar via compose()."""
+        assert "MORALE" in ui_js
 
-    def test_inventory_list_exists(self, play_html):
-        assert 'id="inventory-list"' in play_html
-
-    def test_o2_bar_exists(self, play_html):
-        assert 'id="status-bar-o2"' in play_html
-
-    def test_morale_bar_exists(self, play_html):
-        assert 'id="status-bar-morale"' in play_html
-
-    def test_bar_fill_elements(self, play_html):
-        """Progress bars have fill elements."""
-        assert "bar-fill" in play_html
+    def test_sidebar_shows_inventory(self, ui_js):
+        """Inventory is displayed in the sidebar (Cyrillic-only post-#190)."""
+        assert "ИНВЕНТАРЬ" in ui_js
 
     def test_update_status_function(self, ui_js):
         """JS updates status display dynamically."""
         assert "function updateStatus" in ui_js
 
-    def test_o2_color_thresholds(self, ui_js):
-        """O2 display changes color based on level (green/yellow/red)."""
-        assert "state.o2 > 50" in ui_js or "o2 > 50" in ui_js
-        assert "state.o2 > 25" in ui_js or "o2 > 25" in ui_js
-        assert "status-green" in ui_js
-        assert "status-yellow" in ui_js
-        assert "status-red" in ui_js
-
-    def test_morale_color_thresholds(self, ui_js):
-        """Morale display changes color based on level."""
-        assert "state.morale > 50" in ui_js or "morale > 50" in ui_js
-        assert "state.morale > 25" in ui_js or "morale > 25" in ui_js
-
     def test_inventory_empty_state(self, ui_js):
         """Empty inventory displays a placeholder message."""
         assert "Nothing carried" in ui_js
-        assert "empty-inventory" in ui_js
 
     def test_inventory_renders_items(self, ui_js):
-        """Inventory items are rendered as list elements."""
+        """Inventory items are rendered in the sidebar."""
         assert "state.inventory" in ui_js
-        assert "createElement" in ui_js
+
+    def test_compose_builds_sidebar(self, ui_js):
+        """compose() includes sidebar with vitals and systems (Cyrillic-only post-#190)."""
+        assert "buildSidebar" in ui_js
+        assert "СОСТОЯНИЕ" in ui_js
+        assert "СИСТЕМЫ" in ui_js
 
 
 # ── Text Input ────────────────────────────────────────────────────────
@@ -183,9 +160,6 @@ class TestTextInput:
     def test_command_input_exists(self, play_html):
         assert 'id="command-input"' in play_html
         assert 'type="text"' in play_html
-
-    def test_input_has_placeholder(self, play_html):
-        assert "placeholder" in play_html
 
     def test_enter_key_sends_command(self, ui_js):
         assert '"Enter"' in ui_js
@@ -210,64 +184,58 @@ class TestTextInput:
         """Input field is cleared after submitting a command."""
         assert 'commandInput.value = ""' in ui_js
 
-    def test_input_prompt_visible(self, play_html):
-        """Command prompt symbol (>) is displayed."""
-        assert 'id="input-prompt"' in play_html
-        assert "&gt;" in play_html
+
+# ── Terminal Layout ──────────────────────────────────────────────────
 
 
-# ── Hitchhiker's-Style Layout ────────────────────────────────────────
+class TestTerminalLayout:
+    """Layout uses Soviet terminal bezel with phosphor screen."""
 
+    def test_terminal_bezel_exists(self, play_html):
+        assert 'id="terminal"' in play_html
 
-class TestHitchhikersLayout:
-    """Layout matches spec: left text, right art/status, bottom input."""
+    def test_screen_element(self, play_html):
+        assert 'id="screen"' in play_html
 
     def test_grid_layout(self, ui_css):
-        """Main container uses CSS grid."""
+        """Terminal uses CSS grid."""
         assert "display: grid" in ui_css
 
-    def test_two_column_layout(self, ui_css):
-        """Grid has two columns: flexible left, fixed right."""
-        assert "grid-template-columns" in ui_css
-        assert "1fr" in ui_css
-        assert "340px" in ui_css
+    def test_80x25_grid_constants(self, ui_js):
+        """JS defines 80×25 grid constants."""
+        assert "TOTAL_W" in ui_js
+        assert "STORY_W" in ui_js
+        assert "SIDE_W" in ui_js
+        assert "= 80" in ui_js
+        assert "= 48" in ui_js
+        assert "= 25" in ui_js
 
-    def test_two_row_layout(self, ui_css):
-        """Grid has two rows: flexible content, fixed input."""
-        assert "grid-template-rows" in ui_css
-        assert "auto" in ui_css
+    def test_box_drawing_characters(self, ui_js):
+        """compose() uses box-drawing characters for borders."""
+        # Check for Unicode escape references to box-drawing chars
+        assert "\\u2554" in ui_js or "\u2554" in ui_js, "Missing top-left corner"
+        assert "\\u2550" in ui_js or "\u2550" in ui_js, "Missing horizontal border"
+        assert "\\u2551" in ui_js or "\u2551" in ui_js, "Missing vertical border"
 
-    def test_story_panel_left_column(self, ui_css):
-        """Story panel occupies the left column."""
-        assert "#story-panel" in ui_css
-        assert "grid-column: 1" in ui_css
+    def test_bezel_plate(self, play_html):
+        """Bezel includes the etched ID plate."""
+        assert 'id="bezel-plate"' in play_html
+        assert "MIR-2" in play_html
 
-    def test_sidebar_right_column(self, ui_css):
-        """Sidebar occupies the right column."""
-        assert "#sidebar" in ui_css
-        assert "grid-column: 2" in ui_css
+    def test_scanline_effect(self, play_html):
+        """Screen has a scanline overlay element."""
+        assert 'id="scan-line"' in play_html
 
-    def test_input_bar_spans_full_width(self, ui_css):
-        """Input bar spans both columns at the bottom."""
-        assert "#input-bar" in ui_css
-        assert "1 / -1" in ui_css  # grid-column: 1 / -1
-
-    def test_sidebar_has_three_sections(self, play_html):
-        """Sidebar contains scene, title, and status panels."""
-        assert 'id="scene-panel"' in play_html
-        assert 'id="title-panel"' in play_html
-        assert 'id="status-panel"' in play_html
-
-    def test_sidebar_flex_column(self, ui_css):
-        """Sidebar uses flex-direction: column for vertical stacking."""
-        assert "flex-direction: column" in ui_css
+    def test_screws(self, play_html):
+        """Bezel has corner screws."""
+        assert 'class="screw' in play_html
 
 
 # ── Dark Theme ────────────────────────────────────────────────────────
 
 
 class TestDarkTheme:
-    """Dark theme renders correctly with appropriate color scheme."""
+    """Dark theme renders correctly with phosphor green palette."""
 
     def test_dark_background_variable(self, ui_css):
         assert "--bg-dark: #0a0c10" in ui_css
@@ -287,8 +255,14 @@ class TestDarkTheme:
         assert "--border-color" in ui_css
         assert "--border-glow" in ui_css
 
+    def test_phosphor_colors(self, ui_css):
+        """Phosphor green palette is defined."""
+        assert "--phosphor:" in ui_css
+        assert "--phosphor-dim:" in ui_css
+        assert "--phosphor-bright:" in ui_css
+
     def test_scene_blue_colors(self, ui_css):
-        """Scene art uses blue-tinted styling."""
+        """Legacy scene blue variables still present for modal compat."""
         assert "--scene-blue" in ui_css
         assert "--scene-text" in ui_css
 
@@ -299,14 +273,13 @@ class TestDarkTheme:
         assert "--status-red" in ui_css
 
     def test_monospace_font(self, ui_css):
-        """Theme uses monospace font throughout."""
+        """Theme uses IBM Plex Mono as primary font."""
         assert "monospace" in ui_css
-        assert "Courier New" in ui_css
+        assert "IBM Plex Mono" in ui_css
 
     def test_custom_scrollbar(self, ui_css):
         """Scrollbar is styled to match dark theme."""
         assert "scrollbar" in ui_css
-        assert "webkit-scrollbar" in ui_css
 
     def test_title_styling(self, ui_css):
         """Game title has distinctive styling."""
@@ -316,7 +289,6 @@ class TestDarkTheme:
 
     def test_no_white_backgrounds(self, ui_css):
         """No white or light backgrounds that would break the dark theme."""
-        # Ensure no background: white or background: #fff
         assert "background: white" not in ui_css
         assert "background: #fff" not in ui_css
         assert "background: #ffffff" not in ui_css

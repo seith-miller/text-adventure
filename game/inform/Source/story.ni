@@ -13,6 +13,31 @@ Chapter 1 - Resource Variables
 
 Oxygen-level is a number that varies. Oxygen-level is 100.
 Morale-level is a number that varies. Morale-level is 50.
+Dose-level is a number that varies. Dose-level is 0.
+
+B1-beats-completed is a number that varies. B1-beats-completed is 0.
+B2-beats-completed is a number that varies. B2-beats-completed is 0.
+Dominant-act2-path is text that varies. Dominant-act2-path is "none".
+
+[Beat-counting guards — each beat increments its path counter once.]
+Notebook-beat-counted is a truth state that varies. Notebook-beat-counted is false.
+Yevgenia-beat-counted is a truth state that varies. Yevgenia-beat-counted is false.
+Petrov-beat-counted is a truth state that varies. Petrov-beat-counted is false.
+Dosimeter-beat-counted is a truth state that varies. Dosimeter-beat-counted is false.
+
+B1-beats-completed is a number that varies. B1-beats-completed is 0.
+B2-beats-completed is a number that varies. B2-beats-completed is 0.
+Dominant-act2-path is text that varies. Dominant-act2-path is "none".
+
+[Beat-counting guards — each beat increments its path counter once.]
+Notebook-beat-counted is a truth state that varies. Notebook-beat-counted is false.
+Yevgenia-beat-counted is a truth state that varies. Yevgenia-beat-counted is false.
+Petrov-beat-counted is a truth state that varies. Petrov-beat-counted is false.
+Dosimeter-beat-counted is a truth state that varies. Dosimeter-beat-counted is false.
+
+[Descent arc state — set by DEORBIT, guards oxygen timer and D3 sequence.]
+Chose-descent is a truth state that varies. Chose-descent is false.
+D3-beat-counter is a number that varies. D3-beat-counter is 0.
 
 Chapter 2 - Status Bar
 
@@ -22,15 +47,45 @@ Chapter 2 - Status Bar
  compiler we use doesn't recognize "fill status bar with ...", and
  we don't need an in-game bar since the Web UI covers it.]
 
-Chapter 3 - Oxygen Timer
+Chapter 3 - Climax Commitment
+
+[Tracks whether the player has locked into any Act 4/5 arc.
+ Set by C1 (transmit), C2 (de-orbit), or C3 (cannon). When true,
+ passive-timer deaths yield to the scripted denouement.]
+Chose-descent is a truth state that varies. Chose-descent is false.
+Cannon-fired is a truth state that varies. Cannon-fired is false.
+
+To decide whether player has committed climax:
+	if responded-to-americans is true, decide yes;
+	if chose-descent is true, decide yes;
+	if cannon-fired is true, decide yes;
+	decide no.
+
+Chapter 4 - Oxygen Timer
 
 Every turn:
-	decrease oxygen-level by 1;
+	if player has committed climax:
+		do nothing;
+	otherwise:
+		decrease oxygen-level by 1;
+		if oxygen-level <= 0:
+			try e5 dispatching.
+
+Chapter 5 - E5 Passive-Failure Dispatcher
+
+[When a passive timer expires and the player has not committed to a
+ climax, this dispatcher selects the correct sub-variant and ends
+ the game. Only the oxygen hook is wired today; CO2, freeze, and
+ radiation plug in here when their timers are wired.]
+
+E5 dispatching is an action applying to nothing.
+
+Carry out e5 dispatching:
 	if oxygen-level <= 0:
-		say "The air has grown impossibly thin. Your vision tunnels. You fought as long as you could. Without oxygen, the darkness wins.";
+		say "[bracket]TODO prose: #60 — e5-suffocate[close bracket]";
 		end the story saying "You have suffocated".
 
-Chapter 4 - UI Status Bridge
+Chapter 6 - UI Status Bridge
 
 [Emit a machine-readable status line every turn so the Web UI can mirror
  oxygen-level / morale-level / inventory into window.MirsEnd.setState.
@@ -46,7 +101,22 @@ To say mirsend-inventory-list:
 		increment counter.
 
 Every turn:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list][close bracket][line break]".
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
+
+Chapter 7 - Perception Markers
+
+[Convention for variant-eligible descriptions (m5 #41):
+
+   say "[bracket]PERCEIVE my-key[close bracket][line break]The base prose paragraph...";
+
+ ui.js detects [PERCEIVE key], looks up game/perceptions.json, and
+ substitutes the next paragraph with the morale-bucketed variant. If
+ ui.js is not active (CLI / glulxe), the marker prints on its own line
+ and the base prose follows unchanged. Keys use kebab-case; hyphens are
+ emitted as literal characters inside [bracket]…[close bracket], so a
+ phrase wrapper like "To say perceive (key - some text)" is not used —
+ Inform 7's text-literal grammar would reject the call site. See
+ docs/perception-buckets.md for bucket thresholds.]
 
 Part 1B - Direction Synonyms
 
@@ -64,7 +134,7 @@ Part 2 - The Station
 
 Chapter 1 - Crew Quarters
 
-The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam. Personal effects drift in zero-g. A photograph. A pen. A sachet of reconstituted borscht. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. A second hatch aft, trefoil-marked, to the Reactor Module."
+The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam. Personal effects drift in zero-g. A photograph. A pen. A sachet of reconstituted borscht. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. Beside it, a red-painted lever set into the bulkhead and a placard stenciled in three languages. A second hatch aft, trefoil-marked, to the Reactor Module."
 
 The player is in the Crew Quarters.
 
@@ -136,6 +206,113 @@ Instead of eating the borscht:
 
 The bunk status panel is scenery in the Crew Quarters. The description of the bunk status panel is "Dead black. Not even the emergency indicators are lit."
 
+[Backdrops for prose-mentioned scenery players reach for. Without these
+ the parser says "You can't see any such thing" on bunks/vent and breaks
+ trust in the prose. Each gives a one-line description that fits the
+ voice without inventing new mechanics.]
+The bunks are scenery in the Crew Quarters. Understand "bunk" or "bunks" or "first bunk" or "second bunk" or "third bunk" or "fourth bunk" as the bunks. The description of the bunks is "Four bunks in their slots. Three are empty harnesses. The fourth was yours."
+
+Instead of taking the bunks:
+	say "The bunks are bolted to the hull. They are not going anywhere."
+
+The reading light is scenery in the Crew Quarters. Understand "reading light" or "lamp" or "overhead light" as the reading light. The description of the reading light is "A small dome lamp clipped above your bunk. Dead, like everything else not running on batteries."
+
+The air vent is scenery in the Crew Quarters. Understand "vent" or "air vent" or "ventilation" or "duct" as the air vent. The description of the air vent is "An air vent overhead. The fan behind it is silent. Without circulation, the bay's air is going to settle in layers."
+
+The reactor warning triangle is scenery in the Crew Quarters. Understand "trefoil" or "warning" or "triangle" or "warning triangle" or "reactor warning" or "radiation symbol" as the reactor warning triangle. The description of the reactor warning triangle is "The trefoil radiation symbol painted on the aft bulkhead. Just past the hatch is the Reactor Module. The trefoil exists for this exact moment."
+
+[The two named hatches in Crew Quarters: the parser accepts "aft hatch"
+ and "forward hatch" as synonyms for the existing sealed hatch, so the
+ LLM player's natural phrasing doesn't get rewritten to "examine south".]
+Understand "aft hatch" or "forward hatch" or "fore hatch" or "fwd hatch" as the sealed hatch.
+
+The chocolate bar is an edible thing in the Crew Quarters. The printed name of the chocolate bar is "chocolate bar". Understand "chocolate" or "shokolad" or "shoko" or "bar" or "ration bar" or "ration" as the chocolate bar. The description of the chocolate bar is "A small dark Soviet ration bar. Foil-wrapped, slightly crushed. Аленка on the label. Probably stale. Probably the only thing within reach that is not trying to kill you."
+
+After eating the chocolate bar:
+	if morale-level + 12 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 12;
+	say "You unwrap the bar. It tastes like dust and cocoa and something faintly like the past. You eat it slowly because you have nothing else.[paragraph break][bracket]You feel a little less broken.[close bracket]"
+
+[Resting in the bunk: lets the player trade O2 for morale. The harness
+ is in Crew Quarters; resting only works there. Each rest costs 4 O2
+ above the per-turn baseline tick and pays back 10 morale.]
+Resting is an action applying to nothing.
+[Inform 7 binds "sleep" to its built-in Sleeping action by default. Clear
+ it so our resting action gets the verb.]
+Understand the command "sleep" as something new.
+Understand "sleep" or "rest" or "nap" or "doze" or "lie down" or "sleep in harness" or "rest in harness" or "go to sleep" or "close eyes" as resting.
+
+Check resting:
+	if the location of the player is not the Crew Quarters:
+		say "There is no good place to rest here. Not without the harness in the bay.";
+		stop the action;
+	if oxygen-level < 8:
+		say "You start to drift, then jerk back. The air is too thin to slow your breathing now. Not without help.";
+		stop the action.
+
+Carry out resting:
+	now oxygen-level is oxygen-level - 4;
+	if morale-level + 10 > 100:
+		now morale-level is 100;
+	otherwise:
+		now morale-level is morale-level + 10.
+
+Report resting:
+	say "You drift in the harness. Eyes closed. Eight breaths. Sixteen. The hammering behind your forehead settles into something duller. The cold pulls at the edge of you, but you let it. When you open your eyes, the room is still black, but you can hold its shape in your mind now.[paragraph break][bracket]You feel steadier. Time has passed.[close bracket]"
+
+[Status check: prints the player's vitals and inventory in the prose
+ stream. Useful for shell-mode play, but more importantly the LLM
+ player has no UI bars; STATUS is how the agent reads its own state.]
+Checking status is an action applying to nothing.
+Understand "status" or "stats" or "vitals" or "check status" or "check stats" or "check vitals" or "condition" as checking status.
+
+Carry out checking status:
+	say "[bracket]STATUS[close bracket][line break]";
+	say "  Location: [printed name of the location of the player][line break]";
+	say "  O2: [oxygen-level]%[line break]";
+	say "  Morale: [morale-level]%[line break]";
+	say "  Score: [the score][line break]";
+	if the number of things carried by the player > 0:
+		say "  Carrying: ";
+		let counter be 0;
+		repeat with item running through things carried by the player:
+			if counter > 0:
+				say ", ";
+			say "[printed name of item]";
+			increment counter;
+		say "[line break]";
+	otherwise:
+		say "  Carrying: nothing[line break]";
+	if morale-level <= 50:
+		say "  [bracket]Tip: REST or SLEEP recovers morale (costs O2). EAT something for a smaller boost.[close bracket][line break]";
+	if oxygen-level <= 50:
+		say "  [bracket]Tip: O2 is dropping. Avoid wasting turns; restoring power and life support is the long-term answer.[close bracket][line break]".
+
+[Help: a quick verb reference. Lower bar to discovery for the LLM
+ player and for any new human player.]
+Asking-for-help is an action applying to nothing.
+Understand "help" or "verbs" or "commands" as asking-for-help.
+
+Carry out asking-for-help:
+	say "Common commands:[line break]";
+	say "  LOOK            see your surroundings[line break]";
+	say "  EXAMINE [bracket]thing[close bracket]  look at something closely[line break]";
+	say "  READ [bracket]thing[close bracket]     read text on a notebook, log, or placard[line break]";
+	say "  INVENTORY (I)   list what you carry[line break]";
+	say "  STATUS          show O2, morale, score, inventory[line break]";
+	say "  TAKE [bracket]thing[close bracket]    pick something up[line break]";
+	say "  OPEN [bracket]thing[close bracket]    open a container or hatch[line break]";
+	say "  EAT [bracket]thing[close bracket]     consume food, restores morale[line break]";
+	say "  REST or SLEEP   recover morale, costs O2 (Crew Quarters only)[line break]";
+	say "  PULL [bracket]thing[close bracket]    operate a lever or valve[line break]";
+	say "  TALK TO [bracket]someone[close bracket] speak with another character[line break]";
+	say "  Movement        N S E W (or fore aft port starboard), UP / DOWN[line break]";
+	say "  SAVE / LOAD     save or load progress[line break]";
+	say "[line break]";
+	say "Tip: when something is in your way, EXAMINE it first.[line break]".
+
 Chapter 2 - The Sealed Hatch
 
 [The hatch north is held shut by a pressure differential: the corridor
@@ -164,6 +341,25 @@ Carry out opening the pressure valve:
 Report opening the pressure valve:
 	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]You have just shared half your air with a vacuum. It had to be done."
 
+[The custom Understand patterns above match only the article-less forms
+ ("pull valve", "turn lever"). When the player adds "the" — "pull the
+ valve", "turn the lever" — the parse falls through to the standard
+ library's pulling/pushing/turning actions, whose check rules respond
+ "It is fixed in place." for scenery objects, which is misleading: the
+ valve IS the operable thing. These Instead rules route any of those
+ standard manipulation verbs on the pressure valve into the existing
+ custom action so the player gets the right outcome regardless of
+ article or verb choice.]
+
+Instead of pulling the pressure valve:
+	try opening the pressure valve.
+
+Instead of pushing the pressure valve:
+	try opening the pressure valve.
+
+Instead of turning the pressure valve:
+	try opening the pressure valve.
+
 Chapter 3 - Main Corridor
 
 The Main Corridor is north of the Crew Quarters. "The main corridor of Mir-3 is the central node. Six ports meeting at a single volume. It is wrong in every way you can parse. Cold. Low-pressure. Silent in a way that is not the silence of a machine at rest but the silence of a place something has happened to.[paragraph break]Frost glazes the inner hull where the breach vented. Loose objects drift in a slow parade. A mug. A clipboard. A flight manual open to a page no one will finish reading.[paragraph break]Yevgenia Kozlova floats near the maintenance panel. You look at her once. Then you look away.[paragraph break]Hatches lead in every direction. Fore (north) to the Command Module. Aft (south) to the Crew Quarters. Starboard (east) to the Armament Bay[if armament-bay-unlocked is false], its hatch marked КАТАЛОГ ВМФ-07 and dogged shut[end if]. Port (west) to the Hydroponics Lab. Zenith (up) to Life Support. Nadir (down) to the Observation Cupola."
@@ -174,12 +370,38 @@ The frost is scenery in the Main Corridor. The description of the frost is "Thic
 
 The maintenance panel is scenery in the Main Corridor. The description of the maintenance panel is "An open panel. A tangle of loose cables and blown circuit breakers. Whatever hit the station punched through every system at once."
 
+The drifting clipboard is scenery in the Main Corridor. Understand "clipboard" as the drifting clipboard. The printed name of the drifting clipboard is "clipboard". The description of the drifting clipboard is "A clipboard with the day's flight plan. The handwriting is Yevgenia's. It tumbles by, useless."
+
+Instead of taking the drifting clipboard:
+	say "You leave the clipboard floating. No more entries to make."
+
+The drifting flight manual is scenery in the Main Corridor. Understand "flight manual" or "manual" or "book" as the drifting flight manual. The printed name of the drifting flight manual is "flight manual". The description of the drifting flight manual is "A flight manual open to the page on emergency repressurization. The author had not finished reading it."
+
+Instead of taking the drifting flight manual:
+	say "The manual drifts past. You know its contents by heart."
+
+The drifting mug is scenery in the Main Corridor. Understand "mug" or "cup" or "drinking bulb" or "bulb" as the drifting mug. The printed name of the drifting mug is "mug". The description of the drifting mug is "A drinking bulb. Half-full of cold tea. It rotates slowly past you."
+
+Instead of taking the drifting mug:
+	say "You let the mug drift. The tea inside is long cold."
+
+The loose cables are scenery in the Main Corridor. Understand "cables" or "cable" or "cabling" or "wires" or "wire" as the loose cables. The description of the loose cables is "A tangle of cabling. The blown breakers are obvious. The rest is too thick to trace by hand."
+
+Instead of taking the loose cables:
+	say "You tug at one. It holds fast. The rest disappears into conduit you cannot reach."
+
 [Yevgenia's body: was an NPC, now scenery. Keep the Inform object
  name for save-state compatibility.]
-Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g. Her face is calm. She probably never registered what happened. A thin film of frost on her eyelashes.[if Yevgenia's notebook is part of Yevgenia] Her flight notebook is still clipped to the chest of her suit.[otherwise] The clip where her flight notebook was is empty. You have the notebook.[end if] The hand nearest the maintenance panel holds a screwdriver she will never put down."
+Yevgenia is a woman. Yevgenia is scenery in the Main Corridor. The printed name of Yevgenia is "Yevgenia's body". Understand "yevgenia" or "kozlova" or "engineer" or "body" or "woman" as Yevgenia. The description of Yevgenia is "[bracket]PERCEIVE examine-yevgenia[close bracket][line break]Yevgenia Kozlova. The station's engineer. Suspended in the middle of the corridor by zero-g. Her face is calm. She probably never registered what happened. A thin film of frost on her eyelashes.[paragraph break][if Yevgenia's notebook is part of Yevgenia]Her flight notebook is still clipped to the chest of her suit.[otherwise]The clip where her flight notebook was is empty. You have the notebook.[end if] The hand nearest the maintenance panel holds a screwdriver she will never put down."
 
 After examining Yevgenia:
+	if yevgenia-beat-counted is false:
+		now yevgenia-beat-counted is true;
+		increase b2-beats-completed by 1;
 	now the prior named object is Yevgenia;
+	if yevgenia-beat-counted is false:
+		now yevgenia-beat-counted is true;
+		increase b2-beats-completed by 1;
 	continue the action.
 
 Instead of taking Yevgenia:
@@ -187,6 +409,11 @@ Instead of taking Yevgenia:
 
 Instead of attacking Yevgenia:
 	say "She is beyond anything you could do."
+
+The held screwdriver is scenery in the Main Corridor. Understand "screwdriver" or "tool" as the held screwdriver. The printed name of the held screwdriver is "screwdriver". The description of the held screwdriver is "She holds it the way you hold a tool when you have one second to decide if it goes in the panel or not."
+
+Instead of taking the held screwdriver:
+	say "You would have to pry it from her hand. You will not do that."
 
 Yevgenia's notebook is a thing. Understand "notebook" or "book" or "journal" or "notes" or "her notebook" as Yevgenia's notebook. The printed name of Yevgenia's notebook is "Yevgenia's flight notebook". The description of Yevgenia's notebook is "A water-stained field notebook. Half in Cyrillic shorthand. Half in numbers. Yevgenia's handwriting. The last entries fill most of a page and are dated tonight. You could read it."
 
@@ -211,37 +438,79 @@ Instead of talking to Petrov:
 Instead of talking to something:
 	say "There is no one here to speak with."
 
+[Inform 7's standard rules bind "read" as a synonym for examining; clear
+ it first so our Reading action gets the verb.]
+Understand the command "read" as something new.
 Reading is an action applying to one thing.
 Understand "read [something]" as reading.
 
+Notebook-read is a truth state that varies. Notebook-read is false.
+
 Instead of reading Yevgenia's notebook:
-	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad. Yes. Caretaker for two years but closed-loop atmosphere and hydroponics should still be functional. Combined fuel reserves from Mir-3 and one American could reach it. One station alone cannot. The Moon is a delta-v problem.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
+	now notebook-read is true;
+	if notebook-beat-counted is false:
+		now notebook-beat-counted is true;
+		increase b1-beats-completed by 1;
+	say "You turn to the last full page.[paragraph break][italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[line break]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[line break]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it. The Moon is a delta-v problem.[line break]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[line break]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[line break]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree. He knows we have no other option.[roman type][paragraph break]There is nothing else in the notebook. The margin math confirms the Selengrad trajectory. Fuel. Time. The burn window. If Mir-3 combines reserves with Freedom Station."
+
+[Inform 7's standard rules already define "consulting it about" with
+ grammar "consult [something] about [text]". Just add a synonym for the
+ common "look up X in Y" phrasing.]
+Understand "look up [text] in [something]" as consulting it about (with nouns reversed).
+
+Instead of consulting Yevgenia's notebook about a topic listed in the Table of Notebook Topics:
+	now notebook-read is true;
+	if notebook-beat-counted is false:
+		now notebook-beat-counted is true;
+		increase b1-beats-completed by 1;
+	say "[response entry][paragraph break]".
+
+Instead of consulting Yevgenia's notebook about:
+	say "Yevgenia did not write about that. Her last entries cover the EMP damage, the Selengrad burn, the safe code for КАТАЛОГ ВМФ-07, and ARGON-87."
+
+Table of Notebook Topics
+topic	response
+"safe" or "code" or "vmf" or "combination" or "keypad"	"[italic type]КАТАЛОГ ВМФ-07. Code is [safe-code of the classified safe]. I am the only one on the station who knows it now.[roman type]"
+"burn" or "selengrad" or "moon" or "delta-v" or "trajectory" or "fuel" or "window"	"[italic type]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h. One station alone cannot make it.[roman type][line break]The margin math fills half the page. Orbital mechanics in a dead woman's shorthand."
+"argon" or "argon-87" or "ai" or "telemetry" or "backup"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type]"
+"transmit" or "radio" or "comms" or "communications" or "distress" or "freedom" or "americans"	"[italic type]ARGON-87 still online. Backup telemetry AI on the isolated bus. Ask him about transmit if comms are restored. He may have heard something we cannot.[roman type][line break][italic type]Need Petrov to authorize the approach to the Americans. He will hate it. He will agree.[roman type]"
+"emp" or "pulse" or "damage" or "power" or "bus" or "capacitor"	"[italic type]EMP confirmed. Not solar. Not ours. Military grade. Every bus fried simultaneously.[line break]Reactor tripped clean. Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence.[roman type]"
+"de-orbit" or "deorbit" or "re-entry" or "reentry" or "tonight"	"[italic type]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[roman type][line break][italic type]Selengrad burn: combined delta-v from Mir-3 and one American station. 1,247 m/s if we shed non-essential mass. Window opens in 9h.[roman type][line break]The numbers do not leave room for argument. Move or die."
+"oxygen" or "air" or "life support" or "co2" or "lioh"	"[italic type]Life support: twelve to eighteen hours on passive LiOH. After that, CO₂ wins.[roman type]"
+"reset" or "multimeter" or "hard-reset" or "sequence" or "repair"	"[italic type]Isolated bus in the command module SHOULD still be intact. Capacitors look OK on external inspection. Requires multimeter and manual hard-reset sequence. See margin notes.[roman type]"
 
 Chapter 4 - Observation Cupola
 
 The Observation Cupola is down from the Main Corridor. "The observation cupola is a blister of reinforced glass on the station's nadir side. Commander Petrov is here. He did not make it inside.[paragraph break][if war-is-discovered is true]Through the viewport, the Earth below. Fresh nuclear flashes keep blooming across the nightside. A constellation of deaths.[otherwise]Through the viewport, the Earth below. Something is wrong with the nightside.[end if][paragraph break]The hatch back to the central node is above you (zenith)."
 
-The viewport is scenery in the Observation Cupola.
+The viewport is scenery in the Observation Cupola. Understand "earth" or "nightside" or "world" or "planet" or "window" as the viewport.
 
 War-is-discovered is a truth state that varies. War-is-discovered is false.
 
 Instead of examining the viewport:
 	if war-is-discovered is false:
 		now war-is-discovered is true;
+		increase b2-beats-completed by 1;
 		decrease morale-level by 15;
-		say "You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire. Point fire. Hundreds of points. Blooms of orange and white. Some already fading. Some still expanding in slow-motion circles. Fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. From three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
+		say "[bracket]PERCEIVE cupola-nadir-war[close bracket][line break]You press your face to the reinforced glass and look down at the Earth.[paragraph break]The nightside should be a field of glittering city lights.[paragraph break]Instead, the Earth is on fire. Not continent-wide fire. Point fire. Hundreds of points. Blooms of orange and white. Some already fading. Some still expanding in slow-motion circles. Fresh ones joining them every few seconds.[paragraph break]You try to count the new flashes. Seven. Nine. Fourteen. The number keeps climbing.[paragraph break]This is not the aftermath of something. This is happening now. Thermonuclear weapons, in the hundreds, detonating beneath you in real time.[paragraph break]World War III. From three hundred kilometres up you have the clearest view of it ever captured by human eyes.[paragraph break]The silence that follows is heavier than vacuum.";
 	otherwise:
-		say "You look down. The flashes are still coming. Fewer now, perhaps. Or only harder to pick out from the smoke. You force yourself to look away."
+		say "[bracket]PERCEIVE cupola-nadir-revisit[close bracket][line break]You look down. The flashes are still coming. Fewer now, perhaps. Or only harder to pick out from the smoke. You force yourself to look away."
 
 Understand "look through [something]" as examining.
 
 The reinforced glass is scenery in the Observation Cupola. The description of the reinforced glass is "Thick glass. Designed to withstand micrometeorite impacts. Tonight it frames the worst view in human history."
 
 [Petrov's body: was an NPC, now scenery.]
-Petrov is a man. Petrov is scenery in the Observation Cupola. The printed name of Petrov is "Commander Petrov's body". Understand "petrov" or "commander" or "body" as Petrov. The description of Petrov is "Commander Petrov. Thirty years of service. One hand still on the hatch wheel. He was trying to get inside the cupola. Trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had."
+Petrov is a man. Petrov is scenery in the Observation Cupola. The printed name of Petrov is "Commander Petrov's body". Understand "petrov" or "commander" or "body" as Petrov. The description of Petrov is "[bracket]PERCEIVE examine-petrov[close bracket][line break]Commander Petrov. Thirty years of service. One hand still on the hatch wheel. He was trying to get inside the cupola. Trying to see for himself what was happening to the country that built him. The hatch was sealed by the breach before he could. His eyes are open. His face is the face of a man who worked it out in the last two seconds he had."
 
 After examining Petrov:
+	if petrov-beat-counted is false:
+		now petrov-beat-counted is true;
+		increase b2-beats-completed by 1;
 	now the prior named object is Petrov;
+	if petrov-beat-counted is false:
+		now petrov-beat-counted is true;
+		increase b2-beats-completed by 1;
 	continue the action.
 
 Instead of taking Petrov:
@@ -257,12 +526,12 @@ Instead of taking the mechanical watch:
 
 Chapter 5 - Command Module
 
-The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
+The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. On the port wall, ARGON-87's monitor. Dark for now. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
 
 Power-is-restored is a truth state that varies. Power-is-restored is false.
 Armament-bay-unlocked is a truth state that varies. Armament-bay-unlocked is false.
 
-The control panels are scenery in the Command Module. The description of the control panels is "[if power-is-restored is true]Most panels remain dead. The working console on the main bus flickers with partial life.[otherwise]Row upon row of switches. Dials. Screens. All dark. The electromagnetic pulse killed every system at once.[end if]"
+The control panels are scenery in the Command Module. Understand "panels" or "panel" or "switches" or "dials" or "screens" as the control panels. The description of the control panels is "[if power-is-restored is true]Most panels remain dead. The working console on the main bus flickers with partial life.[otherwise]Every panel is dead. Status panels, navigation, comms. Without main power there is nothing to read here.[end if]"
 
 The emergency toolkit is a closed openable container in the Command Module. The emergency toolkit is fixed in place. The description of the emergency toolkit is "A toolkit magnetically latched to the wall. Essential repair instruments inside."
 
@@ -296,10 +565,11 @@ Check reading Petrov's log:
 		say "The console is dead. No power to read anything." instead.
 
 Carry out reading Petrov's log:
-	now petrov-log-read is true.
+	now petrov-log-read is true;
+	increase b1-beats-completed by 1.
 
 Report reading Petrov's log:
-	say "You pull up Petrov's last log entry. He dictated it to the console. Timestamped minutes after the EMP. Minutes before the impact.[paragraph break][italic type]Commander Vasili Petrov, Mir-3. Time is 03:52 Moscow. Status: EMP event confirmed at 03:47. All systems offline. Kozlova believes the isolated bus in this module is recoverable. We are assembling tools.[line break]Sensor scrape suggests a second object inbound. I do not know what it is. I do not recognize the profile. If this station survives the next hour, whoever is listening will need to know. The armament bay on this module is intact. The arming sequence is THREE-SEVEN-ONE-ONE. Use it if you have to. The weapon is aboard for a reason. We may not have been told all of them.[line break]If you are reading this and I am not still talking. Do what you can. Make it worth something.[roman type][paragraph break]The log ends. The console shows the timestamp of its last write. 03:53. One minute before the impact."
+	say "You pull up Petrov's last log entry. He dictated it to the console. Timestamped minutes after the EMP. Minutes before the impact.[paragraph break][italic type]Commander Vasili Petrov, Mir-3. Time is 03:52 Moscow. Status: EMP event confirmed at 03:47. All systems offline. Kozlova believes the isolated bus in this module is recoverable. We are assembling tools.[line break]Sensor scrape suggests a second object inbound. I do not know what it is. I do not recognize the profile. If this station survives the next hour, whoever is listening will need to know. The armament bay on this module is intact. Kozlova has the access code. Use it if you have to. The weapon is aboard for a reason. We may not have been told all of them.[line break]If you are reading this and I am not still talking. Do what you can. Make it worth something.[roman type][paragraph break]The log ends. The console shows the timestamp of its last write. 03:53. One minute before the impact."
 
 Chapter 6 - Hydroponics Lab
 
@@ -327,7 +597,19 @@ The radiation sensor panel is scenery in the Life Support Module. Understand "pa
 
 The dosimeter is a thing in the Life Support Module. Understand "pocket dosimeter" or "meter" or "dosimeter panel" as the dosimeter. The description of the dosimeter is "A Soviet pocket dosimeter. A pen-sized ionization chamber with a tiny scale. Mechanical. EMP-proof. Reads accumulated dose. Essential for any walk past the reactor shield."
 
+After taking the dosimeter:
+	if dosimeter-beat-counted is false:
+		now dosimeter-beat-counted is true;
+		increase b2-beats-completed by 1;
+	continue the action.
+
 The EVA airlock is scenery in the Life Support Module. Understand "airlock" or "eva" or "eva airlock" as the EVA airlock. The description of the EVA airlock is "An emergency EVA airlock at zenith. Dogged shut. Without a suit and a reason, that hatch does not open tonight."
+
+After taking the dosimeter:
+	if dosimeter-beat-counted is false:
+		now dosimeter-beat-counted is true;
+		increase b2-beats-completed by 1;
+	continue the action.
 
 Chapter 8 - Armament Bay
 
@@ -353,7 +635,7 @@ The Reactor Module is south of the Crew Quarters. "A narrow compartment. Two arm
 Every turn when the player is in the Reactor Module:
 	decrease morale-level by 1;
 	if a random chance of 1 in 4 succeeds:
-		say "Your dosimeter ticks up another increment. Not lethal. Not tonight. But you cannot stay here."
+		say "[bracket]PERCEIVE reactor-radiation-tick[close bracket][line break]Your dosimeter ticks up another increment. Not lethal. Not tonight. But you cannot stay here."
 
 The reactor shielding is scenery in the Reactor Module. Understand "shielding" or "reactor" or "placards" or "placard" or "warnings" as the reactor shielding. The description of the reactor shielding is "A wall of lead and polyethylene shielding between you and the reactor core proper. Placards in Russian, English, German. ИОНИЗИРУЮЩЕЕ ИЗЛУЧЕНИЕ. The reactor is a RORSAT-lineage uranium-235 unit. Small. Efficient. Designed to be ejected and boosted to graveyard orbit at end-of-life. It is not, this evening, being ejected."
 
@@ -504,7 +786,7 @@ Instead of examining west when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
 		say "It is too dark to port to see.";
 	otherwise:
-		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if]"
+		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if][paragraph break]Beside the comms console, ARGON-87's monitor. A flat dark panel. Above it a small brass plate. АРГОН-87. The station computer. Dark tonight."
 
 Instead of examining east when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
@@ -649,17 +931,66 @@ Instead of examining down when the location is the Progress Ferry:
 
 Part 3 - Classified Armament Reveal
 
-The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" as the classified safe. The description of the classified safe is "A wall-mounted safe. Four-digit keypad. Above it, a stenciled Cyrillic placard reads КАТАЛОГ ВМФ-07. A military cataloging prefix. You did not know this was here before tonight.[if petrov-log-read is true] Petrov's log gave you an arming sequence. Three-seven-one-one.[end if]"
+The classified safe is scenery in the Command Module. Understand "safe" or "classified safe" or "armoury" or "armory" or "armament" or "panel" or "classified panel" or "keypad" as the classified safe.
+
+The classified safe has a number called the safe-code. The safe-code of the classified safe is 0.
+
+The description of the classified safe is "A wall-mounted safe. Four-digit keypad. Above it, a stenciled Cyrillic placard reads КАТАЛОГ ВМФ-07. A military cataloging prefix. You did not know this was here before tonight.[if notebook-read is true] Yevgenia's notebook had the code. [safe-code of the classified safe].[end if]"
+
+To say (N - a number) as spoken digits:
+	let T be N;
+	let D4 be T / 1000;
+	let T be T - (D4 * 1000);
+	let D3 be T / 100;
+	let T be T - (D3 * 100);
+	let D2 be T / 10;
+	let D1 be T - (D2 * 10);
+	say "[D4]-[D3]-[D2]-[D1]".
+
+Chapter 2 - Code Entry Action
+
+[Generic keypad code-entry action. Works for the classified safe and any
+ future keypad-locked object (e.g. armament bay door). The grammar accepts
+ "enter NNNN on <thing>", "type NNNN on <thing>", and "enter code NNNN".]
+
+Code-entering it on is an action applying to one number and one thing.
+Understand "enter [number] on [something]" as code-entering it on.
+Understand "type [number] on [something]" as code-entering it on.
+Understand "enter code [number] on [something]" as code-entering it on.
+Understand "type code [number] on [something]" as code-entering it on.
+
+[Bare "enter code NNNN" targets the classified safe when in the Command Module.]
+Code-entering it on the safe is an action applying to one number.
+Understand "enter code [number]" as code-entering it on the safe.
+Understand "enter [number]" as code-entering it on the safe.
+Understand "type [number]" as code-entering it on the safe.
+
+Check code-entering it on:
+	let N be the number understood;
+	if N < 1 or N > 9999:
+		say "The keypad accepts four-digit codes only." instead.
+
+Instead of code-entering a number on the classified safe:
+	let N be the number understood;
+	if armament-bay-unlocked is true:
+		say "The safe's green light is still on. The armament bay is open.";
+	otherwise if N is the safe-code of the classified safe:
+		now armament-bay-unlocked is true;
+		increase the score by 2;
+		say "You enter [safe-code of the classified safe as spoken digits]. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now.";
+	otherwise:
+		say "The keypad blinks once. Wrong code."
 
 Instead of opening the classified safe:
-	if petrov-log-read is false:
+	if notebook-read is false:
 		say "The safe is keypad-locked. You do not have the code.";
 	otherwise if armament-bay-unlocked is true:
 		say "The safe's green light is still on. The armament bay is open.";
 	otherwise:
 		now armament-bay-unlocked is true;
 		increase the score by 2;
-		say "You enter three-seven-one-one. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now."
+		increase b1-beats-completed by 1;
+		say "You enter [safe-code of the classified safe as spoken digits]. A single green light acknowledges. Somewhere behind the wall a heavy magnetic bolt withdraws with a dull metallic tock. Then a second, further away. The hatch to the armament bay has dogged itself open.[paragraph break]You have just armed yourself in space. Whatever that means now."
 
 Part 3B - Map Command
 
@@ -686,7 +1017,11 @@ Carry out showing the map:
 
 
 When play begins:
-	say "You wake to a shout. Not a voice. A physical shout. The station hitting you through your harness. Something enormous has struck Mir-3.[paragraph break]The lights are out. The air is wrong. Thinner. Colder. Your ears ring from a pressure change you do not consciously remember. Alarms that must have been going a moment ago have already died. Through the bulkhead you hear the long whistle of venting atmosphere. Slowing. Stopping.[paragraph break]Then nothing. The absolute nothing of a station that is not running.[paragraph break]You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. You tear yourself free of the straps. You have no idea what just happened. You are certain it was not small."
+	now oxygen-level is a random number between 75 and 95;
+	now morale-level is a random number between 30 and 55;
+	now dose-level is a random number between 0 and 3;
+	now the safe-code of the classified safe is a random number from 1000 to 9999;
+	say "You were sleeping. The bunk warm. The harness loose against you. The station thrumming the way it always does. Three small comforts you were not aware of having.[paragraph break]Then the crash. Not a sound. A weight. The whole station shoved sideways like a bottle off a shelf. A light went off behind your eyes. Not a flash. A whole room of sun. Inside your skull. For one impossible second.[paragraph break]Then nothing.[paragraph break]Now. You are floating. Your face is wet. You touch your forehead and your hand comes back warm and dark. You bang the back of your head on the bulkhead trying to right yourself and that is what brings you all the way back into the room.[paragraph break]The room is black. The kind of black that does not have lights coming back on in it. You can hear your own breath. You can hear the long whistle of air leaving somewhere it shouldn't. Slowing. Stopping. Then nothing. The absolute nothing of a station that is not running.[paragraph break]You are bleeding. You do not know how badly. You float in your sleeping harness. Second bunk from forward. Port wall. Crew Quarters. Whatever happened was not small.[paragraph break][bracket]New here? Type HELP for a list of commands. STATUS shows your vitals. LOOK describes the room. EXAMINE [bracket]thing[close bracket] inspects an object.[close bracket]"
 
 Part 5 - Listening
 
@@ -730,7 +1065,8 @@ Check restoring power:
 Carry out restoring power:
 	now power-is-restored is true;
 	now the status console is switched on;
-	increase morale-level by 10.
+	increase morale-level by 10;
+	increase b1-beats-completed by 1.
 
 Report restoring power:
 	say "You work alone. Yevgenia's notebook wedged open beside the console with a bent clip.[paragraph break]Her handwriting walks you through it. Test the capacitor bank first. Green. Short the reset pin to ground for three seconds. You count under your breath. Reseat the isolation relay. You are not an engineer. You follow the instructions of a dead woman as carefully as anyone has ever followed anything.[paragraph break]With a sharp crack and a brief flash, the status console flickers to life.[paragraph break]Her notes have a short margin comment at this point. [italic type]if it sparks here, you did it right[roman type]. You let yourself breathe.[paragraph break]The screen is dim. Half the pixels are dead. But it works. Status readouts begin scrolling. Most of them bad."
@@ -748,6 +1084,7 @@ Part 8 - Responding to the Distress Call
 
 Responded-to-americans is a truth state that varies. Responded-to-americans is false.
 Chose-silence is a truth state that varies. Chose-silence is false.
+Selengrad-prep-begun is a truth state that varies. Selengrad-prep-begun is false.
 
 Transmitting is an action applying to nothing.
 Understand "transmit" as transmitting.
@@ -765,6 +1102,8 @@ Check transmitting:
 		say "The communications array has no power." instead;
 	if distress-call-heard is false:
 		say "You turn on the radio but hear only static. Perhaps you should listen more carefully first." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "You reach for the mic. You do not know yet what you would say. Not into a war." instead;
 	if responded-to-americans is true:
 		say "You are already in contact with Freedom Station. Commander Chen's crew is standing by." instead;
 	if chose-silence is true:
@@ -772,7 +1111,12 @@ Check transmitting:
 
 Carry out transmitting:
 	now responded-to-americans is true;
-	increase morale-level by 8.
+	now selengrad-prep-begun is true;
+	increase morale-level by 8;
+	if b1-beats-completed >= b2-beats-completed:
+		now dominant-act2-path is "engineer";
+	otherwise:
+		now dominant-act2-path is "witness".
 
 Report transmitting:
 	say "You key the microphone yourself. There is no one else to key it for you.[paragraph break][italic type]Freedom Station, this is Mir-3. We read your distress call. Say your status. Over.[roman type][paragraph break]The loop cuts. A pause. Long enough that you think the signal is gone. Then a new voice. Live. Shaking with relief and surprise.[paragraph break][italic type]Mir-3... oh my God. This is Commander Diane Chen, Freedom Station. We... we did not expect anyone to answer.[roman type][paragraph break]You trade damage reports with a stranger. Five crew on her side. Two injured. One on yours. No injured. You skip over the word [italic type]alive[roman type]. She skips over it too.[paragraph break]You open Yevgenia's notebook. You tell Chen about Selengrad.[paragraph break]A pause. Then her voice again. Quieter. [italic type]You are proposing we fly to the Moon.[roman type][paragraph break][italic type]I am proposing we try. It is that or a slow death in orbit.[roman type][paragraph break]Five American survivors. You. One lunar base in caretaker mode. One plan scribbled in a dead engineer's handwriting.[paragraph break][italic type]Begin preparations[roman type], Chen says, after a long silence. [italic type]We have work to do.[roman type]"
@@ -798,6 +1142,173 @@ Carry out staying silent:
 
 Report staying silent:
 	say "You listen to the loop. You do not key the microphone.[paragraph break]The first time it plays, you almost answer. The second time, you almost answer. The third time, you catch yourself already reaching for the mic. You pull your hand back.[paragraph break]Chen's voice fades. Maybe her battery failed. Maybe she gave up. Maybe she is still talking and the signal is too weak to reach you. Whichever it is, the channel is gone.[paragraph break]You sit alone with the static and with the math in Yevgenia's notebook. Alone, you cannot make Selengrad. The combined fuel is not optional. It is arithmetic.[paragraph break]You tell yourself you chose this for good reasons. You are not sure you believe yourself."
+
+Part 8B - Selengrad Arc (D1 / E1 / E2)
+
+Chapter 1 - D1 Fuel Choice State
+
+Chose-split-fuel is a truth state that varies. Chose-split-fuel is false.
+Chose-martyr is a truth state that varies. Chose-martyr is false.
+Fuel-choice-made is a truth state that varies. Fuel-choice-made is false.
+D1-counter is a number that varies. D1-counter is 0.
+
+Chapter 2 - D1 Trigger Prepare Selengrad
+
+Preparing selengrad is an action applying to nothing.
+Understand "prepare selengrad" as preparing selengrad.
+Understand "prepare for selengrad" as preparing selengrad.
+Understand "begin preparations" as preparing selengrad.
+Understand "coordinate" as preparing selengrad.
+Understand "prepare" as preparing selengrad.
+
+Check preparing selengrad:
+	if the player is not in the Command Module:
+		say "You would need to be at the command module to coordinate preparations." instead;
+	if selengrad-prep-begun is false:
+		say "There is nothing to prepare for yet." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has been made. There is nothing left to do but wait." instead.
+
+Report preparing selengrad:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]Chen's voice crackles through the static. The Selengrad plan requires a decision about fuel allocation. You must choose.[paragraph break]You can SPLIT FUEL between the two stations for a shared burn, or GIVE FUEL — sacrifice Mir-3's reserves entirely so Freedom Station can make the transit alone."
+
+Chapter 3 - D1 Sub-Choice Split Fuel
+
+Splitting fuel is an action applying to nothing.
+Understand "split fuel" as splitting fuel.
+Understand "split the fuel" as splitting fuel.
+Understand "share fuel" as splitting fuel.
+
+Check splitting fuel:
+	if selengrad-prep-begun is false:
+		say "That does not make sense right now." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has already been made." instead.
+
+Carry out splitting fuel:
+	now chose-split-fuel is true;
+	now fuel-choice-made is true.
+
+Report splitting fuel:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. Split burn. Both stations commit their reserves. The math is tight but it works. Selengrad or nothing, together."
+
+Chapter 4 - D1 Sub-Choice Give Fuel Martyr
+
+Giving fuel is an action applying to nothing.
+Understand "give fuel" as giving fuel.
+Understand "give the fuel" as giving fuel.
+Understand "sacrifice fuel" as giving fuel.
+Understand "sacrifice" as giving fuel.
+
+Check giving fuel:
+	if selengrad-prep-begun is false:
+		say "That does not make sense right now." instead;
+	if fuel-choice-made is true:
+		say "The fuel decision has already been made." instead.
+
+Carry out giving fuel:
+	now chose-martyr is true;
+	now fuel-choice-made is true.
+
+Report giving fuel:
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. All of Mir-3's fuel. Every drop. Freedom Station will make Selengrad alone. You will remain in orbit. You know what that means."
+
+Chapter 5 - E1 / E2 Dispatch
+
+Every turn when fuel-choice-made is true:
+	increase D1-counter by 1;
+	if D1-counter >= 3:
+		if chose-split-fuel is true:
+			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]The burn sequence completes. Both stations arc toward the Moon. Selengrad's beacon answers. The caretaker systems wake. Against all odds, you are going to live.[paragraph break][italic type]End of the Selengrad arc — E1: Arrival.[roman type]";
+			end the story saying "You have reached Selengrad";
+		if chose-martyr is true:
+			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]Freedom Station's engines fire on Mir-3's fuel. You watch from the cupola as Chen's station pulls away toward the Moon. Your orbit is stable. For now. The oxygen will not last. But they will make it.[paragraph break][italic type]End of the Selengrad arc — E2: Martyr.[roman type]";
+			end the story saying "You gave them the Moon".
+
+Part 8C - De-orbiting Gate Stub
+
+The Soyuz Reentry Capsule is a room. The printed name of the Soyuz Reentry Capsule is "Soyuz Reentry Capsule". "You are strapped into the descent module. The capsule shudders around you. There is nothing to do but wait."
+
+Deorbiting is an action applying to nothing.
+Understand "deorbit" as deorbiting.
+Understand "de-orbit" as deorbiting.
+Understand "descend" as deorbiting.
+Understand "reenter" as deorbiting.
+Understand "re-enter" as deorbiting.
+Understand "initiate deorbit" as deorbiting.
+Understand "initiate de-orbit" as deorbiting.
+Understand "initiate descent" as deorbiting.
+Understand "fire retrorockets" as deorbiting.
+Understand "use de-orbit console" as deorbiting.
+Understand "use deorbit console" as deorbiting.
+
+Check deorbiting:
+	if the player is not in the Soyuz Ferry:
+		say "You would need to be aboard the Soyuz ferry to initiate a de-orbit sequence." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "You reach for the de-orbit console and hesitate. You have not seen the Earth since the impact. You should look first." instead;
+	if responded-to-americans is true:
+		say "You have already committed to the Selengrad plan with Freedom Station. The de-orbit path is closed to you now." instead.
+
+Carry out deorbiting:
+	now chose-descent is true;
+	now d3-beat-counter is 1;
+	if b1-beats-completed >= b2-beats-completed:
+		now dominant-act2-path is "engineer";
+	otherwise:
+		now dominant-act2-path is "witness";
+	move the player to the Soyuz Reentry Capsule.
+
+Report deorbiting:
+	say "[bracket]TODO prose: #56[close bracket][paragraph break]You seal the hatch. You strap in. You key the de-orbit sequence. The retrorockets fire. Mir-3 falls away behind you."
+
+Part 8CA - D3 Reentry Sequence
+
+[The D3 reentry fires one beat per turn on a counter. The player has no
+ agency during reentry — the interpreter prints scripted beats. Six beats
+ total, then transition to E3.]
+
+Every turn when chose-descent is true and d3-beat-counter > 0 and d3-beat-counter <= 6:
+	if d3-beat-counter is 1:
+		say "[line break][bracket]TODO prose: #56 — d3-deorbit-burn[close bracket]";
+	otherwise if d3-beat-counter is 2:
+		say "[line break][bracket]TODO prose: #56 — d3-atmosphere-entry[close bracket]";
+	otherwise if d3-beat-counter is 3:
+		say "[line break][bracket]TODO prose: #56 — d3-no-ground-control[close bracket]";
+	otherwise if d3-beat-counter is 4:
+		say "[line break][bracket]TODO prose: #56 — d3-continents-visible[close bracket]";
+	otherwise if d3-beat-counter is 5:
+		say "[line break][bracket]TODO prose: #56 — d3-soot-layers[close bracket]";
+	otherwise if d3-beat-counter is 6:
+		say "[line break][bracket]TODO prose: #56 — d3-touchdown[close bracket]";
+	increase d3-beat-counter by 1.
+
+Part 8CB - E3 Return Denouement
+
+[E3 fires the turn after d3-touchdown (beat counter reaches 7). Terminal.]
+
+Every turn when chose-descent is true and d3-beat-counter is 7:
+	say "[line break][bracket]TODO prose: #56 — e3-return[close bracket]";
+	end the story saying "You have returned".
+
+Part 8D - Firing the Cannon Gate Stub
+
+Firing the cannon is an action applying to nothing.
+Understand "fire cannon" as firing the cannon.
+Understand "fire r-23" as firing the cannon.
+Understand "fire rikhter" as firing the cannon.
+Understand "fire gun" as firing the cannon.
+Understand "fire weapon" as firing the cannon.
+Understand "shoot cannon" as firing the cannon.
+
+Check firing the cannon:
+	if the player is not in the Armament Bay:
+		say "You would need to be in the armament bay to fire the cannon." instead;
+	if b1-beats-completed < 3 and b2-beats-completed < 3:
+		say "The trigger is still cold. You do not have a reason yet. Not one you could name." instead.
+
+Report firing the cannon:
+	say "The fire-control console is dark. The cannon is inert. Whatever feeds its armored power line is not live tonight."
 
 Part 9 - Scene-Specific Responses
 
@@ -833,8 +1344,7 @@ Instead of pushing the control panels:
 Instead of pushing the status console when power-is-restored is false:
 	say "The console is dead. No amount of pressing buttons will change that without power."
 
-Instead of switching on the status console when power-is-restored is false:
-	say "The console has no power. You need to restore the isolated power bus first."
+[switching on the status console now redirects to operating (Part 9B).]
 
 Instead of taking the communications array:
 	say "The communications array is built into the station's infrastructure. It is not going anywhere."
@@ -844,6 +1354,103 @@ Instead of taking the manual pressure gauges:
 
 Instead of taking the sleeping harness:
 	say "The sleeping harness is bolted to the bulkhead."
+
+Part 9B - Argon-87 grammar (m8 in-game runtime)
+
+[The player addresses the Station AI through a small set of commands.
+ Each emits an [AI-PROMPT: topic=...] tag that ui.js intercepts and
+ routes to either the warm AI runtime or the canned offline line,
+ depending on the MIRSEND_AI_ENABLED feature flag.]
+
+Talking to argon is an action applying to nothing.
+Understand "talk to argon" or "talk to station ai" or "speak to argon" or "speak to ship" or "call argon" or "call station ai" or "ask argon" or "ask station ai" as talking to argon.
+
+Asking argon about is an action applying to one topic.
+Understand "ask argon about [text]" or "ask station ai about [text]" as asking argon about.
+
+Carry out talking to argon:
+	say "[bracket]AI-PROMPT: topic=general[close bracket]".
+
+Carry out asking argon about:
+	say "[bracket]AI-PROMPT: topic=[the topic understood][close bracket]".
+
+Part 9C - Console Interaction Verbs
+
+[Issue #117. Playtest agents find the consoles, try every verb in the
+ dictionary, and bounce off unhelpful default refusals. This action
+ catches USE / ACTIVATE / TURN ON / POWER ON / INTERACT WITH when
+ applied to a console and branches on the power state.]
+
+Chapter 1 - Operating Console Action
+
+Operating is an action applying to one thing.
+Understand "use [something]" as operating.
+Understand "activate [something]" as operating.
+Understand "interact with [something]" as operating.
+Understand "power on [something]" as operating.
+Understand the command "power" as something new.
+Understand "power on [something]" as operating.
+Understand "power [something]" as operating.
+
+[TURN ON already maps to switching on in the Standard Rules. Redirect
+ switching on for consoles to operating so all verbs share one path.]
+
+Instead of switching on the deorbit console:
+	try operating the deorbit console.
+
+Instead of switching on the status console:
+	try operating the status console.
+
+Instead of switching on the fire-control console:
+	try operating the fire-control console.
+
+Chapter 2 - Unpowered Console Refusals
+
+Instead of operating the deorbit console when power-is-restored is false:
+	say "The console is dark. No power reaches the Command Module bus. Even if it had power, the de-orbit sequence requires an authorization that has not yet come from the Command Module status loop. You will need power on this side of the station first."
+
+Instead of operating the status console when power-is-restored is false:
+	say "The status console is dead. None of these panels will tell you anything until something puts power back into the bus."
+
+Instead of operating the fire-control console when the fire-control console is unpowered:
+	say "The fire-control console is dark. It is not on the isolated bus. Whatever feeds its armored power line is not live tonight."
+
+Chapter 3 - Powered Console Responses
+
+Instead of operating the status console when power-is-restored is true:
+	say "The screen flickers. Status readouts scroll. Most of them bad. Hull integrity compromised. Life support offline. Oxygen reserves critical.[if petrov-log-read is false] The console holds Commander Petrov's last log entry, flagged for review.[end if]"
+
+Instead of operating the deorbit console when power-is-restored is true:
+	say "The console lights respond to your touch. The Soyuz guidance loop is live. Its own battery held through the pulse. The de-orbit initiation sequence waits behind a final confirmation you are not ready to give. Not yet."
+
+Instead of operating the fire-control console when the fire-control console is powered:
+	say "The targeting console hums. Radar sweep. Aim vector. The trigger guard is still locked. The weapon is ready but the decision is not yours alone."
+
+Part 9D - Argon-87 awareness cues (prose)
+
+[Issue #114. Across 8 playtest sessions on 2026-04-27 zero agents
+ addressed ARGON-87. Part 9B already wires TALK TO ARGON / ASK ARGON
+ ABOUT X to the AI-PROMPT routing. The verb grammar exists but the
+ prose gave no signal that the AI was there to talk to. This part adds
+ the prose surface only. Verb routing stays in 9B.
+
+ Three cues layer: the Command Module description names the monitor
+ on the port wall; LOOK PORT in the Command Module describes the
+ monitor and its АРГОН-87 plate; and the player's first turn standing
+ in the Main Corridor produces a single capacitor-burst speaker line
+ in his voice. The corridor line is consistent with the dead-bus
+ state because it is framed as stored capacitance, not live runtime.]
+
+The argon monitor is scenery in the Command Module. Understand "monitor" or "screen" or "argon monitor" or "argon screen" or "port monitor" or "brass plate" as the argon monitor. The printed name of the argon monitor is "ARGON-87's monitor". The description of the argon monitor is "A flat-panel monitor at the port wall. Above it a small brass plate stamped АРГОН-87 in the formal Cyrillic of an older era of Soviet hardware. The console where ARGON-87 speaks to the watch. Logs the burns. Hands back the short answers a watchstander asks at three in the morning.[if power-is-restored is false] The screen is dark. The bus that feeds him is one of the ones the EMP took.[otherwise] The screen carries a single patient cursor. The bus is alive again.[end if]"
+
+Instead of taking the argon monitor:
+	say "The monitor is bolted into the port wall. It is not going anywhere."
+
+Argon-corridor-cue-shown is a truth state that varies. Argon-corridor-cue-shown is false.
+
+Every turn when the player is in the Main Corridor and argon-corridor-cue-shown is false:
+	now argon-corridor-cue-shown is true;
+	say "[paragraph break]A speaker in the maintenance panel clicks. Soft. Once.[paragraph break][italic type]I am still here, comrade. When you can hear me, I will hear you.[roman type][paragraph break]The voice is synthesized. Calm. Not unfamiliar. The speaker goes quiet. The bus that feeds him is dead with everything else. The words came out of stored capacitance and nothing more."
 
 Part 10 - Score Tracking
 
@@ -886,3 +1493,5 @@ Test quarters with "open locker / take flashlight / switch on flashlight / exami
 Test hatch with "open locker / take flashlight / switch on flashlight / examine hatch / pull lever / n".
 Test explore with "open locker / take flashlight / switch on flashlight / pull lever / n / e / examine viewport / w / n / open toolkit / take multimeter".
 Test full with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit".
+Test selengrad-e1 with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit / prepare selengrad / split fuel / z / z / z".
+Test selengrad-e2 with "open locker / take flashlight / switch on flashlight / listen / pull lever / n / examine yevgenia / take notebook / read notebook / e / examine viewport / examine petrov / w / n / open toolkit / take multimeter / restore power / read log / listen / transmit / prepare selengrad / give fuel / z / z / z".

@@ -22,3 +22,27 @@ game/inform/*.plist
 game/inform/*.iFiction
 game/inform/*.blurb
 gameinfo.dbg
+
+# LLM bridge transcript logs
+logs/
+
+# Local SQLite playthrough database
+/data/
+/data/*.sqlite
+/data/*.sqlite-journal
+
+# Local-only API key file (written by scripts/extract_key.py)
+.env.playtest
+
+# Per-run transcript dumps from scripts/playtest-pool.py dump
+docs/playtests/runs/
+
+# Source media for ASCII video conversion (large binaries, kept local).
+# The generated frames in game/mockups/frames/ ARE committed.
+media/
+
+# Editable-install build artifacts from `pip install -e .`
+*.egg-info/
+
+# Local Claude Code settings
+.claude/

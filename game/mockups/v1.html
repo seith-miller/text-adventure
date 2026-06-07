@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIR'S END — UI Mockup v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bezel-paint: #6b7560;        /* olive-grey painted metal */
+    --bezel-paint-lit: #8a937c;
+    --bezel-paint-shadow: #3f4639;
+    --bezel-screw: #2a2e26;
+    --label-cream: #d8d2bc;        /* etched plate */
+    --label-cyrillic: #a8a294;
+    --screen-bg: #0a1408;
+    --screen-bg-deep: #050a04;
+    --phosphor: #6cf06b;            /* P1 green */
+    --phosphor-dim: #3a8a39;
+    --phosphor-glow: rgba(108, 240, 107, 0.35);
+    --lamp-red: #ff4530;
+    --lamp-amber: #ffb020;
+    --lamp-green: #4dff60;
+    --lamp-white: #f0f5e8;
+    --lamp-off: #1a2418;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #15171a;
+    font-family: 'VT323', 'Courier New', monospace;
+    overflow: hidden;
+  }
+
+  /* ── Outer hardware bezel — painted metal terminal enclosure ── */
+  #terminal {
+    position: absolute;
+    inset: 24px;
+    background:
+      radial-gradient(ellipse at top left, var(--bezel-paint-lit) 0%, var(--bezel-paint) 35%, var(--bezel-paint-shadow) 100%);
+    border-radius: 14px;
+    padding: 18px 22px 60px 22px;
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,0.12),
+      inset 0 -3px 8px rgba(0,0,0,0.45),
+      0 8px 30px rgba(0,0,0,0.7);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+  }
+
+  /* ── Top etched plate: model number + operator info ── */
+  #bezel-plate {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 14px;
+    background: linear-gradient(to bottom, #b5ad95 0%, #8a8270 100%);
+    color: #1a1d18;
+    border: 1px solid #4a4538;
+    border-radius: 3px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.3);
+  }
+
+  .plate-cell { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .plate-cell .lat { font-size: 13px; }
+  .plate-cell .cyr { font-size: 9px; letter-spacing: 1px; opacity: 0.65; margin-top: 2px; }
+  .plate-cell.id { font-weight: bold; }
+
+  /* ── Screws at the corners of the bezel ── */
+  #terminal::before,
+  #terminal::after,
+  .screw {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    background: radial-gradient(circle at 35% 35%, #5a5a52 0%, #2a2a24 70%, #0a0a08 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 -1px 1px rgba(0,0,0,0.6);
+  }
+  #terminal::before { top: 8px; left: 8px; }
+  #terminal::after  { top: 8px; right: 8px; }
+  .screw.bl { bottom: 8px; left: 8px; }
+  .screw.br { bottom: 8px; right: 8px; }
+
+  /* ── The screen itself: phosphor display ── */
+  #screen {
+    position: relative;
+    background:
+      radial-gradient(ellipse at center, var(--screen-bg) 0%, var(--screen-bg-deep) 100%);
+    border: 3px solid #1a1d18;
+    border-radius: 8px;
+    padding: 18px 22px;
+    color: var(--phosphor);
+    text-shadow: 0 0 4px var(--phosphor-glow), 0 0 1px var(--phosphor-glow);
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.7),
+      inset 0 0 8px rgba(108, 240, 107, 0.12);
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    grid-template-rows: auto 1fr auto;
+    gap: 8px;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  /* Scanlines + slight phosphor flicker */
+  #screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    pointer-events: none;
+    z-index: 5;
+  }
+  #screen::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* ── Top status banner inside the screen ── */
+  #screen-header {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--phosphor-dim);
+    padding-bottom: 4px;
+    color: var(--phosphor-dim);
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+  #screen-header .seg { display: flex; gap: 8px; }
+  #screen-header .key { color: var(--phosphor-dim); }
+  #screen-header .val { color: var(--phosphor); }
+
+  /* ── Story panel (left) ── */
+  #story {
+    grid-column: 1; grid-row: 2;
+    overflow-y: auto;
+    padding-right: 12px;
+    border-right: 1px solid var(--phosphor-dim);
+  }
+
+  #story .room {
+    color: var(--phosphor);
+    font-weight: normal;
+    text-decoration: underline;
+    margin-bottom: 6px;
+  }
+  #story p { margin-bottom: 12px; }
+  #story .echo { color: var(--phosphor-dim); }
+  #story .echo::before { content: '> '; }
+
+  /* ── Right: status sidebar with box-drawing border ── */
+  #sidebar {
+    grid-column: 2; grid-row: 2;
+    padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .panel {
+    border: 1px solid var(--phosphor-dim);
+    padding: 0;
+  }
+  .panel-title {
+    background: var(--phosphor-dim);
+    color: var(--screen-bg-deep);
+    padding: 1px 8px;
+    text-shadow: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    letter-spacing: 1px;
+  }
+  .panel-title .lat { font-size: 17px; }
+  .panel-title .cyr { font-size: 12px; opacity: 0.85; }
+  .panel-body { padding: 6px 8px; }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1px 0;
+  }
+  .row .label-pair { display: flex; flex-direction: column; line-height: 1; }
+  .row .label-pair .lat { font-size: 17px; color: var(--phosphor); }
+  .row .label-pair .cyr { font-size: 11px; color: var(--phosphor-dim); }
+  .row .val { font-size: 18px; }
+
+  /* Annunciator lamps: small filled glyph */
+  .lamp {
+    display: inline-block;
+    width: 0.85em; height: 0.85em;
+    line-height: 1;
+    text-align: center;
+    margin-right: 6px;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .lamp.red    { color: var(--lamp-red); }
+  .lamp.amber  { color: var(--lamp-amber); }
+  .lamp.green  { color: var(--lamp-green); }
+  .lamp.white  { color: var(--lamp-white); }
+  .lamp.off    { color: var(--lamp-off); }
+
+  /* Bar gauge */
+  .bar { display: flex; gap: 1px; margin-top: 2px; }
+  .bar .seg {
+    flex: 1; height: 8px;
+    background: var(--lamp-off);
+    border: 1px solid var(--phosphor-dim);
+  }
+  .bar .seg.lit { background: var(--phosphor); box-shadow: 0 0 4px var(--phosphor-glow); }
+
+  /* Annunciator strip — replaces "indicator lamps" panel */
+  .annunciators { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
+  .annunciator { display: flex; align-items: center; font-size: 16px; }
+  .annunciator .label { display: flex; flex-direction: column; line-height: 1; }
+  .annunciator .label .lat { font-size: 15px; }
+  .annunciator .label .cyr { font-size: 10px; color: var(--phosphor-dim); }
+
+  /* ── Input line — bottom of screen ── */
+  #input {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    border-top: 1px solid var(--phosphor-dim);
+    padding-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #input .prompt { color: var(--phosphor); }
+  #input .typed { color: var(--phosphor); }
+  #input .cursor {
+    display: inline-block;
+    width: 0.55em; height: 1em;
+    background: var(--phosphor);
+    box-shadow: 0 0 6px var(--phosphor-glow);
+    animation: blink 1.05s steps(1) infinite;
+    vertical-align: text-bottom;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Sweeping scan line — single bright bar that travels top→bottom at irregular intervals */
+  #scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    top: 0;
+    height: 6px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(108, 240, 107, 0.05) 20%,
+      rgba(108, 240, 107, 0.35) 50%,
+      rgba(108, 240, 107, 0.05) 80%,
+      transparent 100%
+    );
+    box-shadow: 0 0 8px rgba(108, 240, 107, 0.4);
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  /* Subtle phosphor jitter on whole screen */
+  #screen { animation: jitter 8s ease-in-out infinite; }
+  @keyframes jitter {
+    0%, 100% { filter: brightness(1); }
+    47%      { filter: brightness(1); }
+    48%      { filter: brightness(0.92); }
+    49%      { filter: brightness(1.05); }
+    50%      { filter: brightness(1); }
+  }
+
+  /* Vent slots on bottom of bezel */
+  #vents {
+    position: absolute;
+    bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px;
+    width: 60%; justify-content: center;
+  }
+  #vents .slot {
+    width: 28px; height: 6px;
+    background: linear-gradient(to bottom, #1a1d18 0%, #2a2e26 60%, #1a1d18 100%);
+    border-radius: 1px;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.6);
+  }
+
+  /* Hardware brand stamp on bottom right of bezel */
+  #brand {
+    position: absolute;
+    bottom: 16px; right: 26px;
+    font-size: 10px;
+    color: var(--bezel-paint-shadow);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+    letter-spacing: 2px;
+    line-height: 1;
+    text-align: right;
+  }
+  #brand .cyr { font-size: 13px; letter-spacing: 3px; }
+  #brand .model { font-size: 9px; opacity: 0.75; }
+
+  /* Power LED on bezel */
+  #power-led {
+    position: absolute;
+    bottom: 18px; left: 30px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px;
+    color: var(--bezel-paint-shadow);
+    letter-spacing: 1px;
+  }
+  #power-led .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--lamp-red);
+    box-shadow: 0 0 6px var(--lamp-red);
+  }
+</style>
+</head>
+<body>
+
+<div id="terminal">
+  <span class="screw bl"></span>
+  <span class="screw br"></span>
+
+  <!-- Etched ID plate above the screen -->
+  <div id="bezel-plate">
+    <div class="plate-cell id">
+      <span class="lat">МИР-2 / MIR-2 STATION</span>
+      <span class="cyr">ОРБИТАЛЬНАЯ СТАНЦИЯ</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">CONSOLE 04</span>
+      <span class="cyr">ПУЛЬТ 04</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">OP. KOVAL, A.I.</span>
+      <span class="cyr">ОПЕРАТОР</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">14.03.1991</span>
+      <span class="cyr">ДАТА</span>
+    </div>
+  </div>
+
+  <!-- The phosphor screen -->
+  <div id="screen">
+
+    <div id="screen-header">
+      <div class="seg"><span class="key">SYS</span><span class="val">МИР-2 / TERM-04</span></div>
+      <div class="seg"><span class="key">UPT</span><span class="val">003:14:22</span></div>
+      <div class="seg"><span class="key">ORB</span><span class="val">412KM / 91.2MIN</span></div>
+      <div class="seg"><span class="key">TIME</span><span class="val">04:17:08 МСК</span></div>
+    </div>
+
+    <!-- Story panel -->
+    <div id="story">
+      <div class="room">COMMAND MODULE / КОМАНДНЫЙ МОДУЛЬ</div>
+      <p>The hatch seals behind you with a long pneumatic sigh. Frost has drawn pale fingerprints across the porthole glass; beyond it, Earth turns slow and orange, lit by something that should not be lighting it.</p>
+      <p>The main console hums on a low, steady note. Three of the seven status lamps are dark. A fourth flickers — a slow amber pulse, not yet an alarm.</p>
+      <p>You can see a <u>logbook</u>, a <u>thermal mug</u> (cold), and the <u>radio handset</u> resting in its cradle.</p>
+      <p class="echo">examine logbook</p>
+      <p>The cover is salt-stained leather. The last legible entry, in Koval's handwriting, ends mid-word. The pen lies a meter away on the deck, as if dropped in a hurry.</p>
+      <p class="echo">status</p>
+    </div>
+
+    <!-- Sidebar: status panels -->
+    <div id="sidebar">
+
+      <div class="panel">
+        <div class="panel-title">
+          <span class="lat">VITALS</span>
+          <span class="cyr">СОСТОЯНИЕ</span>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="label-pair">
+              <span class="lat">O2 LEVEL</span>
+              <span class="cyr">КИСЛОРОД</span>
+            </div>
+            <span class="val">94%</span>
+          </div>
+          <div class="bar">
+            <span class="seg lit"></span><span class="seg lit"></span><span class="seg lit"></span>
+            <span class="seg lit"></span><span class="seg lit"></span><span class="seg lit"></span>
+            <span class="seg lit"></span><span class="seg lit"></span><span class="seg lit"></span><span class="seg"></span>
+          </div>
+          <div class="row" style="margin-top: 6px;">
+            <div class="label-pair">
+              <span class="lat">MORALE</span>
+              <span class="cyr">МОРАЛЬ</span>
+            </div>
+            <span class="val">62%</span>
+          </div>
+          <div class="bar">
+            <span class="seg lit"></span><span class="seg lit"></span><span class="seg lit"></span>
+            <span class="seg lit"></span><span class="seg lit"></span><span class="seg lit"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <span class="lat">SYSTEMS</span>
+          <span class="cyr">СИСТЕМЫ</span>
+        </div>
+        <div class="panel-body">
+          <div class="annunciators">
+            <div class="annunciator"><span class="lamp green">■</span><div class="label"><span class="lat">PWR</span><span class="cyr">ПИТ</span></div></div>
+            <div class="annunciator"><span class="lamp green">■</span><div class="label"><span class="lat">LIFE</span><span class="cyr">ЖО</span></div></div>
+            <div class="annunciator"><span class="lamp amber">■</span><div class="label"><span class="lat">COMM</span><span class="cyr">СВЯЗЬ</span></div></div>
+            <div class="annunciator"><span class="lamp off">■</span><div class="label"><span class="lat">NAV</span><span class="cyr">НАВ</span></div></div>
+            <div class="annunciator"><span class="lamp red">■</span><div class="label"><span class="lat">HULL</span><span class="cyr">КОРП</span></div></div>
+            <div class="annunciator"><span class="lamp white">■</span><div class="label"><span class="lat">DOCK</span><span class="cyr">СТЫК</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <span class="lat">INVENTORY</span>
+          <span class="cyr">ИНВЕНТАРЬ</span>
+        </div>
+        <div class="panel-body">
+          <div class="row"><span>▸ flashlight</span></div>
+          <div class="row"><span>▸ logbook</span></div>
+          <div class="row"><span>▸ ration bar (×2)</span></div>
+          <div class="row"><span>▸ key, brass</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sweeping scan line -->
+    <div id="scan-line"></div>
+
+    <!-- Input line -->
+    <div id="input">
+      <span class="prompt">&gt;</span>
+      <span class="typed">examine radio</span><span class="cursor"></span>
+    </div>
+
+  </div>
+
+  <div id="vents">
+    <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+    <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+    <span class="slot"></span><span class="slot"></span>
+  </div>
+
+  <div id="power-led">
+    <span class="dot"></span>
+    <span>PWR / ПИТ</span>
+  </div>
+
+  <div id="brand">
+    <div class="cyr">ЭЛЕКТРОНИКА</div>
+    <div class="model">МС-0511 · 1989</div>
+  </div>
+
+</div>
+
+<script>
+  // Sweeping scan line at irregular intervals.
+  // Each sweep picks a random duration (slow drift vs fast snap),
+  // a random opacity (some are faint, some pronounced),
+  // and a random gap before the next sweep.
+  (function () {
+    const bar = document.getElementById('scan-line');
+    const screen = document.getElementById('screen');
+
+    function rand(min, max) { return min + Math.random() * (max - min); }
+
+    function sweep() {
+      const h = screen.clientHeight;
+      const duration = rand(900, 4200);          // ms — slow drift to fast snap
+      const opacity = rand(0.35, 1.0);           // some faint, some bold
+      const startOffset = rand(-20, -4);         // start just above the screen
+
+      bar.style.transition = 'none';
+      bar.style.transform = `translateY(${startOffset}px)`;
+      bar.style.opacity = '0';
+
+      // Force reflow so the next transition takes effect
+      // eslint-disable-next-line no-unused-expressions
+      bar.offsetHeight;
+
+      bar.style.transition = `transform ${duration}ms linear, opacity 200ms ease-in`;
+      bar.style.opacity = String(opacity);
+      bar.style.transform = `translateY(${h + 8}px)`;
+
+      // Fade out near the end
+      setTimeout(() => { bar.style.opacity = '0'; }, duration - 180);
+
+      // Schedule next sweep after a varied gap
+      const gap = Math.random() < 0.25
+        ? rand(150, 600)         // occasional rapid double-sweep
+        : rand(2500, 9000);      // normal gap
+      setTimeout(sweep, duration + gap);
+    }
+
+    // Kick off after a short initial delay
+    setTimeout(sweep, 600);
+  })();
+</script>
+
+</body>
+</html>

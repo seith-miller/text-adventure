@@ -60,6 +60,33 @@
     logic (ui.js sendToInterpreter) silently stops driving GlkOte.
   surfaces: [dom, interpreter]
 
+- id: ai-feature-flag
+  area: gameplay
+  demonstrates: >
+    The warm AI feature flag (MIRSEND_AI_ENABLED) is off by default.
+    TALK TO ARGON prints a canned in-fiction line when disabled, shows
+    an AI-online badge and first-run onboarding modal when enabled,
+    and falls back to the canned line when the proxy is unreachable.
+  surfaces: [dom, state, storage]
+
+- id: act2-gate
+  area: story
+  demonstrates: >
+    Climax actions (TRANSMIT, DEORBIT, FIRE CANNON) are soft-blocked
+    until the player completes at least 3 beats in either the B1
+    (engineer) or B2 (witness) Act 2 path. A full B1 run allows
+    TRANSMIT to fire normally.
+  surfaces: [dom, interpreter]
+
+- id: c2-descent
+  area: story
+  demonstrates: >
+    The DEORBIT action in the Soyuz Ferry triggers the C2 climax,
+    fires a six-beat D3 reentry sequence on a turn counter, and
+    transitions to the terminal E3 return ending. The oxygen timer
+    does not fire during descent.
+  surfaces: [dom, state, interpreter]
+
 - id: session-export
   area: ui
   demonstrates: >
@@ -68,3 +95,45 @@
     history, and final state. Clicking Export (or Ctrl/Cmd+E) downloads
     the session as JSON, which can be shared for post-playtest review.
   surfaces: [dom, storage, state]
+
+- id: session-post
+  area: ui
+  demonstrates: >
+    Completed sessions are POSTed to the local ingest endpoint
+    (/v1/sessions) on game end and manual export. Failures are
+    swallowed gracefully. Player kind is detected from init scripts,
+    query params, or defaults to human.
+  surfaces: [dom, state]
+
+- id: title-screen-restyle
+  area: menu
+  demonstrates: >
+    The title screen renders the v3 Soviet terminal visual language: a
+    bezel + phosphor CRT frame around an etched ID plate that names
+    "MIR'S END" in Latin, bilingual menu buttons (NEW GAME / НОВАЯ ИГРА),
+    and phosphor scanlines + vignette matching the in-game sidebar
+    panels. Guards against regressions in the visible structural
+    elements that establish the design language before gameplay starts.
+  surfaces: [dom]
+
+- id: phosphor-renderer
+  area: ui
+  demonstrates: >
+    The 80-column phosphor renderer (m13 #143) word-wraps Glulx prose
+    at 48 chars into the story column, echoes player input as a dim
+    `> command` line, renders bilingual Latin/Cyrillic shadow headings
+    on known room names, and supports scrollback with pin-on-append:
+    when the player has scrolled up to read history, new arriving
+    content does not yank the viewport back to the bottom.
+  surfaces: [dom, state]
+
+- id: bezel-version
+  area: ui
+  demonstrates: >
+    The bezel `#brand` block surfaces the current build's version
+    (`FW <semver>+<sha>`) read from `game/dist/version.json`, and
+    appends ` · <branch>` when the working tree is on a feature
+    branch — so a side-by-side reviewer can tell at a glance which
+    build is running. Element hides itself when version.json is
+    missing.
+  surfaces: [dom]

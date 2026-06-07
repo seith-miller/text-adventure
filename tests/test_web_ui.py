@@ -1,4 +1,4 @@
-"""Tests for the web UI shell (issue #13)."""
+"""Tests for the web UI shell (issue #13, updated for #132 terminal port)."""
 
 import os
 import re
@@ -34,34 +34,43 @@ def test_play_html_has_game_title():
     )
 
 
-def test_play_html_has_panel_layout():
-    """play.html contains the required panel structure."""
+def test_play_html_has_terminal_layout():
+    """play.html contains the Soviet terminal bezel + screen structure."""
     path = os.path.join(GAME_DIR, "play.html")
     with open(path) as f:
         content = f.read()
-    # Left panel — story output
-    assert 'id="story-panel"' in content, "Missing story panel"
+    # Terminal bezel
+    assert 'id="terminal"' in content, "Missing terminal bezel"
+    # Phosphor screen
+    assert 'id="screen"' in content, "Missing screen element"
+    # Pre-based display
+    assert 'id="display"' in content, "Missing display <pre>"
+    # Hidden story-output (for session recording + e2e compat)
     assert 'id="story-output"' in content, "Missing story output div"
-    # Top right — scene art
-    assert 'id="scene-panel"' in content, "Missing scene panel"
-    assert 'id="scene-art"' in content, "Missing scene art element"
-    # Mid right — title
-    assert 'id="title-panel"' in content, "Missing title panel"
-    # Bottom right — status
-    assert 'id="status-panel"' in content, "Missing status panel"
-    # Bottom — input
-    assert 'id="input-bar"' in content, "Missing input bar"
+    # Command input
     assert 'id="command-input"' in content, "Missing command input"
 
 
-def test_play_html_has_status_indicators():
-    """Status panel includes O2, morale, and inventory elements."""
+def test_play_html_has_bezel_chrome():
+    """play.html includes bezel plate, power LED, brand stamp."""
     path = os.path.join(GAME_DIR, "play.html")
     with open(path) as f:
         content = f.read()
-    assert 'id="status-o2"' in content, "Missing O2 status element"
-    assert 'id="status-morale"' in content, "Missing morale status element"
-    assert 'id="inventory-list"' in content, "Missing inventory list element"
+    assert 'id="bezel-plate"' in content, "Missing bezel plate"
+    assert 'id="power-led"' in content, "Missing power LED"
+    assert 'id="brand"' in content, "Missing brand stamp"
+    assert "ЭЛЕКТРОНИКА" in content, "Missing Cyrillic brand text"
+
+
+def test_play_html_has_save_load_buttons():
+    """play.html retains save/load/export buttons for runtime hooks."""
+    path = os.path.join(GAME_DIR, "play.html")
+    with open(path) as f:
+        content = f.read()
+    assert 'id="btn-save"' in content, "Missing save button"
+    assert 'id="btn-load"' in content, "Missing load button"
+    assert 'id="btn-continue"' in content, "Missing continue button"
+    assert 'id="btn-export"' in content, "Missing export button"
 
 
 def test_play_html_has_interpreter_config():
@@ -89,14 +98,6 @@ def test_play_html_loads_ui_css():
     assert "ui.css" in content, "play.html does not reference ui.css"
 
 
-def test_play_html_has_sidebar():
-    """play.html has a sidebar container for right-side panels."""
-    path = os.path.join(GAME_DIR, "play.html")
-    with open(path) as f:
-        content = f.read()
-    assert 'id="sidebar"' in content, "Missing sidebar container"
-
-
 def test_play_html_has_gameport():
     """play.html retains a gameport div for interpreter attachment."""
     path = os.path.join(GAME_DIR, "play.html")
@@ -120,29 +121,31 @@ def test_ui_css_has_dark_theme():
     with open(path) as f:
         content = f.read()
     assert "--bg-dark" in content, "Missing dark background variable"
-    # Should have dark hex values
-    assert "#0a0c10" in content or "#000" in content, "No dark background color"
+    assert "#0a0c10" in content, "No dark background color"
 
 
 def test_ui_css_has_grid_layout():
-    """CSS uses grid layout for the game shell."""
+    """CSS uses grid layout for the terminal bezel."""
     path = os.path.join(GAME_DIR, "ui.css")
     with open(path) as f:
         content = f.read()
     assert "display: grid" in content or "display:grid" in content, (
         "Missing grid layout"
     )
-    assert "grid-template-columns" in content, "Missing grid columns definition"
+    assert "grid-template-rows" in content, "Missing grid rows definition"
 
 
-def test_ui_css_has_blue_scene_styling():
-    """CSS includes blue-tinted styling for scene art panel."""
+def test_ui_css_has_phosphor_palette():
+    """CSS defines the phosphor green color palette."""
     path = os.path.join(GAME_DIR, "ui.css")
     with open(path) as f:
         content = f.read()
-    assert "--scene-blue" in content or "--scene-text" in content, (
-        "Missing blue scene art styling"
-    )
+    assert "--phosphor:" in content, "Missing phosphor color variable"
+    assert "--phosphor-dim:" in content, "Missing phosphor-dim variable"
+    assert "--phosphor-bright:" in content, "Missing phosphor-bright variable"
+    assert "--lamp-red:" in content, "Missing lamp-red variable"
+    assert "--lamp-amber:" in content, "Missing lamp-amber variable"
+    assert "--lamp-green:" in content, "Missing lamp-green variable"
 
 
 def test_ui_css_has_status_colors():
@@ -163,8 +166,18 @@ def test_ui_css_has_monospace_font():
     assert "monospace" in content, "Missing monospace font"
 
 
+def test_ui_css_has_ibm_plex_mono():
+    """CSS loads IBM Plex Mono via @font-face (self-hosted)."""
+    path = os.path.join(GAME_DIR, "ui.css")
+    with open(path) as f:
+        content = f.read()
+    assert "@font-face" in content, "Missing @font-face declarations"
+    assert "IBM Plex Mono" in content, "Missing IBM Plex Mono font family"
+    assert "assets/fonts/" in content, "Fonts should be self-hosted in assets/fonts/"
+
+
 def test_ui_css_styles_scrollbar():
-    """CSS customizes the scrollbar for the story panel."""
+    """CSS customizes the scrollbar."""
     path = os.path.join(GAME_DIR, "ui.css")
     with open(path) as f:
         content = f.read()
@@ -186,7 +199,6 @@ def test_ui_js_has_room_art_mapping():
     with open(path) as f:
         content = f.read()
     assert "ROOM_ART" in content, "Missing room-to-art mapping"
-    # Check key room mappings
     assert "crew quarters" in content.lower(), "Missing crew quarters mapping"
     assert "main corridor" in content.lower(), "Missing main corridor mapping"
     assert "command module" in content.lower(), "Missing command module mapping"
@@ -283,6 +295,25 @@ def test_ui_js_has_input_handling():
     assert "Enter" in content, "Missing Enter key handling"
 
 
+def test_ui_js_has_compose_function():
+    """JavaScript has compose() for building the 80x25 grid."""
+    path = os.path.join(GAME_DIR, "ui.js")
+    with open(path) as f:
+        content = f.read()
+    assert "function compose" in content, "Missing compose function"
+    assert "TOTAL_W" in content, "Missing TOTAL_W grid constant"
+    assert "STORY_W" in content, "Missing STORY_W grid constant"
+    assert "SIDE_W" in content, "Missing SIDE_W grid constant"
+
+
+def test_ui_js_has_word_wrap():
+    """JavaScript word-wraps story text at STORY_W (48 chars)."""
+    path = os.path.join(GAME_DIR, "ui.js")
+    with open(path) as f:
+        content = f.read()
+    assert "wordWrap" in content, "Missing wordWrap function"
+
+
 # ── Integration tests ──
 
 
@@ -311,3 +342,13 @@ def test_all_files_are_valid_utf8():
                 f.read()
             except UnicodeDecodeError:
                 raise AssertionError(f"{filename} is not valid UTF-8")
+
+
+def test_font_files_exist():
+    """Self-hosted IBM Plex Mono woff2 files exist."""
+    fonts_dir = os.path.join(GAME_DIR, "assets", "fonts")
+    assert os.path.isdir(fonts_dir), "Missing fonts directory"
+    woff2_files = [f for f in os.listdir(fonts_dir) if f.endswith(".woff2")]
+    assert len(woff2_files) >= 4, (
+        f"Expected at least 4 woff2 font files, found {len(woff2_files)}"
+    )

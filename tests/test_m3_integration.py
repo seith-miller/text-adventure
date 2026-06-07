@@ -85,7 +85,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "state.o2 = 100" in chunk
         assert "state.morale = 70" in chunk
         assert "state.inventory = []" in chunk
@@ -96,7 +96,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
         assert ".run(" in chunk
 
@@ -105,7 +105,7 @@ class TestNewGameFlow:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "hookInterpreter" in chunk
 
 
@@ -365,7 +365,7 @@ class TestIntroPlaysOnNewGame:
         js = _read("ui.js")
         idx = js.find("function startNewGame")
         assert idx != -1
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
         assert ".run(" in chunk
 
@@ -728,14 +728,14 @@ class TestEndToEndFlow:
         assert "startNewGame" in js
         # startNewGame runs intro
         idx = js.find("function startNewGame")
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "MirsEndIntro" in chunk
 
     def test_intro_ends_into_gameplay(self):
         """Intro completion -> hookInterpreter -> focus input."""
         js = _read("ui.js")
         idx = js.find("function startNewGame")
-        chunk = js[idx:idx + 700]
+        chunk = js[idx:idx + 1500]
         assert "hookInterpreter" in chunk
         assert "commandInput.focus" in chunk
 
@@ -835,11 +835,14 @@ class TestCrossComponentIntegration:
     def test_no_orphan_dom_references(self):
         """All DOM IDs referenced in JS exist in HTML."""
         html = _read("play.html")
+        # Post-#132: scene-art, status-o2, status-morale, inventory-list
+        # are no longer separate DOM elements — they are rendered in the
+        # <pre id="display"> grid by compose(). The remaining IDs are
+        # still present in play.html (some hidden for runtime compat).
         critical_ids = [
             "title-screen", "menu-new-game", "menu-continue",
-            "ingame-menu-btn", "story-output", "scene-art",
-            "command-input", "status-o2", "status-morale",
-            "inventory-list", "game-shell",
+            "ingame-menu-btn", "story-output",
+            "command-input", "game-shell",
             "btn-save", "btn-load", "btn-continue",
         ]
         for dom_id in critical_ids:

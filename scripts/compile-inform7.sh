@@ -89,3 +89,10 @@ else
   echo "Error: Compiled output not found at $BUILD_OUTPUT"
   exit 1
 fi
+
+# Generate version.json so every playthrough can be tagged with the
+# exact code state that produced it (semver + git SHA + ulx hash).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+"$PYTHON_BIN" "$SCRIPT_DIR/make_version.py" || \
+  echo "warning: make_version.py failed; version.json not updated"

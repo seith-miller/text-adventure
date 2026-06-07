@@ -1,6 +1,6 @@
 {
   "name": "text-adventure",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "engines": {
     "node": ">=18"
@@ -14,6 +14,7 @@
     "test": "echo 'No node-side tests. Use \\`npx playwright test\\` (e2e) and \\`pytest tests/\\` (story + UI structure).'"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.93.0",
     "@biomejs/biome": "^2.4.10",
     "@playwright/test": "^1.59.1",
     "typescript": "^5.4.0"

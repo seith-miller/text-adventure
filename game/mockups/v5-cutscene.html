@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MIR'S END — UI Mockup v5 (Cutscene Transition)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bezel-paint: #6b7560;
+    --bezel-paint-lit: #8a937c;
+    --bezel-paint-shadow: #3f4639;
+    --screen-bg: #0a1408;
+    --screen-bg-deep: #050a04;
+    --phosphor: #6cf06b;
+    --phosphor-dim: #3a8a39;
+    --phosphor-bright: #b6ffb5;
+    --phosphor-glow: rgba(108, 240, 107, 0.35);
+    --lamp-red:    #ff4530;
+    --lamp-amber:  #ffb020;
+    --lamp-green:  #4dff60;
+    --lamp-white:  #f0f5e8;
+    --lamp-off:    #1a2418;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #15171a;
+    overflow: hidden;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── Bezel ── */
+  #terminal {
+    position: absolute;
+    inset: 18px;
+    background:
+      radial-gradient(ellipse at top left, var(--bezel-paint-lit) 0%, var(--bezel-paint) 35%, var(--bezel-paint-shadow) 100%);
+    border-radius: 14px;
+    padding: 18px 22px 22px 22px;
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,0.12),
+      inset 0 -3px 8px rgba(0,0,0,0.45),
+      0 8px 30px rgba(0,0,0,0.7);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+  }
+  /* Corner screws */
+  .screw {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: radial-gradient(circle at 35% 35%, #5a5a52 0%, #2a2a24 70%, #0a0a08 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 -1px 1px rgba(0,0,0,0.6);
+  }
+  .screw.tl { top: 8px;    left: 8px;  }
+  .screw.tr { top: 8px;    right: 8px; }
+  .screw.bl { bottom: 8px; left: 8px;  }
+  .screw.br { bottom: 8px; right: 8px; }
+
+  /* Etched ID plate above the screen */
+  #bezel-plate {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 14px;
+    background: linear-gradient(to bottom, #b5ad95 0%, #8a8270 100%);
+    color: #1a1d18;
+    border: 1px solid #4a4538;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.3);
+  }
+  .plate-cell { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+  .plate-cell .lat { font-size: 12px; }
+  .plate-cell .cyr { font-size: 9px; letter-spacing: 1px; opacity: 0.65; margin-top: 2px; }
+  .plate-cell.id { font-weight: 600; }
+
+  /* Bottom strip on the bezel: power LED · vents · brand */
+  #bezel-bottom {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 6px;
+    height: 22px;
+  }
+  #power-led {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--bezel-paint-shadow);
+    letter-spacing: 1px;
+  }
+  #power-led .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--lamp-red);
+    box-shadow: 0 0 6px var(--lamp-red);
+  }
+  #vents { display: flex; gap: 6px; justify-content: center; }
+  #vents .slot {
+    width: 28px; height: 6px;
+    background: linear-gradient(to bottom, #1a1d18 0%, #2a2e26 60%, #1a1d18 100%);
+    border-radius: 1px;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.6);
+  }
+  #brand {
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--bezel-paint-shadow);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+    line-height: 1.05;
+  }
+  #brand .cyr { font-size: 12px; letter-spacing: 3px; }
+  #brand .model { font-size: 9px; opacity: 0.75; letter-spacing: 2px; }
+
+  /* ── Screen ── */
+  #screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: radial-gradient(ellipse at center, var(--screen-bg) 0%, var(--screen-bg-deep) 100%);
+    border: 3px solid #1a1d18;
+    border-radius: 8px;
+    color: var(--phosphor);
+    text-shadow: 0 0 4px var(--phosphor-glow), 0 0 1px var(--phosphor-glow);
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.7),
+      inset 0 0 8px rgba(108, 240, 107, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Static scanlines + vignette overlays (above text but below scan-line) */
+  #screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0) 4px);
+    pointer-events: none;
+    z-index: 5;
+  }
+  #screen::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* The ENTIRE UI is one big <pre> of monospace characters.
+     Fallback fonts have full Unicode coverage for box-drawing
+     and geometric shapes that IBM Plex Mono lacks. */
+  #display {
+    position: relative;
+    z-index: 3;
+    font-family: 'IBM Plex Mono', 'Cascadia Mono', 'DejaVu Sans Mono', 'Consolas', 'Courier New', monospace;
+    font-feature-settings: "liga" 0, "calt" 0;
+    font-variant-ligatures: none;
+    font-size: 16px;
+    line-height: 1.25;
+    white-space: pre;
+    color: var(--phosphor);
+    letter-spacing: 0;
+  }
+
+  /* Inline color classes — applied via custom inline tags inside the pre.
+     These are styled by tag name so the source stays terse. */
+  dim    { color: var(--phosphor-dim); }
+  bri    { color: var(--phosphor-bright); }
+  hd     { color: var(--phosphor-bright); font-weight: 500; }
+  echo   { color: var(--phosphor-dim); }
+  red    { color: var(--lamp-red);   text-shadow: 0 0 6px currentColor; }
+  amb    { color: var(--lamp-amber); text-shadow: 0 0 6px currentColor; }
+  grn    { color: var(--lamp-green); text-shadow: 0 0 6px currentColor; }
+  wht    { color: var(--lamp-white); text-shadow: 0 0 6px currentColor; }
+  off    { color: var(--lamp-off); }
+  cur    {
+    color: var(--phosphor-bright);
+    text-shadow: 0 0 8px var(--phosphor-glow);
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Sweeping scanline */
+  #scan-line {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 6px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(108, 240, 107, 0.05) 20%,
+      rgba(108, 240, 107, 0.35) 50%,
+      rgba(108, 240, 107, 0.05) 80%,
+      transparent 100%);
+    box-shadow: 0 0 8px rgba(108, 240, 107, 0.4);
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+</style>
+</head>
+<body>
+
+<div id="terminal">
+  <span class="screw tl"></span><span class="screw tr"></span>
+  <span class="screw bl"></span><span class="screw br"></span>
+
+  <!-- Etched ID plate above the screen -->
+  <div id="bezel-plate">
+    <div class="plate-cell id">
+      <span class="lat">МИР-2 / MIR-2 STATION</span>
+      <span class="cyr">ОРБИТАЛЬНАЯ СТАНЦИЯ</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">CONSOLE 04</span>
+      <span class="cyr">ПУЛЬТ 04</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">OP. KOVAL, A.I.</span>
+      <span class="cyr">ОПЕРАТОР</span>
+    </div>
+    <div class="plate-cell">
+      <span class="lat">14.03.1991</span>
+      <span class="cyr">ДАТА</span>
+    </div>
+  </div>
+
+  <div id="screen">
+    <pre id="display"></pre>
+    <div id="scan-line"></div>
+  </div>
+
+  <div id="bezel-bottom">
+    <div id="power-led">
+      <span class="dot"></span>
+      <span>PWR / ПИТ</span>
+    </div>
+    <div id="vents">
+      <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+      <span class="slot"></span><span class="slot"></span><span class="slot"></span>
+      <span class="slot"></span><span class="slot"></span>
+    </div>
+    <div id="brand">
+      <div class="cyr">ЭЛЕКТРОНИКА</div>
+      <div class="model">МС-0511 · 1989</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pre-rendered frames file. Sets window.FRAMES + window.META.
+     Comment this out to fall back to the procedural Earth demo. -->
+<script src="frames/space.js"></script>
+
+<script>
+/* ────────────────────────────────────────────────────────────
+   Pure-text-mode UI renderer.
+
+   Every visible character on the screen comes from one
+   monospace font (IBM Plex Mono). All structure is drawn with
+   box-drawing characters; bars are █/░; lamps are ■. Color is
+   applied via inline tags inside a single <pre>.
+
+   Layout: 80 × 25 (the standard Soviet/DEC/IBM terminal grid).
+     ║ <space> <story 48> <space> <│> <space> <sidebar 25> <space> ║
+   ──────────────────────────────────────────────────────────── */
+
+const TOTAL_W   = 80;
+const STORY_W   = 48;
+const SIDE_W    = 25;
+const HEADER_W  = 76;   // inside the outer borders + 1-char pad each side
+
+function visLen(s) {
+  // Strip HTML tags, then collapse each HTML entity to a single char.
+  return s
+    .replace(/<[^>]+>/g, '')
+    .replace(/&[a-zA-Z0-9#]+;/g, 'X')
+    .length;
+}
+function pad(s, w) {
+  const n = w - visLen(s);
+  return n > 0 ? s + ' '.repeat(n) : s;
+}
+function cells(left, right, w) {
+  const fill = w - visLen(left) - visLen(right);
+  return left + ' '.repeat(Math.max(0, fill)) + right;
+}
+
+/* ── Story column (48 wide × 19 rows) ───────────────────── */
+const STORY = [
+  '<hd>COMMAND MODULE / КОМАНДНЫЙ МОДУЛЬ</hd>',
+  '',
+  'Frost has drawn pale fingerprints across the',
+  'porthole glass; beyond it, Earth turns slow',
+  'and orange, lit by something that should not',
+  'be lighting it.',
+  '',
+  'Three of the seven status lamps are dark. A',
+  'fourth flickers a slow amber pulse.',
+  '',
+  'You see a logbook, a thermal mug (cold), and',
+  'the radio handset in its cradle.',
+  '',
+  '<echo>> examine logbook</echo>',
+  '',
+  'Salt-stained leather. The last legible entry,',
+  "in Koval's handwriting, ends mid-word.",
+  '',
+  '<echo>> status</echo>',
+];
+
+/* ── Sidebar column (25 wide × 19 rows) ─────────────────── */
+const SIDE = [
+  '<hd>VITALS / СОСТОЯНИЕ</hd>',
+  '',
+  cells('O2 LEVEL', '<bri>94%</bri>', SIDE_W),
+  '<bri>████████████████████████</bri><dim>░</dim>',   // 24 lit + 1 dim = 25
+  cells('MORALE', '<bri>62%</bri>', SIDE_W),
+  '<bri>████████████████</bri><dim>░░░░░░░░░</dim>',   // 16 lit + 9 dim = 25
+  '',
+  '<hd>SYSTEMS / СИСТЕМЫ</hd>',
+  '',
+  '<grn>█</grn> PWR              <grn>█</grn> LIFE',   // 5 + 14 + 6 = 25
+  '<amb>█</amb> COMM             <off>█</off> NAV',    // 6 + 13 + 5 = 24, pad 1
+  '<red>█</red> HULL             <wht>█</wht> DOCK',   // 6 + 13 + 6 = 25
+  '',
+  '<hd>INVENTORY / ИНВЕНТАРЬ</hd>',
+  '',
+  '> flashlight',
+  '> logbook',
+  '> ration bar (x2)',
+  '> key, brass',
+];
+
+/* ── Compose the 80×25 terminal screen ──────────────────── */
+function compose() {
+  const out = [];
+  out.push('╔' + '═'.repeat(TOTAL_W - 2) + '╗');
+
+  const header =
+    'SYS <bri>МИР-2/TERM-04</bri>   ' +
+    'UPT <bri>003:14:22</bri>   ' +
+    'ORB <bri>412KM/91.2MIN</bri>   ' +
+    'TIME <bri>04:17:08 МСК</bri>';
+  out.push('║ ' + pad(header, HEADER_W) + ' ║');
+
+  out.push('╠' + '═'.repeat(STORY_W + 2) + '╤' + '═'.repeat(SIDE_W + 2) + '╣');
+
+  const bodyRows = Math.max(STORY.length, SIDE.length);
+  for (let i = 0; i < bodyRows; i++) {
+    const left  = STORY[i] || '';
+    const right = SIDE[i]  || '';
+    out.push('║ ' + pad(left, STORY_W) + ' │ ' + pad(right, SIDE_W) + ' ║');
+  }
+
+  out.push('╠' + '═'.repeat(STORY_W + 2) + '╧' + '═'.repeat(SIDE_W + 2) + '╣');
+
+  const inputLine = '<bri>></bri> examine radio<cur>█</cur>';
+  out.push('║ ' + pad(inputLine, HEADER_W) + ' ║');
+
+  out.push('╚' + '═'.repeat(TOTAL_W - 2) + '╝');
+
+  return out.join('\n');
+}
+
+/* ────────────────────────────────────────────────────────────
+   VIDEO MODE — body area is filled by ASCII frame data instead
+   of a story/sidebar split. Header and input row remain.
+
+   Body region: BODY_W × BODY_H character cells. Each frame is a
+   string of BODY_H rows, each BODY_W chars wide, joined by '\n'.
+   The AsciiPlayer pulls one frame per tick; compose() rebuilds
+   the full screen with the current frame embedded.
+   ──────────────────────────────────────────────────────────── */
+
+const BODY_W = HEADER_W;     // 76 — full inner width
+const BODY_H = 19;           // matches text-mode body height
+
+/* Procedural test source: Earth from orbit, rotating terminator.
+   Same player will accept any string[] of frames — pre-rendered
+   from MP4 via the offline converter (added next), hand-authored
+   ASCII, or generated procedurally. */
+function genEarthFrames(numFrames = 48, w = BODY_W, h = BODY_H) {
+  const frames = [];
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = 8;            // earth disc radius in chars
+  const charAspect = 2.0;      // chars are ~2x taller than wide
+  const ramp = ' .:;-=+*#%@';
+
+  // Static starfield (deterministic — same stars every frame so
+  // they don't shimmer)
+  let seed = 0x1a2b3c4d;
+  const stars = [];
+  for (let i = 0; i < 70; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const sx = seed % w;
+    const sy = (seed >> 9) % h;
+    const ch = ['.', '·', '+', '*'][(seed >> 17) & 3];
+    // Skip stars that would land where Earth will be drawn
+    const dx = sx - cx, dy = (sy - cy) * charAspect;
+    if (dx*dx + dy*dy < (radius + 1) * (radius + 1)) continue;
+    stars.push({ x: sx, y: sy, ch });
+  }
+  const starAt = (x, y) => stars.find(s => s.x === x && s.y === y);
+
+  for (let f = 0; f < numFrames; f++) {
+    const angle = (f / numFrames) * Math.PI * 2;
+    const lx = Math.cos(angle);
+    const lz = Math.sin(angle);
+    const rows = [];
+    for (let y = 0; y < h; y++) {
+      let row = '';
+      for (let x = 0; x < w; x++) {
+        const dx = x - cx;
+        const dy = (y - cy) * charAspect;
+        const d2 = dx*dx + dy*dy;
+        if (d2 <= radius * radius) {
+          const nx = dx / radius;
+          const ny = dy / radius;
+          const nz2 = 1 - nx*nx - ny*ny;
+          const nz = nz2 > 0 ? Math.sqrt(nz2) : 0;
+          const lit = Math.max(0, nx*lx + nz*lz);
+          row += ramp[Math.floor(lit * (ramp.length - 1))];
+        } else {
+          const s = starAt(x, y);
+          row += s ? s.ch : ' ';
+        }
+      }
+      rows.push(row);
+    }
+    frames.push(rows.join('\n'));
+  }
+  return frames;
+}
+
+/* AsciiPlayer — minimal frame swapper with rAF timing.
+   Drop-in for any frames source (procedural, pre-rendered, etc.) */
+class AsciiPlayer {
+  constructor({ frames, fps = 12, loop = true, onFrame }) {
+    this.frames = frames;
+    this.fps = fps;
+    this.loop = loop;
+    this.onFrame = onFrame;     // called with each frame string
+    this.i = 0;
+    this.last = 0;
+    this.playing = false;
+    this._tick = this._tick.bind(this);
+  }
+  play() {
+    if (this.playing) return;
+    this.playing = true;
+    this.last = performance.now();
+    requestAnimationFrame(this._tick);
+  }
+  pause() { this.playing = false; }
+  _tick(now) {
+    if (!this.playing) return;
+    const dt = now - this.last;
+    if (dt >= 1000 / this.fps) {
+      this.onFrame(this.frames[this.i]);
+      this.i++;
+      if (this.i >= this.frames.length) {
+        if (this.loop) this.i = 0;
+        else { this.pause(); return; }
+      }
+      this.last = now;
+    }
+    requestAnimationFrame(this._tick);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   CUTSCENE STATE MACHINE
+
+   Every time the player enters a new module the screen will:
+     TERMINAL → WIPE_IN → VIDEO → WIPE_OUT → TERMINAL
+
+   The wipe is per-column with random delays — each column
+   "drips" the new content down from the top at its own pace,
+   with a single bright character at the leading edge (Matrix-
+   adjacent, but slower and more deliberate).
+
+   For the wipe phase we render PLAIN TEXT (no brightness tier
+   spans) because mid-row tag boundaries don't survive
+   character-position slicing. Once the wipe completes, we
+   swap back to innerHTML so the full-color frame paints.
+   ──────────────────────────────────────────────────────────── */
+
+const display = document.getElementById('display');
+
+const FRAMES = (typeof window.FRAMES !== 'undefined' && window.FRAMES.length)
+  ? window.FRAMES
+  : genEarthFrames(48, TOTAL_W, 25);
+const VIDEO_FPS = (window.META && window.META.fps) || 12;
+
+const STATE = { TERMINAL: 0, WIPE_IN: 1, VIDEO: 2, WIPE_OUT: 3 };
+
+// Timing knobs — tweak to taste
+const HOLD_TERMINAL = 2200;   // ms holding pre-cutscene terminal
+const WIPE_DURATION = 1800;   // total wipe time
+const HOLD_VIDEO    = 6000;   // ms playing video before wipe-out
+
+let state = STATE.TERMINAL;
+let stateStart = 0;
+let videoFrameIdx = 0;
+let videoLastTick = 0;
+
+// Per-column wipe schedule (regenerated at the start of each wipe).
+const colDelay = new Float32Array(TOTAL_W);
+const colDur   = new Float32Array(TOTAL_W);
+function rollWipeSchedule() {
+  // Most of the wipe happens in the first ~70% of the duration; the
+  // last 30% is when straggler columns finish.
+  for (let x = 0; x < TOTAL_W; x++) {
+    colDelay[x] = Math.random() * (WIPE_DURATION * 0.55);
+    colDur[x]   = WIPE_DURATION * 0.35 + Math.random() * (WIPE_DURATION * 0.25);
+  }
+}
+
+function stripTags(s) {
+  return s.replace(/<[^>]+>/g, '').replace(/&[a-zA-Z0-9#]+;/g, 'X');
+}
+
+// Cache the static terminal screen — re-composed once and reused.
+const TERMINAL_HTML  = compose();
+const TERMINAL_PLAIN = stripTags(TERMINAL_HTML);
+
+function tickVideo(now) {
+  if (now - videoLastTick >= 1000 / VIDEO_FPS) {
+    videoFrameIdx = (videoFrameIdx + 1) % FRAMES.length;
+    videoLastTick = now;
+  }
+}
+
+function renderWipe(elapsed, fromPlain, toPlain) {
+  const fromRows = fromPlain.split('\n');
+  const toRows   = toPlain.split('\n');
+  const out = [];
+  for (let y = 0; y < 25; y++) {
+    let row = '';
+    let openTag = null;  // 'bri' (head), 'dim' (trail), or null (plain)
+    for (let x = 0; x < TOTAL_W; x++) {
+      const t = (elapsed - colDelay[x]) / colDur[x];
+      const head = Math.floor(t * 25);
+      let ch, tier;
+      if (y < head) {
+        ch   = (toRows[y]   && toRows[y][x])   || ' ';
+        tier = null;                              // already wiped — normal
+      } else if (y === head) {
+        ch   = (toRows[y]   && toRows[y][x])   || ' ';
+        tier = 'bri';                             // bright leading edge
+      } else if (y === head + 1) {
+        ch   = (fromRows[y] && fromRows[y][x]) || ' ';
+        tier = 'dim';                             // dim trailing edge over old content
+      } else {
+        ch   = (fromRows[y] && fromRows[y][x]) || ' ';
+        tier = null;
+      }
+      if (tier !== openTag) {
+        if (openTag) row += `</${openTag}>`;
+        if (tier)    row += `<${tier}>`;
+        openTag = tier;
+      }
+      row += ch;
+    }
+    if (openTag) row += `</${openTag}>`;
+    out.push(row);
+  }
+  display.innerHTML = out.join('\n');
+}
+
+function loop(now) {
+  if (!stateStart) stateStart = now;
+  const elapsed = now - stateStart;
+  tickVideo(now);
+
+  switch (state) {
+    case STATE.TERMINAL:
+      // Static — only redraw when entering this state
+      if (elapsed === 0 || display._lastState !== state) {
+        display.innerHTML = TERMINAL_HTML;
+        display._lastState = state;
+      }
+      if (elapsed >= HOLD_TERMINAL) {
+        state = STATE.WIPE_IN;
+        stateStart = now;
+        rollWipeSchedule();
+      }
+      break;
+
+    case STATE.WIPE_IN: {
+      const toPlain = stripTags(FRAMES[videoFrameIdx]);
+      renderWipe(elapsed, TERMINAL_PLAIN, toPlain);
+      if (elapsed >= WIPE_DURATION) {
+        state = STATE.VIDEO;
+        stateStart = now;
+        display._lastState = state;
+      }
+      break;
+    }
+
+    case STATE.VIDEO:
+      // Full-color tagged frame
+      display.innerHTML = FRAMES[videoFrameIdx];
+      if (elapsed >= HOLD_VIDEO) {
+        state = STATE.WIPE_OUT;
+        stateStart = now;
+        rollWipeSchedule();
+      }
+      break;
+
+    case STATE.WIPE_OUT: {
+      const fromPlain = stripTags(FRAMES[videoFrameIdx]);
+      renderWipe(elapsed, fromPlain, TERMINAL_PLAIN);
+      if (elapsed >= WIPE_DURATION) {
+        state = STATE.TERMINAL;
+        stateStart = now;
+        display._lastState = -1;   // force redraw
+      }
+      break;
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+// First paint so fit() can measure
+display.innerHTML = TERMINAL_HTML;
+requestAnimationFrame(loop);
+
+/* ── Auto-scale the <pre> to fill the screen ────────────── */
+function fit() {
+  const pre = document.getElementById('display');
+  const screen = document.getElementById('screen');
+  // Reset font size and measure natural width at 1px to compute scale
+  pre.style.fontSize = '10px';
+  const rect = pre.getBoundingClientRect();
+  const cw = screen.clientWidth  - 32;  // padding allowance
+  const ch = screen.clientHeight - 24;
+  const scaleW = cw / rect.width;
+  const scaleH = ch / rect.height;
+  const scale = Math.min(scaleW, scaleH);
+  pre.style.fontSize = (10 * scale) + 'px';
+}
+window.addEventListener('resize', fit);
+fit();
+
+/* ── Sweeping scanline ──────────────────────────────────── */
+(function () {
+  const bar = document.getElementById('scan-line');
+  const screen = document.getElementById('screen');
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function sweep() {
+    const h = screen.clientHeight;
+    const dur = rand(900, 4200);
+    const op = rand(0.35, 1.0);
+    bar.style.transition = 'none';
+    bar.style.transform = 'translateY(-12px)';
+    bar.style.opacity = '0';
+    bar.offsetHeight;
+    bar.style.transition = `transform ${dur}ms linear, opacity 200ms ease-in`;
+    bar.style.opacity = String(op);
+    bar.style.transform = `translateY(${h + 8}px)`;
+    setTimeout(() => { bar.style.opacity = '0'; }, dur - 180);
+    const gap = Math.random() < 0.25 ? rand(150, 600) : rand(2500, 9000);
+    setTimeout(sweep, dur + gap);
+  }
+  setTimeout(sweep, 600);
+})();
+</script>
+</body>
+</html>
