@@ -90,7 +90,13 @@ Chapter 6 - UI Status Bridge
 [Emit a machine-readable status line every turn so the Web UI can mirror
  oxygen-level / morale-level / inventory into window.MirsEnd.setState.
  ui.js detects the [MIRSEND ...] prefix, parses it, and suppresses it
- from the visible story panel.]
+ from the visible story panel.
+
+ Trailing pwr/hull/comm/nav/dock booleans (#173) drive the six
+ system-status lamps in the sidebar. Each is a 0|1 string derived
+ from an existing truth state; ui.js maps it to a lamp color tag
+ (grn / amb / red / wht / off). When no MIRSEND has been parsed yet
+ (early-init render) the lamps fall back to static colors.]
 
 To say mirsend-inventory-list:
 	let counter be 0;
@@ -100,8 +106,14 @@ To say mirsend-inventory-list:
 		say "[printed name of item]";
 		increment counter.
 
+To say mirsend-bool (T - a truth state):
+	if T is true:
+		say "1";
+	otherwise:
+		say "0".
+
 Every turn:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] hull=[mirsend-bool corridor-pressurized] comm=[mirsend-bool listening-to-station] nav=[if chose-descent is false]1[otherwise]0[end if] dock=[if chose-descent is false]1[otherwise]0[end if][close bracket][line break]".
 
 Chapter 7 - Perception Markers
 

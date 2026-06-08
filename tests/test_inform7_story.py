@@ -170,6 +170,21 @@ class TestResources:
         assert "MIRSEND" in story_source
         assert "mirsend-inventory-list" in story_source
 
+    def test_system_lamp_fields_in_status(self, story_source):
+        # #173: the six system-status lamps in the sidebar are driven by
+        # boolean fields on the MIRSEND line. ui.js maps each 0|1 string
+        # to a lamp color tag.
+        for field in ("pwr=", "hull=", "comm=", "nav=", "dock="):
+            assert field in story_source, (
+                f"MIRSEND status line is missing the {field} lamp field (#173)"
+            )
+        # The pwr lamp is wired to power-is-restored via the mirsend-bool
+        # helper; assert the binding so a refactor doesn't silently flip
+        # one of the lamps to the wrong truth state.
+        assert "pwr=[mirsend-bool power-is-restored]" in story_source
+        assert "hull=[mirsend-bool corridor-pressurized]" in story_source
+        assert "comm=[mirsend-bool listening-to-station]" in story_source
+
     def test_oxygen_decreases_over_time(self, story_source):
         assert "decrease oxygen-level by 1" in story_source
 

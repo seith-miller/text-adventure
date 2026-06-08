@@ -82,8 +82,24 @@
     o2: 100,
     morale: 70,
     inventory: [],
+    /* Ship-state booleans parsed from the MIRSEND status line. null until
+       the first MIRSEND lands, at which point system lamps switch from
+       static fallback to derived colors (#173). */
+    shipState: null,
     interpreterReady: false,
     gameStarted: false,
+  };
+
+  /* Static fallback colors for the six system-status lamps, used before
+     any MIRSEND has been parsed. Matches the hardcoded colors that
+     shipped pre-#173 so an early-init render still shows variation. */
+  var STATIC_LAMP_COLORS = {
+    pwr: "grn",
+    life: "grn",
+    comm: "amb",
+    nav: "off",
+    hull: "red",
+    dock: "wht",
   };
 
   /* ── Save key for localStorage (inline quick-save fallback) ── */
@@ -203,6 +219,57 @@
     return result;
   }
 
+  /* ── Derive the six system-status lamp colors (#173) ──
+     Sources:
+       PWR  — pwr boolean (power-is-restored). on → grn, off → off.
+       LIFE — derived from current O2 level. Matches the existing O2
+              meter color thresholds (>50 grn, >25 amb, ≤25 red).
+       COMM — comm boolean (listening-to-station has registered traffic).
+              on → grn, off → off (no signal floor).
+       NAV  — nav boolean (orientation lock held; flips false once the
+              player commits to a deorbit burn). held → grn, drifting → amb.
+       HULL — hull boolean (corridor-pressurized; true once the central-
+              node breach is sealed). sealed → grn, breached → red.
+       DOCK — dock boolean (Soyuz/Progress soft-locked at port; flips
+              false on undock). docked → wht, undocked → off.
+
+     If no MIRSEND has been parsed yet, OR a parsed MIRSEND carries
+     none of the lamp keys (e.g. an outdated .ulx still emitting the
+     pre-#173 format), keep STATIC_LAMP_COLORS so the lamps don't all
+     flip to their "false" color and look broken. */
+  function deriveLampColors() {
+    var s = state.shipState;
+    if (s === null) return STATIC_LAMP_COLORS;
+    var hasLampData =
+      s.pwr !== undefined ||
+      s.hull !== undefined ||
+      s.comm !== undefined ||
+      s.nav !== undefined ||
+      s.dock !== undefined;
+    if (!hasLampData) return STATIC_LAMP_COLORS;
+    var o2 = state.o2;
+    return {
+      pwr: s.pwr === "1" ? "grn" : "off",
+      life: o2 > 50 ? "grn" : o2 > 25 ? "amb" : "red",
+      comm: s.comm === "1" ? "grn" : "off",
+      nav: s.nav === "1" ? "grn" : "amb",
+      hull: s.hull === "1" ? "grn" : "red",
+      dock: s.dock === "1" ? "wht" : "off",
+    };
+  }
+
+  /* Render the three lamp rows (two lamps per row) using current colors.
+     Returns an array of three strings sized to fit the sidebar column. */
+  function buildLampRows() {
+    var c = deriveLampColors();
+    var lamp = (tag) => `<${tag}>█</${tag}>`;
+    return [
+      `${lamp(c.pwr)} PWR              ${lamp(c.life)} LIFE`,
+      `${lamp(c.comm)} COMM             ${lamp(c.nav)} NAV`,
+      `${lamp(c.hull)} HULL             ${lamp(c.dock)} DOCK`,
+    ];
+  }
+
   /* ── Build sidebar column ── */
   function buildSidebar() {
     var rows = [];
@@ -246,10 +313,14 @@
     rows.push("<hd>СИСТЕМЫ</hd>");
     rows.push("");
 
-    // System status lamps (static for now — wiring is #133)
-    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
-    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
-    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
+    // System status lamps. Colors derive from ship-state booleans the
+    // Inform 7 story emits in the MIRSEND line (#173). Before any
+    // MIRSEND arrives, fall back to STATIC_LAMP_COLORS so an early
+    // render still looks varied rather than six identical lamps.
+    var lampRows = buildLampRows();
+    rows.push(lampRows[0]);
+    rows.push(lampRows[1]);
+    rows.push(lampRows[2]);
 
     rows.push("");
     rows.push("<hd>ИНВЕНТАРЬ</hd>");
@@ -575,6 +646,9 @@
     state.o2 = 100;
     state.morale = 70;
     state.inventory = [];
+    /* Clear lamp wiring so STATIC_LAMP_COLORS show again until the
+       first MIRSEND of the new game lands (#173). */
+    state.shipState = null;
     state.gameStarted = true;
     state.sessionStartedAt = new Date().toISOString();
 
@@ -830,13 +904,19 @@
 
   /* ── Display functions ── */
 
-  // The Inform 7 status line is currently:
-  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH]
-  // The trailing fields (b1/b2/act2) are story-state instrumentation, not
-  // inventory. Capture inv=... non-greedily and let the optional trailing
-  // " key=value..." block be discarded.
+  // The Inform 7 status line currently looks like:
+  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH
+  //            pwr=0|1 hull=0|1 comm=0|1 nav=0|1 dock=0|1]
+  // The b1/b2/act2 fields are story-state instrumentation; the trailing
+  // pwr/hull/comm/nav/dock booleans (#173) drive the six system lamps.
+  // Capture inv=... non-greedily up to the next " <token>=" segment so
+  // item names containing commas (but not spaces) still parse cleanly,
+  // then re-scan the whole bracketed body for every key=value pair so
+  // both the existing instrumentation fields and the new lamp fields
+  // land in state.shipState without needing a fixed positional regex.
   var MIRSEND_STATUS_RE =
-    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)(?:\s+\w+=[^\]]*)?\]/;
+    /\[MIRSEND\s+(o2=(-?\d+)\s+morale=(-?\d+)\s+inv=(.*?))((?:\s+[\w-]+=[^\s\]]*)*)\]/;
+  var MIRSEND_KV_RE = /([\w-]+)=([^\s]*)/g;
 
   function interceptAiPrompt(text) {
     if (!window.StationAI) return false;
@@ -853,13 +933,32 @@
   function parseAndApplyMirsendStatus(text) {
     var m = text.match(MIRSEND_STATUS_RE);
     if (!m) return false;
-    var o2 = parseInt(m[1], 10);
-    var morale = parseInt(m[2], 10);
-    var invStr = (m[3] || "").trim();
+    var o2 = parseInt(m[2], 10);
+    var morale = parseInt(m[3], 10);
+    var invStr = (m[4] || "").trim();
     var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
     state.o2 = o2;
     state.morale = morale;
     state.inventory = inventory;
+
+    // Re-scan the entire bracketed body for all key=value pairs so we
+    // capture both the trailing story-state fields (b1/b2/act2) and the
+    // lamp booleans (pwr/hull/comm/nav/dock — #173). Keys we already
+    // consumed positionally (o2/morale/inv) are dropped from shipState
+    // to avoid duplicating them across two state slots.
+    var shipState = {};
+    var body = `${m[1]}${m[5] || ""}`;
+    MIRSEND_KV_RE.lastIndex = 0;
+    var kv = MIRSEND_KV_RE.exec(body);
+    while (kv !== null) {
+      const key = kv[1];
+      if (key !== "o2" && key !== "morale" && key !== "inv") {
+        shipState[key] = kv[2];
+      }
+      kv = MIRSEND_KV_RE.exec(body);
+    }
+    state.shipState = shipState;
+
     updateStatus();
     return true;
   }
