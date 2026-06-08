@@ -111,7 +111,7 @@ test.describe("station-ai-runtime", () => {
     // Fallback prints the canned line as plain narration, not as Argon speech.
     await page
       .locator("#story-output")
-      .filter({ hasText: "AI channel is dead" })
+      .filter({ hasText: "runtime is not attached" })
       .waitFor({ timeout: 5000 });
   });
 
@@ -132,7 +132,7 @@ test.describe("station-ai-runtime", () => {
 
     await page
       .locator("#story-output")
-      .filter({ hasText: "AI channel is dead" })
+      .filter({ hasText: "runtime is not attached" })
       .waitFor({ timeout: 5000 });
   });
 
