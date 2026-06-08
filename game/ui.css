@@ -651,14 +651,14 @@ cur    {
   color: var(--accent-cyan);
 }
 
-/* ── Save/Load modal overlay ── */
+/* ── Save/Load modal overlay (terminal aesthetic) ── */
 #save-load-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.80);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -666,25 +666,46 @@ cur    {
 }
 
 #save-load-modal {
-  background: var(--bg-panel);
-  border: 2px solid var(--border-glow);
-  border-radius: 6px;
-  padding: 1.5em;
+  background: var(--screen-bg);
+  border: none;
+  border-radius: 0;
+  padding: 0;
   min-width: 420px;
   max-width: 520px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
-  color: var(--text-primary);
-  box-shadow: 0 0 30px rgba(42, 90, 143, 0.3);
+  color: var(--phosphor);
+  text-shadow: 0 0 4px var(--phosphor-glow);
+  box-shadow: 0 0 30px rgba(108, 240, 107, 0.15);
+}
+
+/* Box-drawing border built from ::before pseudo-element */
+.save-load-border-top,
+.save-load-border-bottom {
+  display: block;
+  color: var(--phosphor);
+  text-shadow: 0 0 4px var(--phosphor-glow);
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1;
+  white-space: pre;
+  padding: 0;
+  user-select: none;
+}
+
+.save-load-body {
+  padding: 0.8em 1.2em;
 }
 
 #save-load-modal h2 {
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 14px;
   letter-spacing: 3px;
-  color: var(--title-color);
+  color: var(--phosphor-bright);
+  text-shadow: 0 0 8px var(--phosphor-glow);
   text-transform: uppercase;
-  margin-bottom: 1em;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5em;
+  margin: 0 0 0.8em 0;
+  border-bottom: none;
+  padding-bottom: 0;
   text-align: center;
 }
 
@@ -693,20 +714,27 @@ cur    {
   align-items: center;
   gap: 8px;
   padding: 0.5em 0;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--phosphor-dim);
+}
+
+.save-slot-row:last-of-type {
+  border-bottom: none;
 }
 
 .save-slot-label {
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 12px;
-  color: var(--accent-cyan);
+  color: var(--phosphor-bright);
+  text-shadow: 0 0 8px var(--phosphor-glow);
   font-weight: bold;
-  min-width: 80px;
+  min-width: 160px;
   flex-shrink: 0;
 }
 
 .save-slot-summary {
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--phosphor-dim);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -714,47 +742,51 @@ cur    {
 }
 
 .save-slot-btn {
-  background: var(--bg-dark);
-  color: var(--text-input);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
+  background: transparent;
+  color: var(--phosphor);
+  border: 1px solid var(--phosphor-dim);
+  border-radius: 0;
   padding: 4px 14px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   flex-shrink: 0;
-  transition: border-color 0.2s, color 0.2s;
+  transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
 }
 
 .save-slot-btn:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
+  color: var(--phosphor-bright);
+  border-color: var(--phosphor);
+  text-shadow: 0 0 8px var(--phosphor-glow);
 }
 
 #save-load-close {
   display: block;
   margin: 1em auto 0;
   background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
+  color: var(--phosphor-dim);
+  border: 1px solid var(--phosphor-dim);
+  border-radius: 0;
   padding: 5px 20px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
 }
 
 #save-load-close:hover {
-  color: var(--text-primary);
-  border-color: var(--text-dim);
+  color: var(--phosphor-bright);
+  border-color: var(--phosphor);
+  text-shadow: 0 0 8px var(--phosphor-glow);
 }
 
 .save-load-error {
-  color: var(--status-red);
+  color: var(--lamp-red);
+  text-shadow: 0 0 6px var(--lamp-red);
   font-size: 12px;
   text-align: center;
   padding: 1em 0;

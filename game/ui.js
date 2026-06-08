@@ -423,9 +423,13 @@
     menuContinueBtn.addEventListener("click", continueGame);
     ingameMenuBtn.addEventListener("click", showMenu);
 
-    /* ESC key to toggle menu during gameplay */
+    /* ESC key to close save/load modal or toggle menu during gameplay */
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        if (_saveLoadModalOpen) {
+          closeSaveLoadModal();
+          return;
+        }
         if (window.MirsEndIntro?.isActive()) return;
         if (
           state.gameStarted &&
@@ -1447,6 +1451,21 @@
 
   /* ── Save/Load UI ── */
 
+  /* Bilingual slot labels for terminal modal */
+  var SLOT_LABELS = {
+    auto: "AUTO / \u0410\u0412\u0422\u041E",
+    1: "SLOT 01 / \u0421\u041B\u041E\u0422 01",
+    2: "SLOT 02 / \u0421\u041B\u041E\u0422 02",
+    3: "SLOT 03 / \u0421\u041B\u041E\u0422 03",
+  };
+
+  function buildBoxBorder(type, width) {
+    if (type === "top") {
+      return "\u2554" + "\u2550".repeat(width) + "\u2557";
+    }
+    return "\u255A" + "\u2550".repeat(width) + "\u255D";
+  }
+
   function showSaveLoadModal(mode) {
     closeSaveLoadModal();
     _saveLoadModalOpen = true;
@@ -1460,15 +1479,28 @@
     var modal = document.createElement("div");
     modal.id = "save-load-modal";
 
+    /* Box-drawing top border */
+    var borderTop = document.createElement("div");
+    borderTop.className = "save-load-border-top";
+    borderTop.textContent = buildBoxBorder("top", 48);
+    modal.appendChild(borderTop);
+
+    /* Body wrapper between borders */
+    var body = document.createElement("div");
+    body.className = "save-load-body";
+
     var title = document.createElement("h2");
-    title.textContent = mode === "save" ? "Save Game" : "Load Game";
-    modal.appendChild(title);
+    title.textContent =
+      mode === "save"
+        ? "SAVE GAME / \u0421\u041E\u0425\u0420\u0410\u041D\u0418\u0422\u042C"
+        : "LOAD GAME / \u0417\u0410\u0413\u0420\u0423\u0417\u0418\u0422\u042C";
+    body.appendChild(title);
 
     if (!window.SaveManager?.storageAvailable()) {
       const msg = document.createElement("p");
       msg.className = "save-load-error";
       msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
-      modal.appendChild(msg);
+      body.appendChild(msg);
     } else {
       const slots = window.SaveManager.listSlots();
       for (let i = 0; i < slots.length; i++) {
@@ -1478,8 +1510,7 @@
 
           const label = document.createElement("span");
           label.className = "save-slot-label";
-          label.textContent =
-            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
+          label.textContent = SLOT_LABELS[slot.slot] || `SLOT ${slot.slot}`;
 
           const summary = document.createElement("span");
           summary.className = "save-slot-summary";
@@ -1491,7 +1522,7 @@
           if (mode === "save" && slot.slot !== "auto") {
             const saveBtn = document.createElement("button");
             saveBtn.className = "save-slot-btn";
-            saveBtn.textContent = "Save";
+            saveBtn.textContent = "SAVE";
             saveBtn.addEventListener("click", () => {
               const result = window.SaveManager.saveToSlot(slot.slot);
               appendSystemText(`[${result.message}]`);
@@ -1501,7 +1532,7 @@
           } else if (mode === "load" && slot.hasData) {
             const loadBtn = document.createElement("button");
             loadBtn.className = "save-slot-btn";
-            loadBtn.textContent = "Load";
+            loadBtn.textContent = "LOAD";
             loadBtn.addEventListener("click", () => {
               let result;
               if (slot.slot === "auto") {
@@ -1520,16 +1551,24 @@
             row.appendChild(loadBtn);
           }
 
-          modal.appendChild(row);
+          body.appendChild(row);
         })(slots[i]);
       }
     }
 
     var closeBtn = document.createElement("button");
     closeBtn.id = "save-load-close";
-    closeBtn.textContent = "Close";
+    closeBtn.textContent = "CANCEL";
     closeBtn.addEventListener("click", closeSaveLoadModal);
-    modal.appendChild(closeBtn);
+    body.appendChild(closeBtn);
+
+    modal.appendChild(body);
+
+    /* Box-drawing bottom border */
+    var borderBottom = document.createElement("div");
+    borderBottom.className = "save-load-border-bottom";
+    borderBottom.textContent = buildBoxBorder("bottom", 48);
+    modal.appendChild(borderBottom);
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
