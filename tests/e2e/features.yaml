@@ -137,3 +137,13 @@
     build is running. Element hides itself when version.json is
     missing.
   surfaces: [dom]
+
+- id: typing-effect
+  area: ui
+  demonstrates: >
+    Optional typing/decode-in effect on new story text (#140). Characters
+    appear one at a time (typing mode) or settle from random glyphs
+    (decode mode). Configurable speed, on/off toggle, default off.
+    Skippable per-message with any keypress. Settings persist in
+    localStorage and are exposed via window.MirsEnd API.
+  surfaces: [dom, state, storage]

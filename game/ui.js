@@ -99,8 +99,8 @@
   var TYPING_SETTINGS_KEY = "mirsend_typing_effect";
   var _typingEffect = {
     enabled: false,
-    speed: 30,        // characters per second
-    mode: "typing",   // "typing" | "decode"
+    speed: 30, // characters per second
+    mode: "typing", // "typing" | "decode"
   };
 
   /* Decode-mode glyph pool — Cyrillic + Latin + symbols for that
@@ -112,32 +112,39 @@
     "#@$%&*";
 
   /* Animation state — only one reveal can run at a time. */
-  var _typingQueue = [];       // pending text blocks (arrays of wrapped lines)
-  var _typingCurrent = null;   // { lines: string[], revealed: number, startIdx: number }
+  var _typingQueue = []; // pending text blocks (arrays of wrapped lines)
+  var _typingCurrent = null; // { lines: string[], revealed: number, startIdx: number }
   var _typingTimer = null;
 
   function _loadTypingSettings() {
     try {
-      var raw = localStorage.getItem(TYPING_SETTINGS_KEY);
+      const raw = localStorage.getItem(TYPING_SETTINGS_KEY);
       if (raw) {
-        var obj = JSON.parse(raw);
-        if (typeof obj.enabled === "boolean") _typingEffect.enabled = obj.enabled;
-        if (typeof obj.speed === "number" && obj.speed > 0) _typingEffect.speed = obj.speed;
-        if (obj.mode === "typing" || obj.mode === "decode") _typingEffect.mode = obj.mode;
+        const obj = JSON.parse(raw);
+        if (typeof obj.enabled === "boolean")
+          _typingEffect.enabled = obj.enabled;
+        if (typeof obj.speed === "number" && obj.speed > 0)
+          _typingEffect.speed = obj.speed;
+        if (obj.mode === "typing" || obj.mode === "decode")
+          _typingEffect.mode = obj.mode;
       }
-    } catch (_e) { /* ignore */ }
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   function _saveTypingSettings() {
     try {
       localStorage.setItem(TYPING_SETTINGS_KEY, JSON.stringify(_typingEffect));
-    } catch (_e) { /* ignore */ }
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   /** Total visible characters across an array of lines (strips HTML tags). */
   function _totalVisChars(lines) {
-    var total = 0;
-    for (var i = 0; i < lines.length; i++) {
+    let total = 0;
+    for (let i = 0; i < lines.length; i++) {
       total += visLen(lines[i]);
     }
     return total;
@@ -146,11 +153,11 @@
   /** Build the partially-revealed version of lines for the typing effect.
       `revealed` is the number of visible characters to show. */
   function _revealLines(lines, revealed, mode) {
-    var result = [];
-    var remaining = revealed;
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      var vl = visLen(line);
+    const result = [];
+    let remaining = revealed;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const vl = visLen(line);
       if (remaining >= vl) {
         // Fully revealed
         result.push(line);
@@ -170,14 +177,14 @@
       become random glyphs. */
   function _partialReveal(line, count, mode) {
     // Walk through the line tracking visible chars vs tags
-    var out = "";
-    var vis = 0;
-    var inTag = false;
-    var inEntity = false;
-    var entityBuf = "";
+    let out = "";
+    let vis = 0;
+    let inTag = false;
+    let inEntity = false;
+    let entityBuf = "";
 
-    for (var i = 0; i < line.length; i++) {
-      var ch = line[i];
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
 
       if (inTag) {
         out += ch;
@@ -199,7 +206,8 @@
             out += entityBuf;
             vis++;
           } else if (mode === "decode") {
-            out += DECODE_GLYPHS[Math.floor(Math.random() * DECODE_GLYPHS.length)];
+            out +=
+              DECODE_GLYPHS[Math.floor(Math.random() * DECODE_GLYPHS.length)];
           }
           entityBuf = "";
         }
@@ -231,13 +239,13 @@
   function _typingTick() {
     if (!_typingCurrent) return;
 
-    var cur = _typingCurrent;
-    var total = _totalVisChars(cur.lines);
+    const cur = _typingCurrent;
+    const total = _totalVisChars(cur.lines);
     cur.revealed++;
 
     // Replace the lines in storyLines with the partially revealed version
-    var partial = _revealLines(cur.lines, cur.revealed, _typingEffect.mode);
-    for (var i = 0; i < cur.lines.length; i++) {
+    const partial = _revealLines(cur.lines, cur.revealed, _typingEffect.mode);
+    for (let i = 0; i < cur.lines.length; i++) {
       if (i < partial.length) {
         storyLines[cur.startIdx + i] = partial[i];
       } else {
@@ -249,7 +257,7 @@
 
     if (cur.revealed >= total) {
       // Ensure final lines are the originals (decode mode has randomness)
-      for (var j = 0; j < cur.lines.length; j++) {
+      for (let j = 0; j < cur.lines.length; j++) {
         storyLines[cur.startIdx + j] = cur.lines[j];
       }
       renderDisplay();
@@ -259,7 +267,7 @@
       return;
     }
 
-    var interval = Math.max(1, Math.round(1000 / _typingEffect.speed));
+    const interval = Math.max(1, Math.round(1000 / _typingEffect.speed));
     _typingTimer = setTimeout(_typingTick, interval);
   }
 
@@ -268,12 +276,12 @@
     if (_typingCurrent) return; // already animating
     if (_typingQueue.length === 0) return;
 
-    var entry = _typingQueue.shift();
-    var lines = entry.lines;
-    var startIdx = storyLines.length;
+    const entry = _typingQueue.shift();
+    const lines = entry.lines;
+    const startIdx = storyLines.length;
 
     // Push placeholder lines
-    for (var i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       pushStoryLine("");
     }
     // Add the blank paragraph separator
@@ -287,8 +295,8 @@
 
     renderDisplay();
 
-    var interval = Math.max(1, Math.round(1000 / _typingEffect.speed));
-    _typingTimer = setTimeout(_typingTick, interval);
+    const interval2 = Math.max(1, Math.round(1000 / _typingEffect.speed));
+    _typingTimer = setTimeout(_typingTick, interval2);
   }
 
   /** Skip the current typing animation — show all text immediately. */
@@ -300,8 +308,8 @@
       _typingTimer = null;
     }
 
-    var cur = _typingCurrent;
-    for (var i = 0; i < cur.lines.length; i++) {
+    const cur = _typingCurrent;
+    for (let i = 0; i < cur.lines.length; i++) {
       storyLines[cur.startIdx + i] = cur.lines[i];
     }
     _typingCurrent = null;
@@ -749,8 +757,8 @@
       _skipTypingEffect();
       // Drain any remaining queued blocks too
       while (_typingQueue.length > 0) {
-        var entry = _typingQueue.shift();
-        for (var j = 0; j < entry.lines.length; j++) {
+        const entry = _typingQueue.shift();
+        for (let j = 0; j < entry.lines.length; j++) {
           pushStoryLine(entry.lines[j]);
         }
         pushStoryLine("");
@@ -1974,17 +1982,20 @@
       mode: _typingEffect.mode,
     }),
     setTypingEffect: (opts) => {
-      if (typeof opts.enabled === "boolean") _typingEffect.enabled = opts.enabled;
-      if (typeof opts.speed === "number" && opts.speed > 0) _typingEffect.speed = opts.speed;
-      if (opts.mode === "typing" || opts.mode === "decode") _typingEffect.mode = opts.mode;
+      if (typeof opts.enabled === "boolean")
+        _typingEffect.enabled = opts.enabled;
+      if (typeof opts.speed === "number" && opts.speed > 0)
+        _typingEffect.speed = opts.speed;
+      if (opts.mode === "typing" || opts.mode === "decode")
+        _typingEffect.mode = opts.mode;
       _saveTypingSettings();
     },
     isTypingActive: _isTypingActive,
     skipTypingEffect: () => {
       _skipTypingEffect();
       while (_typingQueue.length > 0) {
-        var entry = _typingQueue.shift();
-        for (var j = 0; j < entry.lines.length; j++) {
+        const entry = _typingQueue.shift();
+        for (let j = 0; j < entry.lines.length; j++) {
           pushStoryLine(entry.lines[j]);
         }
         pushStoryLine("");
