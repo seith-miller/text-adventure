@@ -92,6 +92,229 @@
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
 
+  /* ── Typing / decode-in effect (#140) ──
+     Default OFF. When enabled, new story text is revealed character by
+     character ("typing" mode) or settles from random glyphs into the
+     final text ("decode" mode). Skippable per-message with any key. */
+  var TYPING_SETTINGS_KEY = "mirsend_typing_effect";
+  var _typingEffect = {
+    enabled: false,
+    speed: 30,        // characters per second
+    mode: "typing",   // "typing" | "decode"
+  };
+
+  /* Decode-mode glyph pool — Cyrillic + Latin + symbols for that
+     "data settling" feel on a Soviet terminal. */
+  var DECODE_GLYPHS =
+    "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ" +
+    "0123456789" +
+    "█░▒▓│─┤├┬┴┼═║╔╗╚╝" +
+    "#@$%&*";
+
+  /* Animation state — only one reveal can run at a time. */
+  var _typingQueue = [];       // pending text blocks (arrays of wrapped lines)
+  var _typingCurrent = null;   // { lines: string[], revealed: number, startIdx: number }
+  var _typingTimer = null;
+
+  function _loadTypingSettings() {
+    try {
+      var raw = localStorage.getItem(TYPING_SETTINGS_KEY);
+      if (raw) {
+        var obj = JSON.parse(raw);
+        if (typeof obj.enabled === "boolean") _typingEffect.enabled = obj.enabled;
+        if (typeof obj.speed === "number" && obj.speed > 0) _typingEffect.speed = obj.speed;
+        if (obj.mode === "typing" || obj.mode === "decode") _typingEffect.mode = obj.mode;
+      }
+    } catch (_e) { /* ignore */ }
+  }
+
+  function _saveTypingSettings() {
+    try {
+      localStorage.setItem(TYPING_SETTINGS_KEY, JSON.stringify(_typingEffect));
+    } catch (_e) { /* ignore */ }
+  }
+
+  /** Total visible characters across an array of lines (strips HTML tags). */
+  function _totalVisChars(lines) {
+    var total = 0;
+    for (var i = 0; i < lines.length; i++) {
+      total += visLen(lines[i]);
+    }
+    return total;
+  }
+
+  /** Build the partially-revealed version of lines for the typing effect.
+      `revealed` is the number of visible characters to show. */
+  function _revealLines(lines, revealed, mode) {
+    var result = [];
+    var remaining = revealed;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var vl = visLen(line);
+      if (remaining >= vl) {
+        // Fully revealed
+        result.push(line);
+        remaining -= vl;
+      } else {
+        // Partially revealed
+        result.push(_partialReveal(line, remaining, mode));
+        remaining = 0;
+        // Lines not yet reached are omitted (not pushed)
+      }
+    }
+    return result;
+  }
+
+  /** Return a line with only `count` visible characters shown.
+      In "typing" mode, truncate. In "decode" mode, unrevealed chars
+      become random glyphs. */
+  function _partialReveal(line, count, mode) {
+    // Walk through the line tracking visible chars vs tags
+    var out = "";
+    var vis = 0;
+    var inTag = false;
+    var inEntity = false;
+    var entityBuf = "";
+
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+
+      if (inTag) {
+        out += ch;
+        if (ch === ">") inTag = false;
+        continue;
+      }
+
+      if (ch === "<") {
+        inTag = true;
+        out += ch;
+        continue;
+      }
+
+      if (inEntity) {
+        entityBuf += ch;
+        if (ch === ";") {
+          inEntity = false;
+          if (vis < count) {
+            out += entityBuf;
+            vis++;
+          } else if (mode === "decode") {
+            out += DECODE_GLYPHS[Math.floor(Math.random() * DECODE_GLYPHS.length)];
+          }
+          entityBuf = "";
+        }
+        continue;
+      }
+
+      if (ch === "&") {
+        inEntity = true;
+        entityBuf = "&";
+        continue;
+      }
+
+      // Regular visible character
+      if (vis < count) {
+        out += ch;
+        vis++;
+      } else if (mode === "decode" && ch !== " ") {
+        out += DECODE_GLYPHS[Math.floor(Math.random() * DECODE_GLYPHS.length)];
+      } else if (mode === "decode") {
+        out += " ";
+      }
+      // In "typing" mode, unrevealed chars are simply omitted
+    }
+
+    return out;
+  }
+
+  /** Start revealing the current block, ticking at _typingEffect.speed. */
+  function _typingTick() {
+    if (!_typingCurrent) return;
+
+    var cur = _typingCurrent;
+    var total = _totalVisChars(cur.lines);
+    cur.revealed++;
+
+    // Replace the lines in storyLines with the partially revealed version
+    var partial = _revealLines(cur.lines, cur.revealed, _typingEffect.mode);
+    for (var i = 0; i < cur.lines.length; i++) {
+      if (i < partial.length) {
+        storyLines[cur.startIdx + i] = partial[i];
+      } else {
+        storyLines[cur.startIdx + i] = "";
+      }
+    }
+
+    renderDisplay();
+
+    if (cur.revealed >= total) {
+      // Ensure final lines are the originals (decode mode has randomness)
+      for (var j = 0; j < cur.lines.length; j++) {
+        storyLines[cur.startIdx + j] = cur.lines[j];
+      }
+      renderDisplay();
+      _typingCurrent = null;
+      _typingTimer = null;
+      _processTypingQueue();
+      return;
+    }
+
+    var interval = Math.max(1, Math.round(1000 / _typingEffect.speed));
+    _typingTimer = setTimeout(_typingTick, interval);
+  }
+
+  /** Process the next queued text block. */
+  function _processTypingQueue() {
+    if (_typingCurrent) return; // already animating
+    if (_typingQueue.length === 0) return;
+
+    var entry = _typingQueue.shift();
+    var lines = entry.lines;
+    var startIdx = storyLines.length;
+
+    // Push placeholder lines
+    for (var i = 0; i < lines.length; i++) {
+      pushStoryLine("");
+    }
+    // Add the blank paragraph separator
+    pushStoryLine("");
+
+    _typingCurrent = {
+      lines: lines,
+      revealed: 0,
+      startIdx: startIdx,
+    };
+
+    renderDisplay();
+
+    var interval = Math.max(1, Math.round(1000 / _typingEffect.speed));
+    _typingTimer = setTimeout(_typingTick, interval);
+  }
+
+  /** Skip the current typing animation — show all text immediately. */
+  function _skipTypingEffect() {
+    if (!_typingCurrent) return false;
+
+    if (_typingTimer) {
+      clearTimeout(_typingTimer);
+      _typingTimer = null;
+    }
+
+    var cur = _typingCurrent;
+    for (var i = 0; i < cur.lines.length; i++) {
+      storyLines[cur.startIdx + i] = cur.lines[i];
+    }
+    _typingCurrent = null;
+    renderDisplay();
+    _processTypingQueue();
+    return true;
+  }
+
+  /** Returns true if a typing animation is currently running. */
+  function _isTypingActive() {
+    return _typingCurrent !== null || _typingQueue.length > 0;
+  }
+
   /* ── DOM references ── */
   var storyOutput; // hidden #story-output (for session recording + e2e)
   var commandInput;
@@ -512,6 +735,28 @@
     /* Fetch the version descriptor produced by scripts/make_version.py
        so session payloads can carry the exact code state. */
     loadVersionJson();
+
+    /* Load typing-effect settings from localStorage (#140). */
+    _loadTypingSettings();
+
+    /* Skip typing/decode animation on any key (except modifiers).
+       Fires before input handling so a single press both skips and
+       resumes normal input flow. */
+    document.addEventListener("keydown", (e) => {
+      if (!_isTypingActive()) return;
+      // Ignore bare modifier keys
+      if (["Shift", "Control", "Alt", "Meta"].indexOf(e.key) !== -1) return;
+      _skipTypingEffect();
+      // Drain any remaining queued blocks too
+      while (_typingQueue.length > 0) {
+        var entry = _typingQueue.shift();
+        for (var j = 0; j < entry.lines.length; j++) {
+          pushStoryLine(entry.lines[j]);
+        }
+        pushStoryLine("");
+      }
+      renderDisplay();
+    });
 
     /* Fetch the perception variant bank (m5 #41). */
     loadPerceptionBank();
@@ -971,12 +1216,22 @@
        rather than as injected markup. Trusted tags (room headings,
        echoes, cursor) are pushed pre-formatted via other paths. */
     var wrapped = wordWrap(text, STORY_W);
+    var escapedLines = [];
     for (let i = 0; i < wrapped.length; i++) {
-      pushStoryLine(escHtml(wrapped[i]));
+      escapedLines.push(escHtml(wrapped[i]));
     }
-    pushStoryLine(""); // blank line between paragraphs
 
-    renderDisplay();
+    if (_typingEffect.enabled && escapedLines.length > 0) {
+      _typingQueue.push({ lines: escapedLines });
+      _processTypingQueue();
+    } else {
+      for (let i = 0; i < escapedLines.length; i++) {
+        pushStoryLine(escapedLines[i]);
+      }
+      pushStoryLine(""); // blank line between paragraphs
+      renderDisplay();
+    }
+
     detectRoomChange(text);
     checkForGameEnd(text);
   }
@@ -1712,6 +1967,30 @@
     scrollToBottom: scrollToBottom,
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
+    /* Typing / decode-in effect (#140) */
+    getTypingEffect: () => ({
+      enabled: _typingEffect.enabled,
+      speed: _typingEffect.speed,
+      mode: _typingEffect.mode,
+    }),
+    setTypingEffect: (opts) => {
+      if (typeof opts.enabled === "boolean") _typingEffect.enabled = opts.enabled;
+      if (typeof opts.speed === "number" && opts.speed > 0) _typingEffect.speed = opts.speed;
+      if (opts.mode === "typing" || opts.mode === "decode") _typingEffect.mode = opts.mode;
+      _saveTypingSettings();
+    },
+    isTypingActive: _isTypingActive,
+    skipTypingEffect: () => {
+      _skipTypingEffect();
+      while (_typingQueue.length > 0) {
+        var entry = _typingQueue.shift();
+        for (var j = 0; j < entry.lines.length; j++) {
+          pushStoryLine(entry.lines[j]);
+        }
+        pushStoryLine("");
+      }
+      renderDisplay();
+    },
   };
 
   /* ── Boot ── */
