@@ -339,3 +339,27 @@ class TestMirsendLampFields:
         # to descent (chose-descent is true). Inlined rather than via the
         # mirsend-bool helper because the polarity is inverted.
         assert "dock=[if chose-descent is false]1[otherwise]0[end if]" in story_source
+
+
+# ── Pressure-valve cost (#209) ──────────────────────────────────────────
+
+
+class TestPressureValveCost:
+    """PULL LEVER vents real reserve into the corridor's dead volume.
+    The carry-out rule randomly deducts 5-10 from oxygen-level so the prose
+    ('your reserves are noticeably lighter') reads true and a repeated
+    playthrough isn't bookkeepable."""
+
+    def test_random_deduction_in_carry_out(self, story_source):
+        assert (
+            "decrease oxygen-level by a random number between 5 and 10"
+            in story_source
+        )
+
+    def test_misleading_half_air_line_is_gone(self, story_source):
+        # The prior wording overstated the cost (a 1-point per-turn tick
+        # vs "shared half your air"). Replaced with a portion-based line.
+        assert "shared half your air" not in story_source
+
+    def test_replacement_line_communicates_loss(self, story_source):
+        assert "Your reserves are noticeably lighter" in story_source

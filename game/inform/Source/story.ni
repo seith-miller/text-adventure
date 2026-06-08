@@ -356,10 +356,15 @@ Check opening the pressure valve:
 		say "The valve is already open. Pressure equalized some time ago." instead.
 
 Carry out opening the pressure valve:
-	now corridor-pressurized is true.
+	now corridor-pressurized is true;
+	[Equalization vents real reserve into the corridor's dead volume.
+	 Randomized so a repeated playthrough isn't bookkeepable. The o2
+	 reading on the sidebar will reflect the new value on the next
+	 MIRSEND emit.]
+	decrease oxygen-level by a random number between 5 and 10.
 
 Report opening the pressure valve:
-	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]You have just shared half your air with a vacuum. It had to be done."
+	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]Your reserves are noticeably lighter. The vacuum took its portion. It had to be done."
 
 [The custom Understand patterns above match only the article-less forms
  ("pull valve", "turn lever"). When the player adds "the" — "pull the
