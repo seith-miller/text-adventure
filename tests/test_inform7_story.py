@@ -312,3 +312,30 @@ class TestInkRetired:
 
     def test_ink_directory_gone(self):
         assert not os.path.isdir(os.path.join(ROOT, "game", "story"))
+
+
+# ── MIRSEND Lamp Fields (#173) ────────────────────────────────────────
+
+
+class TestMirsendLampFields:
+    """The Every-turn MIRSEND emit carries boolean lamp inputs that the
+    UI sidebar reads to color the six system-status lamps. ui.js
+    decodes pwr/comm-tx/dock and maps them through computeLamps()."""
+
+    def test_mirsend_bool_helper_exists(self, story_source):
+        # The helper that turns a truth-state into "0" or "1" for MIRSEND.
+        assert "To say mirsend-bool" in story_source
+
+    def test_mirsend_emits_pwr_from_power_restored(self, story_source):
+        assert "pwr=[mirsend-bool power-is-restored]" in story_source
+
+    def test_mirsend_emits_comm_tx_from_responded_to_americans(
+        self, story_source
+    ):
+        assert "comm-tx=[mirsend-bool responded-to-americans]" in story_source
+
+    def test_mirsend_emits_dock_from_chose_descent(self, story_source):
+        # dock=1 while still docked; flips to 0 once the player commits
+        # to descent (chose-descent is true). Inlined rather than via the
+        # mirsend-bool helper because the polarity is inverted.
+        assert "dock=[if chose-descent is false]1[otherwise]0[end if]" in story_source

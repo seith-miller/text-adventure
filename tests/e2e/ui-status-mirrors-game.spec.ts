@@ -71,4 +71,119 @@ test.describe("ui-status-mirrors-game", () => {
     const visible = await storyText(page);
     expect(visible).not.toMatch(/\[MIRSEND/);
   });
+
+  /* ── System-status lamps (#173) ─────────────────────────────────────
+     The six lamps in the sidebar SYSTEMS panel derive from MIRSEND
+     boolean fields (pwr / comm-tx / dock) and the o2 reserve.
+     Defaults reflect the canonical opening per docs/ship-state.md. */
+
+  type LampColors = Record<
+    "pwr" | "life" | "comm" | "nav" | "hull" | "dock",
+    string
+  >;
+  async function getLamps(
+    page: import("@playwright/test").Page,
+  ): Promise<LampColors> {
+    return await page.evaluate(() => {
+      const m = (window as { MirsEnd?: { getLamps?: () => LampColors } })
+        .MirsEnd;
+      if (!m?.getLamps) throw new Error("MirsEnd.getLamps missing");
+      return m.getLamps();
+    });
+  }
+
+  test("opening-state lamps follow canonical RYG colors", async ({ page }) => {
+    /* Before any MIRSEND lands, the panel still shows the canonical
+       opening — PWR red, LIFE amb, COMM red, NAV amb, HULL grn, DOCK grn. */
+    const fresh = await getLamps(page);
+    expect(fresh).toEqual({
+      pwr: "red",
+      life: "amb",
+      comm: "red",
+      nav: "amb",
+      hull: "grn",
+      dock: "grn",
+    });
+
+    /* After New Game + one turn the first MIRSEND should land with
+       pwr=0 / comm-tx=0 / dock=1, which derives the same colors. */
+    await startNewGame(page);
+    await sendCommand(page, "look");
+    await expect
+      .poll(async () => (await getLamps(page)).pwr, { timeout: 3_000 })
+      .toBe("red");
+    const lamps = await getLamps(page);
+    expect(lamps.life).toBe("amb");
+    expect(lamps.comm).toBe("red");
+    expect(lamps.nav).toBe("amb");
+    expect(lamps.hull).toBe("grn");
+    expect(lamps.dock).toBe("grn");
+  });
+
+  test("right-column lamps share one fixed column (no NAV drift)", async ({
+    page,
+  }) => {
+    await startNewGame(page);
+    await sendCommand(page, "look");
+    /* The compose() output paints into <pre id="display">. Read each
+       sidebar row, strip color tags, and find the column index of the
+       second █ (after PWR/COMM/HULL). All three must agree. */
+    const cols = await page.evaluate(() => {
+      const pre = document.getElementById("display");
+      if (!pre) throw new Error("display missing");
+      const lines = pre.innerText.split("\n");
+      const found: number[] = [];
+      for (const line of lines) {
+        if (
+          /█\s+(LIFE|NAV|DOCK)\s*║$/.test(line) ||
+          /█\s+(LIFE|NAV|DOCK)\s*$/.test(line)
+        ) {
+          /* Find the rightmost █ in the line — that's the right-column lamp. */
+          found.push(line.lastIndexOf("█"));
+        }
+      }
+      return found;
+    });
+    expect(cols.length).toBe(3);
+    expect(cols[0]).toBe(cols[1]);
+    expect(cols[1]).toBe(cols[2]);
+  });
+
+  test(
+    "PWR flips to green after RESTORE POWER",
+    { timeout: 60_000 },
+    async ({ page }) => {
+      await startNewGame(page);
+      /* Mirrors the canonical "Test full" walkthrough up to restore-power.
+         Yevgenia's notebook is required by the Restore-power check rule
+         (story.ni:1074). */
+      const walk = [
+        "open emergency locker",
+        "take chemical flashlight",
+        "switch on chemical flashlight",
+        "pull lever",
+        "north", // Main Corridor
+        "examine yevgenia",
+        "take notebook",
+        "north", // Command Module
+        "open toolkit",
+        "take multimeter",
+        "restore power",
+      ];
+      for (const cmd of walk) {
+        await sendCommand(page, cmd);
+        await page.waitForTimeout(150);
+      }
+      await expect
+        .poll(async () => (await getLamps(page)).pwr, { timeout: 5_000 })
+        .toBe("grn");
+      /* LIFE and NAV should follow PWR. */
+      const lamps = await getLamps(page);
+      expect(lamps.nav).toBe("grn");
+      /* o2 may have dropped a few points but should still be >50 → grn. */
+      expect(["grn", "amb"]).toContain(lamps.life);
+      /* COMM is amber once powered (can receive) but not yet green (no TX). */
+      expect(lamps.comm).toBe("amb");
+    },
+  );
 });
