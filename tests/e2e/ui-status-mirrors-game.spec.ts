@@ -149,41 +149,39 @@ test.describe("ui-status-mirrors-game", () => {
     expect(cols[1]).toBe(cols[2]);
   });
 
-  test(
-    "PWR flips to green after RESTORE POWER",
-    { timeout: 60_000 },
-    async ({ page }) => {
-      await startNewGame(page);
-      /* Mirrors the canonical "Test full" walkthrough up to restore-power.
+  test("PWR flips to green after RESTORE POWER", { timeout: 60_000 }, async ({
+    page,
+  }) => {
+    await startNewGame(page);
+    /* Mirrors the canonical "Test full" walkthrough up to restore-power.
          Yevgenia's notebook is required by the Restore-power check rule
          (story.ni:1074). */
-      const walk = [
-        "open emergency locker",
-        "take chemical flashlight",
-        "switch on chemical flashlight",
-        "pull lever",
-        "north", // Main Corridor
-        "examine yevgenia",
-        "take notebook",
-        "north", // Command Module
-        "open toolkit",
-        "take multimeter",
-        "restore power",
-      ];
-      for (const cmd of walk) {
-        await sendCommand(page, cmd);
-        await page.waitForTimeout(150);
-      }
-      await expect
-        .poll(async () => (await getLamps(page)).pwr, { timeout: 5_000 })
-        .toBe("grn");
-      /* LIFE and NAV should follow PWR. */
-      const lamps = await getLamps(page);
-      expect(lamps.nav).toBe("grn");
-      /* o2 may have dropped a few points but should still be >50 → grn. */
-      expect(["grn", "amb"]).toContain(lamps.life);
-      /* COMM is amber once powered (can receive) but not yet green (no TX). */
-      expect(lamps.comm).toBe("amb");
-    },
-  );
+    const walk = [
+      "open emergency locker",
+      "take chemical flashlight",
+      "switch on chemical flashlight",
+      "pull lever",
+      "north", // Main Corridor
+      "examine yevgenia",
+      "take notebook",
+      "north", // Command Module
+      "open toolkit",
+      "take multimeter",
+      "restore power",
+    ];
+    for (const cmd of walk) {
+      await sendCommand(page, cmd);
+      await page.waitForTimeout(150);
+    }
+    await expect
+      .poll(async () => (await getLamps(page)).pwr, { timeout: 5_000 })
+      .toBe("grn");
+    /* LIFE and NAV should follow PWR. */
+    const lamps = await getLamps(page);
+    expect(lamps.nav).toBe("grn");
+    /* o2 may have dropped a few points but should still be >50 → grn. */
+    expect(["grn", "amb"]).toContain(lamps.life);
+    /* COMM is amber once powered (can receive) but not yet green (no TX). */
+    expect(lamps.comm).toBe("amb");
+  });
 });
