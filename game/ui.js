@@ -89,6 +89,36 @@
   /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
 
+  /* ── Persistent command-history key (separate from save slots) ──
+     History is kept across sessions even when the player hasn't saved,
+     so up/down recall feels like a real shell. Capped at HISTORY_MAX. */
+  var HISTORY_KEY = "mirsend_command_history";
+  var HISTORY_MAX = 200;
+
+  function loadCommandHistory() {
+    var raw;
+    var parsed;
+    try {
+      raw = localStorage.getItem(HISTORY_KEY);
+      if (!raw) return [];
+      parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((s) => typeof s === "string").slice(-HISTORY_MAX);
+    } catch (_e) {
+      return [];
+    }
+  }
+
+  function persistCommandHistory() {
+    var trimmed;
+    try {
+      trimmed = state.commandHistory.slice(-HISTORY_MAX);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    } catch (_e) {
+      /* localStorage may be unavailable or full — silently ignore. */
+    }
+  }
+
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
 
@@ -343,9 +373,11 @@
         "\u2563",
     );
 
-    // Input line
+    // Input line. Both prompt and typed text render in <bri> phosphor so
+    // the live row reads as the currently-energized line; the blinking
+    // <cur> block sits at the caret.
     var inputText = escHtml(currentInputText);
-    var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
+    var inputLine = `<bri>&gt; ${inputText}</bri><cur>\u2588</cur>`;
     out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
 
     // Bottom border
@@ -516,6 +548,11 @@
     /* Fetch the perception variant bank (m5 #41). */
     loadPerceptionBank();
 
+    /* Restore command history from prior sessions so up/down recall
+       persists even without an explicit save. */
+    state.commandHistory = loadCommandHistory();
+    state.historyIndex = state.commandHistory.length;
+
     /* Check for saved game to enable Continue button */
     checkSavedGame();
 
@@ -568,9 +605,9 @@
   }
 
   function startNewGame() {
-    /* Reset game state */
-    state.commandHistory = [];
-    state.historyIndex = -1;
+    /* Reset game state. Command history is intentionally NOT cleared:
+       persistent shell-style recall spans new games. */
+    state.historyIndex = state.commandHistory.length;
     state.currentRoom = null;
     state.o2 = 100;
     state.morale = 70;
@@ -785,11 +822,24 @@
 
   /* ── Command history & input handling ── */
   function handleKeyDown(e) {
+    var prev;
     if (e.key === "Enter") {
       const cmd = commandInput.value.trim();
       if (cmd.length === 0) return;
 
-      state.commandHistory.push(cmd);
+      /* Don't push a literal duplicate of the previous command — typing
+         "look" five times in a row should still recall one entry. */
+      prev = state.commandHistory[state.commandHistory.length - 1];
+      if (prev !== cmd) {
+        state.commandHistory.push(cmd);
+        if (state.commandHistory.length > HISTORY_MAX) {
+          state.commandHistory.splice(
+            0,
+            state.commandHistory.length - HISTORY_MAX,
+          );
+        }
+        persistCommandHistory();
+      }
       state.historyIndex = state.commandHistory.length;
       commandInput.value = "";
       currentInputText = "";

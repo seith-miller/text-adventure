@@ -295,6 +295,48 @@ def test_ui_js_has_input_handling():
     assert "Enter" in content, "Missing Enter key handling"
 
 
+# ── CRT input polish (issue #133) ──
+
+
+def test_ui_js_input_line_uses_bri_phosphor():
+    """The composed input line wraps the typed text in <bri> so it
+    renders in bright phosphor — the polish in #133."""
+    path = os.path.join(GAME_DIR, "ui.js")
+    with open(path) as f:
+        content = f.read()
+    # The prompt `>` and the typed input share one <bri> wrapper, and
+    # the blinking cursor immediately follows. This is the literal token
+    # the renderer pushes into the bottom row of the box-drawing frame.
+    assert "<bri>&gt; ${inputText}</bri><cur>" in content, (
+        "Input line should wrap typed text in <bri> phosphor"
+    )
+
+
+def test_ui_js_persists_command_history():
+    """Command history persists across page reloads via localStorage."""
+    path = os.path.join(GAME_DIR, "ui.js")
+    with open(path) as f:
+        content = f.read()
+    assert "mirsend_command_history" in content, (
+        "Missing dedicated localStorage key for command history"
+    )
+    assert "loadCommandHistory" in content, "Missing history loader"
+    assert "persistCommandHistory" in content, "Missing history persister"
+
+
+def test_ui_css_input_box_is_inside_box_drawing_frame():
+    """The visible input row is part of the <pre id='display'> grid
+    inside the screen, not a free-floating textbox."""
+    path = os.path.join(GAME_DIR, "play.html")
+    with open(path) as f:
+        html = f.read()
+    # The actual <input> is fixed-positioned with opacity:0 — it only
+    # captures keystrokes. The visible prompt is drawn into the grid.
+    assert 'id="command-input"' in html, "Missing capture input"
+    assert "opacity:0" in html, "Capture input should be transparent"
+    assert 'id="display"' in html, "Missing display <pre> where the grid renders"
+
+
 def test_ui_js_has_compose_function():
     """JavaScript has compose() for building the 80x25 grid."""
     path = os.path.join(GAME_DIR, "ui.js")
