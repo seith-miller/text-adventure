@@ -82,6 +82,7 @@ E5 dispatching is an action applying to nothing.
 
 Carry out e5 dispatching:
 	if oxygen-level <= 0:
+		emit-mirsend;
 		say "[bracket]TODO prose: #60 — e5-suffocate[close bracket]";
 		end the story saying "You have suffocated".
 
@@ -112,8 +113,15 @@ To say mirsend-bool (T - a truth state):
 	otherwise:
 		say "0".
 
-Every turn:
+[Emit one MIRSEND status line. Factored out so it can also fire from
+ the E5 death dispatcher — otherwise the player's last sidebar reading
+ before suffocation shows o2=1 (the prior turn's MIRSEND) because death
+ dispatches before the next Every-turn MIRSEND can emit o2=0.]
+To emit-mirsend:
 	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] comm-tx=[mirsend-bool responded-to-americans] dock=[if chose-descent is false]1[otherwise]0[end if][close bracket][line break]".
+
+Every turn:
+	emit-mirsend.
 
 Chapter 7 - Perception Markers
 
