@@ -99,9 +99,7 @@ test.describe("CRT input polish", () => {
       () => (window as any).MirsEnd?.getState !== undefined,
     );
 
-    const state = await page.evaluate(
-      () => (window as any).MirsEnd.getState(),
-    );
+    const state = await page.evaluate(() => (window as any).MirsEnd.getState());
     expect(state.commandHistory).toContain("inventory");
     expect(state.commandHistory).toContain("go east");
   });

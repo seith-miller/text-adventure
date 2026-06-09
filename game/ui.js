@@ -88,6 +88,7 @@
 
   /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
+  var HISTORY_KEY = "mirsend_command_history";
 
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
@@ -345,7 +346,7 @@
 
     // Input line
     var inputText = escHtml(currentInputText);
-    var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
+    var inputLine = `<bri>&gt;</bri> <bri>${inputText}</bri><cur>\u2588</cur>`;
     out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
 
     // Bottom border
@@ -415,6 +416,9 @@
 
     commandInput.addEventListener("keydown", handleKeyDown);
     commandInput.addEventListener("input", handleInputChange);
+
+    /* Restore command history from a previous session if available. */
+    loadCommandHistory();
 
     /* Menu button handlers */
     document
@@ -777,6 +781,32 @@
     panel.appendChild(badge);
   }
 
+  /* ── Command history persistence ── */
+  function loadCommandHistory() {
+    var raw;
+    var parsed;
+    try {
+      raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) {
+        parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          state.commandHistory = parsed;
+          state.historyIndex = parsed.length;
+        }
+      }
+    } catch (_e) {
+      /* localStorage may be unavailable */
+    }
+  }
+
+  function saveCommandHistory() {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.commandHistory));
+    } catch (_e) {
+      /* localStorage may be unavailable or full */
+    }
+  }
+
   /* ── Input change handler — update display on every keystroke ── */
   function handleInputChange() {
     currentInputText = commandInput.value;
@@ -791,6 +821,7 @@
 
       state.commandHistory.push(cmd);
       state.historyIndex = state.commandHistory.length;
+      saveCommandHistory();
       commandInput.value = "";
       currentInputText = "";
 
