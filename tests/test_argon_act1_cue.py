@@ -70,8 +70,12 @@ class TestArgonMonitorScenery:
             assert verb in snippet, f"argon monitor missing Understand verb: {verb}"
 
     def test_argon_monitor_printed_name(self, story_source):
+        # Apostrophe uses the [apostrophe] substitution so Inform 7's
+        # typographic-quote handling doesn't turn the ' after the digit
+        # into a stray double-quote at render time (#209).
         assert (
-            'The printed name of the argon monitor is "ARGON-87\'s monitor"' in story_source
+            'The printed name of the argon monitor is "ARGON-87[apostrophe]s monitor"'
+            in story_source
         )
 
     def test_argon_monitor_does_not_grab_bare_argon(self, story_source):
@@ -119,7 +123,8 @@ class TestProseStyleCompliance:
         assert "--" not in block, "ASCII em-dash surrogate (--) found in Argon prose block"
 
     def test_no_em_dash_in_command_module_argon_addition(self, story_source):
-        idx = story_source.find("On the port wall, ARGON-87's monitor")
+        # Apostrophe via [apostrophe] substitution (#209).
+        idx = story_source.find("On the port wall, ARGON-87[apostrophe]s monitor")
         assert idx != -1, "Command Module ARGON-87 monitor mention not found"
         snippet = story_source[idx:idx + 80]
         assert "—" not in snippet, "Em-dash present in ARGON-87 monitor mention"

@@ -72,7 +72,12 @@
 
   var AI_PROXY_URL = "http://localhost:8787";
   var AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
-  var AI_CANNED_LINE = "The AI channel is dead. Argon-87's console is dark.";
+  // Neutral fallback when the AI runtime isn't attached this build. The prior
+  // wording ("Argon-87's console is dark") contradicted the in-game monitor
+  // description after power restoration, which says "the bus is alive again."
+  // Keep this line agnostic about bus state so prose and UI agree.
+  var AI_CANNED_LINE =
+    "You key the channel for Argon-87. No response. The runtime is not attached this watch.";
 
   /* ── State ── */
   var state = {
@@ -314,7 +319,7 @@
       ? escHtml(state.currentRoom.toUpperCase())
       : "TERM-04";
     var header =
-      "SYS <bri>\u041C\u0418\u0420-2/" +
+      "SYS <bri>\u041C\u0418\u0420-3/" +
       roomLabel +
       "</bri>   " +
       "CONSOLE <bri>04</bri>   " +
