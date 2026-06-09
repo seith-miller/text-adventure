@@ -246,10 +246,24 @@
     rows.push("<hd>СИСТЕМЫ</hd>");
     rows.push("");
 
-    // System status lamps (static for now — wiring is #133)
-    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
-    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
-    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
+    // System status lamps (#173). Colors derive from computeLamps() which
+    // reads parsed MIRSEND lamp inputs + o2. Defaults reflect the canonical
+    // opening (PWR red, LIFE amb, COMM red, NAV amb, HULL grn, DOCK grn)
+    // so a fresh shell isn't lying before the first MIRSEND lands.
+    //
+    // Right cell is padded to a fixed visible width (6 chars = "\u2588 LIFE")
+    // so the right-lamp column stays at col 20 regardless of label length \u2014
+    // otherwise cells() right-aligns and NAV (3 chars) drifts one column
+    // right of LIFE/DOCK (4 chars).
+    var lamps = computeLamps();
+    var lamp = (k, label) => `<${lamps[k]}>\u2588</${lamps[k]}> ${label}`;
+    var rightLamp = (k, label) => {
+      var s = lamp(k, label);
+      return s + " ".repeat(Math.max(0, 6 - visLen(s)));
+    };
+    rows.push(cells(lamp("pwr", "PWR"), rightLamp("life", "LIFE"), SIDE_W));
+    rows.push(cells(lamp("comm", "COMM"), rightLamp("nav", "NAV"), SIDE_W));
+    rows.push(cells(lamp("hull", "HULL"), rightLamp("dock", "DOCK"), SIDE_W));
 
     rows.push("");
     rows.push("<hd>ИНВЕНТАРЬ</hd>");
@@ -830,13 +844,13 @@
 
   /* ── Display functions ── */
 
-  // The Inform 7 status line is currently:
-  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH]
-  // The trailing fields (b1/b2/act2) are story-state instrumentation, not
-  // inventory. Capture inv=... non-greedily and let the optional trailing
-  // " key=value..." block be discarded.
+  // The Inform 7 status line carries the positional fields o2/morale/inv
+  // and an extensible trailing block of name=value pairs. Capture inv=...
+  // non-greedily and keep the trailing block in group 4 so we can parse
+  // forward-compatible lamp inputs (pwr/comm-tx/dock per #173) and other
+  // story-state instrumentation (b1/b2/act2) out of it.
   var MIRSEND_STATUS_RE =
-    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)(?:\s+\w+=[^\]]*)?\]/;
+    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)((?:\s+[\w-]+=[^\]\s]*)*)\]/;
 
   function interceptAiPrompt(text) {
     if (!window.StationAI) return false;
@@ -856,12 +870,74 @@
     var o2 = parseInt(m[1], 10);
     var morale = parseInt(m[2], 10);
     var invStr = (m[3] || "").trim();
+    var trailing = (m[4] || "").trim();
     var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
     state.o2 = o2;
     state.morale = morale;
     state.inventory = inventory;
+    parseLampInputs(trailing);
     updateStatus();
     return true;
+  }
+
+  // Extract boolean lamp inputs (pwr/comm-tx/dock) from the MIRSEND trailing
+  // key=value block. Each is "0"|"1"; absent fields leave the prior value in
+  // place so a transient story.ni emit gap doesn't flicker the lamps.
+  function parseLampInputs(trailing) {
+    if (!state.lampInputs) state.lampInputs = {};
+    var re = /(pwr|comm-tx|dock)=([01])/g;
+    var match = re.exec(trailing);
+    var key;
+    while (match !== null) {
+      key = match[1] === "comm-tx" ? "commTx" : match[1];
+      state.lampInputs[key] = match[2] === "1";
+      match = re.exec(trailing);
+    }
+  }
+
+  // Derive lamp colors from current ship state. Returns a {pwr,life,comm,
+  // nav,hull,dock} map of tag names ("grn"|"amb"|"red"|"off"). Defaults
+  // reflect the canonical opening per lib/ship-state.js so the panel reads
+  // correctly even before the first MIRSEND lands.
+  //
+  // Severity convention: grn = nominal, amb = degraded but functional,
+  //                      red = actively failed, off = system absent / detached.
+  function computeLamps() {
+    var i = state.lampInputs || {};
+    var lamps = {
+      pwr: "red", // main bus offline at opening
+      life: "amb", // O2 reserve full but gen offline, LiOH passive
+      comm: "red", // no live channel (distress loop only)
+      nav: "amb", // no orientation lock without power
+      hull: "grn", // breached but sealed — airtight
+      dock: "grn", // Soyuz + Progress both docked
+    };
+
+    if (i.pwr) lamps.pwr = "grn";
+
+    // LIFE: amber until power restores life support; then track o2 reserve.
+    // Even unpowered, drop straight to red on critical o2 — the lamp should
+    // scream when the player is actually suffocating.
+    if (i.pwr) {
+      if (state.o2 > 50) lamps.life = "grn";
+      else if (state.o2 > 25) lamps.life = "amb";
+      else lamps.life = "red";
+    } else if (state.o2 <= 25) {
+      lamps.life = "red";
+    }
+
+    // COMM: red without power; amber once powered (can receive); green once
+    // the player has transmitted (two-way channel established).
+    if (i.commTx) lamps.comm = "grn";
+    else if (i.pwr) lamps.comm = "amb";
+
+    if (i.pwr) lamps.nav = "grn";
+
+    // DOCK goes off when chose-descent is true (Soyuz detached). story.ni
+    // emits dock=0 after that flag flips.
+    if (i.dock === false) lamps.dock = "off";
+
+    return lamps;
   }
 
   /* ── Perception variant overlay (m5 #41) ──
@@ -1712,6 +1788,7 @@
     scrollToBottom: scrollToBottom,
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
+    getLamps: () => computeLamps(),
   };
 
   /* ── Boot ── */

@@ -82,6 +82,7 @@ E5 dispatching is an action applying to nothing.
 
 Carry out e5 dispatching:
 	if oxygen-level <= 0:
+		emit-mirsend;
 		say "[bracket]TODO prose: #60 — e5-suffocate[close bracket]";
 		end the story saying "You have suffocated".
 
@@ -90,7 +91,13 @@ Chapter 6 - UI Status Bridge
 [Emit a machine-readable status line every turn so the Web UI can mirror
  oxygen-level / morale-level / inventory into window.MirsEnd.setState.
  ui.js detects the [MIRSEND ...] prefix, parses it, and suppresses it
- from the visible story panel.]
+ from the visible story panel.
+
+ Trailing pwr/comm-tx/dock flags drive the six system-status lamps in
+ the sidebar (#173). Each is "0" or "1" derived from an existing truth
+ state; ui.js maps them through computeLamps() to a color tag per the
+ RYG severity scheme. ui.js falls back to canonical-opening colors
+ when the trailing block is absent.]
 
 To say mirsend-inventory-list:
 	let counter be 0;
@@ -100,8 +107,21 @@ To say mirsend-inventory-list:
 		say "[printed name of item]";
 		increment counter.
 
+To say mirsend-bool (T - a truth state):
+	if T is true:
+		say "1";
+	otherwise:
+		say "0".
+
+[Emit one MIRSEND status line. Factored out so it can also fire from
+ the E5 death dispatcher — otherwise the player's last sidebar reading
+ before suffocation shows o2=1 (the prior turn's MIRSEND) because death
+ dispatches before the next Every-turn MIRSEND can emit o2=0.]
+To emit-mirsend:
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] comm-tx=[mirsend-bool responded-to-americans] dock=[if chose-descent is false]1[otherwise]0[end if][close bracket][line break]".
+
 Every turn:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
+	emit-mirsend.
 
 Chapter 7 - Perception Markers
 
