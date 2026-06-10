@@ -127,6 +127,14 @@
     content does not yank the viewport back to the bottom.
   surfaces: [dom, state]
 
+- id: crt-input-polish
+  area: ui
+  demonstrates: >
+    Typed text in the input row renders in bright phosphor (<bri>) with
+    a blinking block cursor, command history persists across sessions
+    via localStorage, and up/down arrow keys recall persisted history.
+  surfaces: [dom, storage, state]
+
 - id: bezel-version
   area: ui
   demonstrates: >
