@@ -651,14 +651,14 @@ cur    {
   color: var(--accent-cyan);
 }
 
-/* ── Save/Load modal overlay ── */
+/* ── Save/Load modal overlay (v3 terminal aesthetic, issue #137) ── */
 #save-load-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.78);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -666,47 +666,95 @@ cur    {
 }
 
 #save-load-modal {
-  background: var(--bg-panel);
-  border: 2px solid var(--border-glow);
-  border-radius: 6px;
-  padding: 1.5em;
-  min-width: 420px;
-  max-width: 520px;
+  background: var(--screen-bg);
+  padding: 0;
+  min-width: 460px;
+  max-width: 560px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
-  color: var(--text-primary);
-  box-shadow: 0 0 30px rgba(42, 90, 143, 0.3);
+  color: var(--phosphor);
+  text-shadow: 0 0 4px var(--phosphor-glow), 0 0 1px var(--phosphor-glow);
+  box-shadow: 0 0 30px rgba(108, 240, 107, 0.18);
+}
+
+/* The box-drawing frame. The top/bottom edges are <pre> blocks of
+   ╔═══╗ / ╚═══╝; the body sits between them with vertical pipes
+   simulated by left/right borders. */
+.save-load-frame {
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+}
+
+#save-load-modal pre.save-load-frame-edge,
+.save-load-frame-edge {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--phosphor);
+  text-shadow: 0 0 4px var(--phosphor-glow);
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.save-load-frame-body {
+  padding: 0.8em 1.6em 1.2em;
+  border-left: 1px solid var(--phosphor-dim);
+  border-right: 1px solid var(--phosphor-dim);
 }
 
 #save-load-modal h2 {
   font-size: 14px;
-  letter-spacing: 3px;
-  color: var(--title-color);
+  letter-spacing: 4px;
+  color: var(--phosphor-bright);
   text-transform: uppercase;
   margin-bottom: 1em;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--phosphor-dim);
   padding-bottom: 0.5em;
   text-align: center;
+  text-shadow: 0 0 6px var(--phosphor-glow);
+}
+
+#save-load-modal h2 .save-load-title-en {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 4px;
+}
+
+#save-load-modal h2 .save-load-title-ru {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--phosphor-dim);
+  margin-top: 3px;
+  opacity: 0.8;
 }
 
 .save-slot-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0.5em 0;
-  border-bottom: 1px solid var(--border-color);
+  gap: 10px;
+  padding: 0.55em 0;
+  border-bottom: 1px dashed var(--phosphor-dim);
+}
+
+.save-slot-row:last-of-type {
+  border-bottom: 1px dashed var(--phosphor-dim);
 }
 
 .save-slot-label {
   font-size: 12px;
-  color: var(--accent-cyan);
-  font-weight: bold;
-  min-width: 80px;
+  color: var(--phosphor-bright);
+  font-weight: 600;
+  letter-spacing: 1px;
+  min-width: 150px;
   flex-shrink: 0;
+  text-shadow: 0 0 4px var(--phosphor-glow);
 }
 
 .save-slot-summary {
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--phosphor-dim);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -714,50 +762,54 @@ cur    {
 }
 
 .save-slot-btn {
-  background: var(--bg-dark);
-  color: var(--text-input);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
+  background: transparent;
+  color: var(--phosphor-dim);
+  border: 1px solid var(--phosphor-dim);
+  border-radius: 0;
   padding: 4px 14px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   flex-shrink: 0;
-  transition: border-color 0.2s, color 0.2s;
+  transition: border-color 0.2s, color 0.2s, text-shadow 0.2s;
 }
 
 .save-slot-btn:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
+  border-color: var(--phosphor);
+  color: var(--phosphor-bright);
+  text-shadow: 0 0 6px var(--phosphor-glow);
 }
 
 #save-load-close {
   display: block;
-  margin: 1em auto 0;
+  margin: 1.2em auto 0;
   background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
-  padding: 5px 20px;
+  color: var(--phosphor-dim);
+  border: 1px solid var(--phosphor-dim);
+  border-radius: 0;
+  padding: 5px 22px;
   font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  transition: border-color 0.2s, color 0.2s, text-shadow 0.2s;
 }
 
 #save-load-close:hover {
-  color: var(--text-primary);
-  border-color: var(--text-dim);
+  color: var(--phosphor-bright);
+  border-color: var(--phosphor);
+  text-shadow: 0 0 6px var(--phosphor-glow);
 }
 
 .save-load-error {
-  color: var(--status-red);
+  color: var(--lamp-red);
   font-size: 12px;
   text-align: center;
   padding: 1em 0;
+  text-shadow: 0 0 6px currentColor;
 }
 
 /* ── AI status badge ── */

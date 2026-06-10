@@ -446,10 +446,16 @@
     menuContinueBtn.addEventListener("click", continueGame);
     ingameMenuBtn.addEventListener("click", showMenu);
 
-    /* ESC key to toggle menu during gameplay */
+    /* ESC key: close the save/load modal if it is open, otherwise toggle
+       the in-game menu. The modal is layered above the menu, so it must
+       take ESC priority. */
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (window.MirsEndIntro?.isActive()) return;
+        if (_saveLoadModalOpen) {
+          closeSaveLoadModal();
+          return;
+        }
         if (
           state.gameStarted &&
           titleScreen &&
@@ -1559,6 +1565,24 @@
 
   /* ── Save/Load UI ── */
 
+  /* Width (in monospace cells) of the box-drawing frame around the modal.
+     Wide enough for the bilingual title plus a comfortable margin. */
+  var SAVE_LOAD_FRAME_WIDTH = 56;
+
+  function buildBoxFrameLine(kind, width) {
+    var fill = "═".repeat(Math.max(0, width - 2));
+    if (kind === "top") return `╔${fill}╗`;
+    if (kind === "bottom") return `╚${fill}╝`;
+    return `║${" ".repeat(Math.max(0, width - 2))}║`;
+  }
+
+  /* Slot label in the v3 style: `SLOT 01 / СЛОТ 01` (or `AUTO / АВТО`). */
+  function bilingualSlotLabel(slot) {
+    if (slot === "auto") return "AUTO / АВТО";
+    var n = String(slot).padStart(2, "0");
+    return `SLOT ${n} / СЛОТ ${n}`;
+  }
+
   function showSaveLoadModal(mode) {
     closeSaveLoadModal();
     _saveLoadModalOpen = true;
@@ -1572,15 +1596,36 @@
     var modal = document.createElement("div");
     modal.id = "save-load-modal";
 
+    /* Box-drawing frame wraps the entire modal content. The corners and
+       edges (╔ ═ ╗ ║ ╚ ╝) are rendered as text inside <pre> blocks so
+       they align in IBM Plex Mono. */
+    var frame = document.createElement("div");
+    frame.className = "save-load-frame";
+
+    var frameTop = document.createElement("pre");
+    frameTop.className = "save-load-frame-edge";
+    frameTop.textContent = buildBoxFrameLine("top", SAVE_LOAD_FRAME_WIDTH);
+    frame.appendChild(frameTop);
+
+    var body = document.createElement("div");
+    body.className = "save-load-frame-body";
+
     var title = document.createElement("h2");
-    title.textContent = mode === "save" ? "Save Game" : "Load Game";
-    modal.appendChild(title);
+    var titleEn = document.createElement("span");
+    titleEn.className = "save-load-title-en";
+    titleEn.textContent = mode === "save" ? "SAVE GAME" : "LOAD GAME";
+    var titleRu = document.createElement("span");
+    titleRu.className = "save-load-title-ru";
+    titleRu.textContent = mode === "save" ? "СОХРАНИТЬ ИГРУ" : "ЗАГРУЗИТЬ ИГРУ";
+    title.appendChild(titleEn);
+    title.appendChild(titleRu);
+    body.appendChild(title);
 
     if (!window.SaveManager?.storageAvailable()) {
       const msg = document.createElement("p");
       msg.className = "save-load-error";
       msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
-      modal.appendChild(msg);
+      body.appendChild(msg);
     } else {
       const slots = window.SaveManager.listSlots();
       for (let i = 0; i < slots.length; i++) {
@@ -1590,8 +1635,7 @@
 
           const label = document.createElement("span");
           label.className = "save-slot-label";
-          label.textContent =
-            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
+          label.textContent = bilingualSlotLabel(slot.slot);
 
           const summary = document.createElement("span");
           summary.className = "save-slot-summary";
@@ -1603,7 +1647,7 @@
           if (mode === "save" && slot.slot !== "auto") {
             const saveBtn = document.createElement("button");
             saveBtn.className = "save-slot-btn";
-            saveBtn.textContent = "Save";
+            saveBtn.textContent = "SAVE";
             saveBtn.addEventListener("click", () => {
               const result = window.SaveManager.saveToSlot(slot.slot);
               appendSystemText(`[${result.message}]`);
@@ -1613,7 +1657,7 @@
           } else if (mode === "load" && slot.hasData) {
             const loadBtn = document.createElement("button");
             loadBtn.className = "save-slot-btn";
-            loadBtn.textContent = "Load";
+            loadBtn.textContent = "LOAD";
             loadBtn.addEventListener("click", () => {
               let result;
               if (slot.slot === "auto") {
@@ -1632,17 +1676,28 @@
             row.appendChild(loadBtn);
           }
 
-          modal.appendChild(row);
+          body.appendChild(row);
         })(slots[i]);
       }
     }
 
     var closeBtn = document.createElement("button");
     closeBtn.id = "save-load-close";
-    closeBtn.textContent = "Close";
+    closeBtn.textContent = "CANCEL";
     closeBtn.addEventListener("click", closeSaveLoadModal);
-    modal.appendChild(closeBtn);
+    body.appendChild(closeBtn);
 
+    frame.appendChild(body);
+
+    var frameBottom = document.createElement("pre");
+    frameBottom.className = "save-load-frame-edge";
+    frameBottom.textContent = buildBoxFrameLine(
+      "bottom",
+      SAVE_LOAD_FRAME_WIDTH,
+    );
+    frame.appendChild(frameBottom);
+
+    modal.appendChild(frame);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
   }
