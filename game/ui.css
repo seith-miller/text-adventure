@@ -850,3 +850,123 @@ cur    {
 ::-webkit-scrollbar-track { background: var(--screen-bg); }
 ::-webkit-scrollbar-thumb { background: var(--phosphor-dim); border-radius: 3px; }
 * { scrollbar-width: thin; scrollbar-color: var(--phosphor-dim) var(--screen-bg); }
+
+/* ── Reduced motion (#144) ──────────────────────────────────────────────
+   Resolved by reduced-motion.js — either OS prefers-reduced-motion is true
+   under mode=auto, or mode=on overrides. When the class is on <html>:
+   - cursor stops blinking (rendered statically)
+   - the sweeping scanline is hidden (the JS pump also skips itself)
+   - button/control hover transitions snap instead of fading
+   The static scanline overlay (decorative, not motion) is preserved. */
+
+html.reduced-motion cur {
+  animation: none;
+  opacity: 1;
+}
+
+html.reduced-motion #scan-line {
+  display: none;
+}
+
+html.reduced-motion .menu-btn,
+html.reduced-motion #ingame-menu-btn,
+html.reduced-motion #ai-onboarding-dismiss,
+html.reduced-motion .save-slot-btn,
+html.reduced-motion #save-load-close,
+html.reduced-motion #settings-close,
+html.reduced-motion .settings-value {
+  transition: none;
+}
+
+/* Honour the OS preference at first paint, before reduced-motion.js has
+   had a chance to read it. Keeps the experience consistent even if JS
+   is slow to evaluate. */
+@media (prefers-reduced-motion: reduce) {
+  cur { animation: none; opacity: 1; }
+  #scan-line { display: none; }
+  .menu-btn,
+  #ingame-menu-btn,
+  #ai-onboarding-dismiss,
+  .save-slot-btn,
+  #save-load-close { transition: none; }
+}
+
+/* ── Settings modal (#144) ──────────────────────────────────────────── */
+
+#settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#settings-modal {
+  background: var(--bg-panel, #0a1408);
+  border: 2px solid var(--phosphor-dim, #3a7a3a);
+  padding: 1.6em 2em;
+  min-width: 360px;
+  max-width: 480px;
+  font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+  color: var(--phosphor, #6cf06b);
+}
+
+#settings-modal h2 {
+  margin: 0 0 1.2em;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--phosphor-bright, #b6ffb5);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1em;
+  font-size: 12px;
+}
+
+.settings-label {
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.settings-value {
+  background: transparent;
+  color: var(--phosphor, #6cf06b);
+  border: 1px solid var(--phosphor-dim, #3a7a3a);
+  padding: 0.4em 0.9em;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.settings-value:hover {
+  border-color: var(--phosphor-bright, #b6ffb5);
+  color: var(--phosphor-bright, #b6ffb5);
+}
+
+#settings-close {
+  display: block;
+  margin: 1.4em auto 0;
+  background: transparent;
+  color: var(--phosphor, #6cf06b);
+  border: 1px solid var(--phosphor-dim, #3a7a3a);
+  padding: 0.5em 2em;
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+#settings-close:hover {
+  border-color: var(--phosphor-bright, #b6ffb5);
+  color: var(--phosphor-bright, #b6ffb5);
+}
