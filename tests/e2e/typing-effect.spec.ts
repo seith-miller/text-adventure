@@ -126,16 +126,18 @@ test.describe("typing-effect — turned on", () => {
         "Slowly the words appear in the dim phosphor glow above the bunk.",
       ),
     );
-    // Right after kickoff, the full payload should NOT yet be on screen.
+    // Right after kickoff, the tail of the payload is NOT yet on screen.
+    // "above the bunk." sits on the second word-wrapped line, so it can
+    // only render after the first 47-char line finishes typing (≈1.5 s
+    // at 30 cps). A round-trip evaluate finishes well before that.
     const earlyDisplay = (await page.locator("#display").textContent()) ?? "";
-    expect(earlyDisplay).not.toContain(
-      "the dim phosphor glow above the bunk.",
-    );
-    // After the animation completes, the full text must be visible.
+    expect(earlyDisplay).not.toContain("above the bunk.");
+    // After the animation completes, the tail is visible on its own line.
     await page.waitForFunction(
       () =>
-        ((document.querySelector("#display") as HTMLElement)?.textContent ?? "")
-          .indexOf("the dim phosphor glow above the bunk.") !== -1,
+        (
+          (document.querySelector("#display") as HTMLElement)?.textContent ?? ""
+        ).indexOf("above the bunk.") !== -1,
       undefined,
       { timeout: 5000 },
     );
@@ -157,7 +159,7 @@ test.describe("typing-effect — turned on", () => {
     );
     await page.evaluate(() => (window as any).MirsEnd.skipTyping());
     const display = (await page.locator("#display").textContent()) ?? "";
-    expect(display).toContain("would otherwise take many seconds");
+    expect(display).toContain("many seconds to fully render.");
   });
 
   test("pressing a key during animation triggers skip", async ({ page }) => {
@@ -179,7 +181,7 @@ test.describe("typing-effect — turned on", () => {
     );
     await page.keyboard.press("Space");
     const display = (await page.locator("#display").textContent()) ?? "";
-    expect(display).toContain("would otherwise take many seconds");
+    expect(display).toContain("many seconds to fully render.");
   });
 
   test("queued message drains after the active one is skipped", async ({
