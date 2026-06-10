@@ -82,6 +82,7 @@ E5 dispatching is an action applying to nothing.
 
 Carry out e5 dispatching:
 	if oxygen-level <= 0:
+		emit-mirsend;
 		say "[bracket]TODO prose: #60 — e5-suffocate[close bracket]";
 		end the story saying "You have suffocated".
 
@@ -90,7 +91,13 @@ Chapter 6 - UI Status Bridge
 [Emit a machine-readable status line every turn so the Web UI can mirror
  oxygen-level / morale-level / inventory into window.MirsEnd.setState.
  ui.js detects the [MIRSEND ...] prefix, parses it, and suppresses it
- from the visible story panel.]
+ from the visible story panel.
+
+ Trailing pwr/comm-tx/dock flags drive the six system-status lamps in
+ the sidebar (#173). Each is "0" or "1" derived from an existing truth
+ state; ui.js maps them through computeLamps() to a color tag per the
+ RYG severity scheme. ui.js falls back to canonical-opening colors
+ when the trailing block is absent.]
 
 To say mirsend-inventory-list:
 	let counter be 0;
@@ -100,8 +107,21 @@ To say mirsend-inventory-list:
 		say "[printed name of item]";
 		increment counter.
 
+To say mirsend-bool (T - a truth state):
+	if T is true:
+		say "1";
+	otherwise:
+		say "0".
+
+[Emit one MIRSEND status line. Factored out so it can also fire from
+ the E5 death dispatcher — otherwise the player's last sidebar reading
+ before suffocation shows o2=1 (the prior turn's MIRSEND) because death
+ dispatches before the next Every-turn MIRSEND can emit o2=0.]
+To emit-mirsend:
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] comm-tx=[mirsend-bool responded-to-americans] dock=[if chose-descent is false]1[otherwise]0[end if][close bracket][line break]".
+
 Every turn:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path][close bracket][line break]".
+	emit-mirsend.
 
 Chapter 7 - Perception Markers
 
@@ -336,10 +356,15 @@ Check opening the pressure valve:
 		say "The valve is already open. Pressure equalized some time ago." instead.
 
 Carry out opening the pressure valve:
-	now corridor-pressurized is true.
+	now corridor-pressurized is true;
+	[Equalization vents real reserve into the corridor's dead volume.
+	 Randomized so a repeated playthrough isn't bookkeepable. The o2
+	 reading on the sidebar will reflect the new value on the next
+	 MIRSEND emit.]
+	decrease oxygen-level by a random number between 5 and 10.
 
 Report opening the pressure valve:
-	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]You have just shared half your air with a vacuum. It had to be done."
+	say "You pull the lever.[paragraph break]A long wet hiss. Air rushes past you. The stale warm of your module bleeding through the valve into the cold beyond. Your ears pop. Objects not tethered down drift toward the hatch. The photograph. The pen. A drop of condensation. Pulled by the last of the pressure differential.[paragraph break]The hiss fades. The needle on the gauge swings up from zero and stops somewhere low. Sufficient. Your eardrums settle. The hatch releases with a soft mechanical clunk.[paragraph break]Your reserves are noticeably lighter. The vacuum took its portion. It had to be done."
 
 [The custom Understand patterns above match only the article-less forms
  ("pull valve", "turn lever"). When the player adds "the" — "pull the
@@ -526,7 +551,7 @@ Instead of taking the mechanical watch:
 
 Chapter 5 - Command Module
 
-The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. On the port wall, ARGON-87's monitor. Dark for now. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
+The Command Module is north of the Main Corridor. "The command module. Cramped. Packed with control panels.[if power-is-restored is true] A single console flickers with dim partial life. The isolated power bus has been restored.[otherwise] Every panel is dead.[end if] On the zenith wall, a small armored safe. КАТАЛОГ ВМФ-07. On the nadir wall, the emergency toolkit. On the port wall, ARGON-87[apostrophe]s monitor. Dark for now. Forward, external observation ports and dead navigational radar displays. The main corridor is aft (south). The Soyuz ferry is docked to starboard (east)."
 
 Power-is-restored is a truth state that varies. Power-is-restored is false.
 Armament-bay-unlocked is a truth state that varies. Armament-bay-unlocked is false.
@@ -786,7 +811,7 @@ Instead of examining west when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
 		say "It is too dark to port to see.";
 	otherwise:
-		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if][paragraph break]Beside the comms console, ARGON-87's monitor. A flat dark panel. Above it a small brass plate. АРГОН-87. The station computer. Dark tonight."
+		say "Port. The long-range communications array. The patched cables that feed it. Its dedicated console.[if power-is-restored is false] No power to either. A dark terminal waiting.[otherwise] Patched into the restored bus now. It crackles faintly.[end if][paragraph break]Beside the comms console, ARGON-87[apostrophe]s monitor. A flat dark panel. Above it a small brass plate. АРГОН-87. The station computer. Dark tonight."
 
 Instead of examining east when the location is the Command Module:
 	if the chemical flashlight is not lit and power-is-restored is false:
@@ -1170,7 +1195,7 @@ Check preparing selengrad:
 		say "The fuel decision has been made. There is nothing left to do but wait." instead.
 
 Report preparing selengrad:
-	say "[bracket]TODO prose: #55[close bracket][paragraph break]Chen's voice crackles through the static. The Selengrad plan requires a decision about fuel allocation. You must choose.[paragraph break]You can SPLIT FUEL between the two stations for a shared burn, or GIVE FUEL — sacrifice Mir-3's reserves entirely so Freedom Station can make the transit alone."
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]Chen's voice crackles through the static. The Selengrad plan requires a decision about fuel allocation. You must choose.[paragraph break]You can SPLIT FUEL between the two stations for a shared burn, or GIVE FUEL — sacrifice Mir-3[apostrophe]s reserves entirely so Freedom Station can make the transit alone."
 
 Chapter 3 - D1 Sub-Choice Split Fuel
 
@@ -1211,7 +1236,7 @@ Carry out giving fuel:
 	now fuel-choice-made is true.
 
 Report giving fuel:
-	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. All of Mir-3's fuel. Every drop. Freedom Station will make Selengrad alone. You will remain in orbit. You know what that means."
+	say "[bracket]TODO prose: #55[close bracket][paragraph break]You radio Chen. All of Mir-3[apostrophe]s fuel. Every drop. Freedom Station will make Selengrad alone. You will remain in orbit. You know what that means."
 
 Chapter 5 - E1 / E2 Dispatch
 
@@ -1222,7 +1247,7 @@ Every turn when fuel-choice-made is true:
 			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]The burn sequence completes. Both stations arc toward the Moon. Selengrad's beacon answers. The caretaker systems wake. Against all odds, you are going to live.[paragraph break][italic type]End of the Selengrad arc — E1: Arrival.[roman type]";
 			end the story saying "You have reached Selengrad";
 		if chose-martyr is true:
-			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]Freedom Station's engines fire on Mir-3's fuel. You watch from the cupola as Chen's station pulls away toward the Moon. Your orbit is stable. For now. The oxygen will not last. But they will make it.[paragraph break][italic type]End of the Selengrad arc — E2: Martyr.[roman type]";
+			say "[line break][bracket]TODO prose: #55[close bracket][paragraph break]Freedom Station's engines fire on Mir-3[apostrophe]s fuel. You watch from the cupola as Chen's station pulls away toward the Moon. Your orbit is stable. For now. The oxygen will not last. But they will make it.[paragraph break][italic type]End of the Selengrad arc — E2: Martyr.[roman type]";
 			end the story saying "You gave them the Moon".
 
 Part 8C - De-orbiting Gate Stub
@@ -1441,7 +1466,7 @@ Part 9D - Argon-87 awareness cues (prose)
  in his voice. The corridor line is consistent with the dead-bus
  state because it is framed as stored capacitance, not live runtime.]
 
-The argon monitor is scenery in the Command Module. Understand "monitor" or "screen" or "argon monitor" or "argon screen" or "port monitor" or "brass plate" as the argon monitor. The printed name of the argon monitor is "ARGON-87's monitor". The description of the argon monitor is "A flat-panel monitor at the port wall. Above it a small brass plate stamped АРГОН-87 in the formal Cyrillic of an older era of Soviet hardware. The console where ARGON-87 speaks to the watch. Logs the burns. Hands back the short answers a watchstander asks at three in the morning.[if power-is-restored is false] The screen is dark. The bus that feeds him is one of the ones the EMP took.[otherwise] The screen carries a single patient cursor. The bus is alive again.[end if]"
+The argon monitor is scenery in the Command Module. Understand "monitor" or "screen" or "argon monitor" or "argon screen" or "port monitor" or "brass plate" as the argon monitor. The printed name of the argon monitor is "ARGON-87[apostrophe]s monitor". The description of the argon monitor is "A flat-panel monitor at the port wall. Above it a small brass plate stamped АРГОН-87 in the formal Cyrillic of an older era of Soviet hardware. The console where ARGON-87 speaks to the watch. Logs the burns. Hands back the short answers a watchstander asks at three in the morning.[if power-is-restored is false] The screen is dark. The bus that feeds him is one of the ones the EMP took.[otherwise] The screen carries a single patient cursor. The bus is alive again.[end if]"
 
 Instead of taking the argon monitor:
 	say "The monitor is bolted into the port wall. It is not going anywhere."

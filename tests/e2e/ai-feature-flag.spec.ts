@@ -7,7 +7,8 @@ import {
   waitForStoryText,
 } from "./helpers";
 
-const _CANNED_LINE = "The AI channel is dead. Argon-87\u2019s console is dark.";
+const _CANNED_LINE =
+  "You key the channel for Argon-87. No response. The runtime is not attached this watch.";
 const _AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
 
 test.describe("ai-feature-flag — flag OFF (default)", () => {
@@ -28,24 +29,24 @@ test.describe("ai-feature-flag — flag OFF (default)", () => {
     expect(aiEnabled).toBe(false);
 
     await sendCommand(page, "talk to argon");
-    await waitForStoryText(page, "AI channel is dead");
+    await waitForStoryText(page, "runtime is not attached");
 
     const text = await storyText(page);
-    expect(text).toContain("AI channel is dead");
+    expect(text).toContain("runtime is not attached");
   });
 
   test("SPEAK TO ARGON also prints the canned line", async ({ page }) => {
     await startNewGame(page);
 
     await sendCommand(page, "speak to argon");
-    await waitForStoryText(page, "AI channel is dead");
+    await waitForStoryText(page, "runtime is not attached");
   });
 
   test("ASK ARGON prints the canned line", async ({ page }) => {
     await startNewGame(page);
 
     await sendCommand(page, "ask argon");
-    await waitForStoryText(page, "AI channel is dead");
+    await waitForStoryText(page, "runtime is not attached");
   });
 
   test("no AI online badge is visible when flag is off", async ({ page }) => {
@@ -157,7 +158,7 @@ test.describe("ai-feature-flag — flag ON", () => {
 
     await sendCommand(page, "talk to argon");
     // Proxy is not running in test environment — should fall back
-    await waitForStoryText(page, "AI channel is dead");
+    await waitForStoryText(page, "runtime is not attached");
 
     // Verify the outage was logged
     expect(warnings.some((w) => w.includes("proxy unreachable"))).toBe(true);

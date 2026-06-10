@@ -22,9 +22,13 @@ test.describe("e5-timer-guard", () => {
     await clearStorage(page);
   });
 
-  test("passive playthrough ends with E5 placeholder when oxygen runs out", {
-    timeout: 180_000,
-  }, async ({ page }) => {
+  test("passive playthrough ends with E5 placeholder when oxygen runs out", async ({
+    page,
+  }) => {
+    // 110 turns × 100ms wait + sendCommand overhead lands around 30-40s
+    // on CI. Playwright silently ignores `timeout` in the test-details
+    // arg; setTimeout in the body is the documented per-test override.
+    test.setTimeout(180_000);
     await startNewGame(page);
 
     // The player does nothing meaningful — just waits until O2 hits 0.
@@ -42,9 +46,10 @@ test.describe("e5-timer-guard", () => {
     expect(text).toMatch(/suffocated/i);
   });
 
-  test("player who transmits does NOT suffocate — climax guard stops O2 drain", {
-    timeout: 120_000,
-  }, async ({ page }) => {
+  test("player who transmits does NOT suffocate — climax guard stops O2 drain", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
     await startNewGame(page);
 
     // Full walkthrough to TRANSMIT (C1 climax commitment)

@@ -23,7 +23,7 @@
      consistent "AI is unavailable" UX. The differentiator for developers
      is the console.warn below. */
   const FALLBACK_MESSAGE =
-    "The AI channel is dead. Argon-87's console is dark.";
+    "You key the channel for Argon-87. No response. The runtime is not attached this watch.";
 
   /* ── AI-PROMPT tag pattern ──
      Format: [AI-PROMPT: topic=<noun> text=<verbatim player text>]
