@@ -128,6 +128,11 @@
   --lamp-green: #4dff60;
   --lamp-white: #f0f5e8;
   --lamp-off: #1a2418;
+  /* Argon-87 AI voice — synthetic cyan distinct from phosphor green */
+  --argon-cyan: #5cf0f0;
+  --argon-cyan-dim: #2a8a8a;
+  --argon-glow: rgba(92, 240, 240, 0.35);
+  --argon-border: rgba(92, 240, 240, 0.5);
   /* Legacy aliases (used by title screen, modals, tests) */
   --border-color: #1e3a5f;
   --border-glow: #2a5a8f;
@@ -353,17 +358,21 @@ cur    {
 
 /* ── Station AI (Argon-87) speech — rendered in story-output ── */
 #story-output .argon-speech {
-  margin: 0.5em 0 0.5em 1.5em;
-  padding: 0.3em 0;
+  margin: 0.5em 0 0.5em 0;
+  padding: 0.3em 0 0.3em 1em;
   font-style: italic;
-  color: #c4a35a;
+  color: var(--argon-cyan);
   white-space: pre-wrap;
+  border-left: 2px solid var(--argon-border);
+  text-shadow: 0 0 4px var(--argon-glow), 0 0 1px var(--argon-glow);
 }
 
 #story-output .argon-label {
   font-weight: bold;
   font-style: normal;
-  color: #d4b36a;
+  color: var(--argon-cyan);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Story text classes (used in hidden #story-output for session recording) */
