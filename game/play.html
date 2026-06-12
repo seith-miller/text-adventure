@@ -230,8 +230,12 @@
 <script src="station-ai-runtime.js"></script>
 
 <!-- Reduced-motion a11y (#144) — must load before ui.js so initScanline
-     can read MirsEndMotion.isReduced() when ui.js starts the sweep. -->
+     can read MirsEndMotion.isReduced() when ui.js starts the sweep.
+     Also referenced by cutscene.js below to decide hard cut vs wipe. -->
 <script src="reduced-motion.js"></script>
+
+<!-- Cutscene transitions (#138) — must load before ui.js so setCurrentRoom can call MirsEndCutscene.transitionTo -->
+<script src="cutscene.js"></script>
 
 <!-- UI Shell — must load after interpreter scripts -->
 <script src="ui.js"></script>
