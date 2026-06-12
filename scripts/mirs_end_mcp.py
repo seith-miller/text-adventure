@@ -207,6 +207,13 @@ class PlaywrightBackend:
         return await page.locator("#story-output").text_content() or ""
 
     async def _read_state(self, page: Any) -> dict:
+        # Read the volatile fields from the page (ui.js getState). Turn and
+        # score are NOT visible there: ui.js's state.commandHistory only
+        # tracks keystroke-driven input, but MCP sends commands through
+        # GlkOte's LineInput, bypassing the keystroke handler. We track
+        # turn count in Python (session.turn_count, line ~157) and read
+        # score from the new MirsEnd.getScore hook which parses it out of
+        # the MIRSEND status line.
         state = await page.evaluate("""() => {
             const m = window.MirsEnd;
             if (!m) return {};
@@ -216,11 +223,15 @@ class PlaywrightBackend:
                 o2: s.o2 ?? 100,
                 morale: s.morale ?? 100,
                 inventory: s.inventory || [],
-                score: 0,
-                turn: (s.commandHistory || []).length
+                score: typeof m.getScore === 'function' ? m.getScore() : 0,
             };
         }""")
         return state or {}
+
+    async def _state_with_turn(self, session: Session) -> dict:
+        """Merge the page-side state with Python-tracked turn count."""
+        page_state = session._last_state or {}
+        return {**page_state, "turn": session.turn_count}
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +287,7 @@ async def mirs_end_start_game() -> dict:
     return {
         "session_id": session.session_id,
         "opening_text": session.transcript[0] if session.transcript else "",
-        "state": session._last_state,
+        "state": await backend._state_with_turn(session),
     }
 
 
@@ -296,7 +307,7 @@ async def mirs_end_send_command(session_id: str, command: str) -> dict:
     response_text = await backend.send_command(session, command)
     return {
         "response_text": response_text,
-        "state": session._last_state,
+        "state": await backend._state_with_turn(session),
     }
 
 
@@ -355,7 +366,7 @@ async def mirs_end_restart(session_id: str) -> dict:
     opening = await backend.restart(session)
     return {
         "opening_text": opening,
-        "state": session._last_state,
+        "state": await backend._state_with_turn(session),
     }
 
 

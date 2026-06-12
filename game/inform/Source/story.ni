@@ -118,7 +118,7 @@ To say mirsend-bool (T - a truth state):
  before suffocation shows o2=1 (the prior turn's MIRSEND) because death
  dispatches before the next Every-turn MIRSEND can emit o2=0.]
 To emit-mirsend:
-	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] comm-tx=[mirsend-bool responded-to-americans] dock=[if chose-descent is false]1[otherwise]0[end if][close bracket][line break]".
+	say "[line break][bracket]MIRSEND o2=[oxygen-level] morale=[morale-level] inv=[mirsend-inventory-list] b1=[b1-beats-completed] b2=[b2-beats-completed] act2=[dominant-act2-path] pwr=[mirsend-bool power-is-restored] comm-tx=[mirsend-bool responded-to-americans] dock=[if chose-descent is false]1[otherwise]0[end if] score=[score][close bracket][line break]".
 
 Every turn:
 	emit-mirsend.

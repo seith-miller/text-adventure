@@ -1093,8 +1093,16 @@
     state.morale = morale;
     state.inventory = inventory;
     parseLampInputs(trailing);
+    parseScore(trailing);
     updateStatus();
     return true;
+  }
+
+  // Extract score=N from the MIRSEND trailing block (#216 finding 11).
+  // The MCP server reads state.score via window.MirsEnd.getScore.
+  function parseScore(trailing) {
+    var m = /score=(-?\d+)/.exec(trailing);
+    if (m) state.score = parseInt(m[1], 10);
   }
 
   // Extract boolean lamp inputs (pwr/comm-tx/dock) from the MIRSEND trailing
@@ -2075,6 +2083,7 @@
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
     getLamps: () => computeLamps(),
+    getScore: () => state.score || 0,
     getTypingConfig: getTypingConfig,
     setTypingConfig: setTypingConfig,
     skipTyping: skipTyping,
