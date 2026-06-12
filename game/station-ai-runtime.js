@@ -184,7 +184,7 @@
 
     const label = document.createElement("span");
     label.className = "argon-label";
-    label.textContent = "ARGON-87: ";
+    label.textContent = "\u0410\u0420\u0413\u041e\u041d-87 :: ";
 
     const content = document.createElement("span");
     content.className = "argon-text";

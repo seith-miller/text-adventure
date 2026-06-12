@@ -73,7 +73,9 @@ test.describe("station-ai-runtime", () => {
     // Verify the response appeared with correct styling
     const speech = page.locator("#story-output .argon-speech");
     await expect(speech).toBeVisible();
-    await expect(speech.locator(".argon-label")).toHaveText("ARGON-87: ");
+    await expect(speech.locator(".argon-label")).toHaveText(
+      "\u0410\u0420\u0413\u041e\u041d-87 :: ",
+    );
     await expect(speech.locator(".argon-text")).toHaveText(
       "Systems nominal, Cosmonaut.",
     );
