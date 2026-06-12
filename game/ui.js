@@ -405,6 +405,15 @@
       return a + Math.random() * (b - a);
     }
     function sweep() {
+      // Reduced-motion gate (#144). Re-checked per sweep so a live mode
+      // change in the Settings dialog snaps the effect off mid-loop
+      // rather than requiring a page reload. CSS also hides #scan-line
+      // under html.reduced-motion, so this is belt-and-suspenders.
+      if (window.MirsEndMotion?.isReduced?.()) {
+        bar.style.opacity = "0";
+        setTimeout(sweep, 2000);
+        return;
+      }
       var h = screen.clientHeight;
       var dur = rand(900, 4200);
       var op = rand(0.35, 1.0);
