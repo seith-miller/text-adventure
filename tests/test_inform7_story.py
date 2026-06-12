@@ -363,3 +363,50 @@ class TestPressureValveCost:
 
     def test_replacement_line_communicates_loss(self, story_source):
         assert "Your reserves are noticeably lighter" in story_source
+
+
+# ── Player vocabulary (#216) ──────────────────────────────────────────
+
+
+class TestPlayerVocabulary:
+    """Blind playtest found that new players use a much wider verb set
+    than the canon accepts. These tests lock in the synonyms + helpful
+    refusals that turn parser dead-ends into actionable hints."""
+
+    def test_yelling_action_exists(self, story_source):
+        assert "Yelling is an action" in story_source
+
+    def test_yell_scream_holler_routed_to_yelling(self, story_source):
+        assert 'Understand "yell" as yelling' in story_source
+        assert 'Understand "scream" as yelling' in story_source
+
+    def test_grab_routes_to_taking(self, story_source):
+        assert 'Understand "grab [things]" as taking' in story_source
+
+    def test_repair_action_routes_helpfully(self, story_source):
+        assert "Repairing is an action" in story_source
+        assert 'Understand "repair [something]" as repairing' in story_source
+        assert 'Understand "fix [something]" as repairing' in story_source
+
+    def test_probe_measure_routes_to_probing(self, story_source):
+        assert "Probing is an action" in story_source
+        assert 'Understand "measure [something]" as probing' in story_source
+
+    def test_use_x_on_y_routes_to_mistake(self, story_source):
+        assert 'Understand "use [something] on [something]" as a mistake' in story_source
+
+    def test_swap_canister_routes_to_helpful_refusal(self, story_source):
+        assert "Swapping out is an action" in story_source
+        assert 'Understand "replace [something]" as swapping out' in story_source
+
+    def test_read_placard_routes_to_examine(self, story_source):
+        assert "Instead of reading the pressure valve:" in story_source
+
+    def test_enter_NNNN_routes_to_mistake_hint(self, story_source):
+        assert 'Understand "enter [number]" as a mistake' in story_source
+
+    def test_activate_routes_to_switching_on(self, story_source):
+        assert 'Understand "activate [something]" as switching on' in story_source
+
+    def test_speaker_added_to_maintenance_panel(self, story_source):
+        assert 'Understand "speaker" as the maintenance panel' in story_source

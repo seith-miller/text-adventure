@@ -1510,6 +1510,143 @@ After transmitting for the first time:
 
 The maximum score is 14.
 
+Part 10B - Player Vocabulary (#216)
+
+[Blind playtest #216 found that new players try a much wider set of
+ English verbs than the parser accepts. Most refusals here were
+ surfacing during the canonical Act 1 arc when players had the right
+ idea ("repair the panel", "fix the breakers", "use the multimeter on
+ the console") but the wrong wording. Each Understand line below maps
+ a player-natural verb to an existing recognised action, or installs a
+ helpful refusal where the action genuinely doesn't exist.]
+
+Chapter 1 - Synonyms for existing actions
+
+Understand "grab [things]" as taking.
+Understand "pick up [things]" as taking.
+
+[Repair / fix / mend point at the maintenance panel, the console, the
+ generator, the scrubbers — any of which the player tries to repair
+ with the multimeter. None of these are repair-via-multimeter actions
+ (the only "fix" in the canon is RESTORE POWER), so we route generic
+ repair attempts to a hint instead of silent refusal.]
+Repairing is an action applying to one thing.
+Understand "repair [something]" as repairing.
+Understand "fix [something]" as repairing.
+Understand "mend [something]" as repairing.
+
+Carry out repairing:
+	if the noun is the status console or the noun is the communications array or the noun is the control panels or the noun is the maintenance panel:
+		say "You poke at it. You are not an engineer. Yevgenia's notebook described a manual hard-reset sequence — that is the path. Try RESTORE POWER in the Command Module once you have the multimeter and the notebook." instead;
+	if the noun is the O2 generator or the noun is the CO2 scrubbers:
+		say "Life support cannot be repaired piecemeal. The whole bus needs power. RESTORE POWER in the Command Module first." instead;
+	say "It is not something you can repair from here.".
+
+[Yell / scream / holler — players reach for these when the prose is
+ dire. There is no one to yell at, but the action shouldn't refuse
+ with "not a verb." Custom action gives the cosmonaut's own voice
+ back at them.]
+Yelling is an action applying to nothing.
+Understand "yell" as yelling.
+Understand "scream" as yelling.
+Understand "holler" as yelling.
+Understand "shout" as yelling.
+
+Carry out yelling:
+	say "Your voice carries into a station that is not listening. Nothing answers. You go quiet again.".
+
+[Probe / measure with the multimeter. There is no test-via-multimeter
+ action because RESTORE POWER is a single bundled command in the canon,
+ but the player who tries USE MULTIMETER ON X / MEASURE X / PROBE X
+ should get a directional hint rather than a generic parser refusal.]
+Probing is an action applying to one thing.
+Understand "probe [something]" as probing.
+Understand "measure [something]" as probing.
+Understand "meter [something]" as probing.
+
+Carry out probing:
+	if the player does not carry the multimeter:
+		say "You do not have a multimeter." instead;
+	if the player is in the Command Module:
+		say "The multimeter is the right tool. The sequence is in Yevgenia's notebook. Try RESTORE POWER." instead;
+	say "Not here. The multimeter is for diagnosing the dead bus in the Command Module." instead.
+
+[Use X on Y — the most common English construction the parser refuses.
+ Route it through a "mistake" that points the player at the canonical
+ verbs (no two-thing action is needed; the player just needs a hint).]
+Understand "use [something] on [something]" as a mistake ("USE X ON Y is not a sentence the parser takes. The bundled diagnose-and-reset action is RESTORE POWER (in the Command Module, with the multimeter and Yevgenia's notebook). EXAMINE the multimeter for what it can do alone.").
+Understand "use [something] with [something]" as a mistake ("Try RESTORE POWER (in the Command Module, with the multimeter and Yevgenia's notebook).").
+
+[Replace / swap / change canister — the LiOH scrubber puzzle. There is
+ no canister-swap action in the canon (life support comes back via
+ RESTORE POWER), so refuse helpfully via a single-noun action.]
+Swapping out is an action applying to one thing.
+Understand "replace [something]" as swapping out.
+Understand "swap [something]" as swapping out.
+Understand "change [something]" as swapping out.
+Understand "install [something]" as swapping out.
+Understand "insert [something]" as swapping out.
+
+Carry out swapping out:
+	say "There are no spare parts aboard for that. RESTORE POWER in the Command Module first; that is what brings active life support back online.".
+
+[Maintenance-panel speaker — the disembodied voice from Argon-87 in
+ the Main Corridor. TALK TO SPEAKER / ANSWER VOICE / SAY HELLO routed
+ to Yevgenia's body in the playtest. Give them all a proper response
+ about Argon's residual capacitance.]
+Understand "speaker" as the maintenance panel.
+Understand "voice" as the maintenance panel.
+
+Instead of answering the maintenance panel that:
+	say "[italic type]The speaker stays dead. Argon-87's bus is gone with everything else; the line you heard came from stored capacitance and nothing more.[roman type]".
+
+Instead of telling the maintenance panel about:
+	say "[italic type]The speaker stays dead. Argon-87's bus is gone with everything else; the line you heard came from stored capacitance and nothing more.[roman type]".
+
+Instead of asking the maintenance panel about:
+	say "[italic type]The speaker stays dead. Argon-87's bus is gone with everything else; the line you heard came from stored capacitance and nothing more.[roman type]".
+
+[TALK TO routes through the standard answering action; that needs an addressee. Force the player's intent to land on the speaker not on a body.]
+Understand "talk to speaker" as a mistake ("You speak toward the speaker. The bus that feeds Argon-87's voice is dead; what you heard was stored capacitance. There is no live channel.").
+Understand "talk to voice" as a mistake ("You speak toward the speaker. The bus that feeds Argon-87's voice is dead; what you heard was stored capacitance. There is no live channel.").
+Understand "answer voice" as a mistake ("You answer the speaker. There is no live channel. Argon-87's bus is one of the ones the EMP took.").
+Understand "answer speaker" as a mistake ("You answer the speaker. There is no live channel. Argon-87's bus is one of the ones the EMP took.").
+Understand "say hello" as a mistake ("Your voice carries into the dead panel. Argon-87's bus is one of the ones the EMP took. The capacitor burst was a one-shot.").
+
+Chapter 2 - Helpful refusals where the action doesn't exist
+
+[READ PLACARD on the equalization placard was returning an empty line
+ in the playthrough. The placard reads under EXAMINE today; route READ
+ to the same description.]
+Instead of reading the pressure valve:
+	try examining the pressure valve.
+
+[ENTER NNNN as a way to type the safe code. The canonical verb is the
+ typing action on the keypad, but ENTER as a bare command was producing
+ empty output. Route it to a hint about the actual verb.]
+Understand "enter [number]" as a mistake ("Try TYPE NNNN ON SAFE — where NNNN is the 4-digit code (the keypad lives on the classified safe in the Command Module).").
+Understand "type [number]" as a mistake ("Try TYPE NNNN ON SAFE — the 4-digit keypad lives on the classified safe in the Command Module.").
+Understand "punch [number]" as a mistake ("Try TYPE NNNN ON SAFE — the 4-digit keypad lives on the classified safe in the Command Module.").
+Understand "enter code" as a mistake ("The safe takes a 4-digit number. Try TYPE NNNN ON SAFE.").
+Understand "type code" as a mistake ("The safe takes a 4-digit number. Try TYPE NNNN ON SAFE.").
+Understand "punch code" as a mistake ("The safe takes a 4-digit number. Try TYPE NNNN ON SAFE.").
+
+[ACTIVATE SCRUBBERS / TURN ON GENERATOR / START GENERATOR — all power
+ dependent. Route to the standard switching-on action so the player's
+ intent at least lands on the same refusal path the canon uses.]
+Understand "activate [something]" as switching on.
+Understand "boot [something]" as switching on.
+Understand "start [something]" as switching on.
+Understand "power on [something]" as switching on.
+
+Chapter 3 - HELP polish
+
+[The HELP text didn't list USE, but USE X ON Y was the most common
+ command the player tried. The new repairing/probing routing above
+ handles the request; this note in HELP acknowledges the syntax.]
+[No edit needed here — the HELP rule already lives in story.ni
+ elsewhere. The synonyms above let USE/MEASURE/PROBE just work.]
+
 Part 11 - Testing Support
 
 Chapter 1 - Test Scripts
