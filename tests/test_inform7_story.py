@@ -363,3 +363,86 @@ class TestPressureValveCost:
 
     def test_replacement_line_communicates_loss(self, story_source):
         assert "Your reserves are noticeably lighter" in story_source
+
+
+# ── Player vocabulary (#216) ──────────────────────────────────────────
+
+
+class TestPlayerVocabulary:
+    """Blind playtest found that new players use a much wider verb set
+    than the canon accepts. These tests lock in the synonyms + helpful
+    refusals that turn parser dead-ends into actionable hints."""
+
+    def test_yelling_action_exists(self, story_source):
+        assert "Yelling is an action" in story_source
+
+    def test_yell_scream_holler_routed_to_yelling(self, story_source):
+        assert 'Understand "yell" as yelling' in story_source
+        assert 'Understand "scream" as yelling' in story_source
+
+    def test_grab_routes_to_taking(self, story_source):
+        assert 'Understand "grab [things]" as taking' in story_source
+
+    def test_repair_action_routes_helpfully(self, story_source):
+        assert "Repairing is an action" in story_source
+        assert 'Understand "repair [something]" as repairing' in story_source
+        assert 'Understand "fix [something]" as repairing' in story_source
+
+    def test_probe_measure_routes_to_probing(self, story_source):
+        assert "Probing is an action" in story_source
+        assert 'Understand "measure [something]" as probing' in story_source
+
+    def test_use_x_on_y_routes_to_mistake(self, story_source):
+        assert 'Understand "use [something] on [something]" as a mistake' in story_source
+
+    def test_swap_canister_routes_to_helpful_refusal(self, story_source):
+        assert "Swapping out is an action" in story_source
+        assert 'Understand "replace [something]" as swapping out' in story_source
+
+    def test_read_placard_routes_to_examine(self, story_source):
+        assert "Instead of reading the pressure valve:" in story_source
+
+    def test_enter_NNNN_routes_to_mistake_hint(self, story_source):
+        assert 'Understand "enter [number]" as a mistake' in story_source
+
+    def test_activate_routes_to_switching_on(self, story_source):
+        assert 'Understand "activate [something]" as switching on' in story_source
+
+    def test_speaker_added_to_maintenance_panel(self, story_source):
+        assert 'Understand "speaker" as the maintenance panel' in story_source
+
+    def test_talk_to_speaker_has_custom_action(self, story_source):
+        # Standard library wants a person for talk-to; the custom
+        # action lets the player's intent land on the dead speaker
+        # with the right capacitor-burst explanation.
+        assert "Talking to speaker is an action" in story_source
+        assert (
+            'Understand "talk to speaker"' in story_source
+            or 'Understand "talk to speaker" or "talk to voice"' in story_source
+        )
+
+    def test_pull_lever_placard_carries_an_instruction(self, story_source):
+        # The placard prose used to read as "do not pull this", which
+        # made cautious players back off. A trailing line names PULL
+        # explicitly so the path forward is visible.
+        assert "PULL the lever to equalize" in story_source
+
+    def test_notebook_discoverability_cue_fires_in_main_corridor(
+        self, story_source
+    ):
+        # Blind playtest missed Yevgenia's notebook because finding it
+        # required EXAMINE YEVGENIA. The Main Corridor cue surfaces the
+        # notebook as a takeable object on a later turn.
+        assert "Notebook-cue-shown is a truth state" in story_source
+        assert "Yevgenia[apostrophe]s flight notebook is still clipped" in story_source or (
+            "Yevgenia's flight notebook is still clipped" in story_source
+        )
+
+    def test_crew_quarters_personal_effects_helper_conditional(
+        self, story_source
+    ):
+        # The Crew Quarters flavor used to mention photograph/pen even
+        # after the player had taken them. Helper checks scope per
+        # render so the prose tracks world state.
+        assert "To say crew-quarters-personal-effects" in story_source
+        assert "if the photograph is in the Crew Quarters" in story_source

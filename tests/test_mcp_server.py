@@ -90,6 +90,11 @@ class MockBackend:
     async def read_state(self, session: Session) -> dict:
         return session._last_state
 
+    async def _state_with_turn(self, session: Session) -> dict:
+        # Mirrors PlaywrightBackend so the mcp tool wrappers can call
+        # this on either backend interchangeably.
+        return {**(session._last_state or {}), "turn": session.turn_count}
+
     async def restart(self, session: Session) -> str:
         session.turn_count = 0
         session.command_history.clear()
