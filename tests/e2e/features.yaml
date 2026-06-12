@@ -155,3 +155,16 @@
     the cursor stops blinking, the sweeping scanline pauses, and button
     hover transitions snap instead of fading. Mode persists in localStorage.
   surfaces: [dom, storage]
+
+- id: typing-effect
+  area: ui
+  demonstrates: >
+    Story text can render with an optional typewriter / decode-in
+    effect: characters appear one at a time at a configurable
+    chars-per-second rate. The effect is OFF by default (opt-in),
+    skippable per-message with any key (immediately revealing the
+    full text), persists settings to localStorage, and never blocks
+    later messages — queued text plays once the current animation
+    finishes or is skipped. Scrolling and existing rendering keep
+    working while the effect is active.
+  surfaces: [dom, state, storage]

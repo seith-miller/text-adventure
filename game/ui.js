@@ -95,6 +95,22 @@
   var SAVE_KEY = "mirsend_save";
   var HISTORY_KEY = "mirsend_command_history";
 
+  /* ── Optional typing / decode-in effect (m13 #140) ──
+     Off by default. When enabled, appendStoryText() reveals characters
+     into the visible buffer at typingConfig.charsPerSec, can be skipped
+     by any key (or by calling skipTyping()), and queues subsequent
+     messages so prose order is preserved. The hidden #story-output DOM
+     is always populated synchronously so session recording, transcript
+     export, and existing e2e assertions are unaffected. */
+  var TYPING_STORAGE_KEY = "mirsend_typing_settings";
+  var TYPING_DEFAULT = { enabled: false, charsPerSec: 60 };
+  var typingConfig = {
+    enabled: TYPING_DEFAULT.enabled,
+    charsPerSec: TYPING_DEFAULT.charsPerSec,
+  };
+  var _activeTyping = null;
+  var _typingQueue = [];
+
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
 
@@ -145,6 +161,141 @@
   function scrollToTop() {
     _storyScrollOffset = Math.max(0, storyLines.length - BODY_ROWS);
     renderDisplay();
+  }
+
+  /* ── Typing-effect config + animation engine ── */
+
+  function loadTypingConfig() {
+    var raw;
+    var saved;
+    try {
+      raw = localStorage.getItem(TYPING_STORAGE_KEY);
+      if (!raw) return;
+      saved = JSON.parse(raw);
+      if (saved && typeof saved === "object") {
+        if (typeof saved.enabled === "boolean")
+          typingConfig.enabled = saved.enabled;
+        if (typeof saved.charsPerSec === "number" && saved.charsPerSec > 0) {
+          typingConfig.charsPerSec = saved.charsPerSec;
+        }
+      }
+    } catch (_e) {
+      /* localStorage unavailable or corrupt — keep defaults */
+    }
+  }
+
+  function persistTypingConfig() {
+    try {
+      localStorage.setItem(TYPING_STORAGE_KEY, JSON.stringify(typingConfig));
+    } catch (_e) {
+      /* ignore */
+    }
+  }
+
+  function getTypingConfig() {
+    return {
+      enabled: typingConfig.enabled,
+      charsPerSec: typingConfig.charsPerSec,
+    };
+  }
+
+  function setTypingConfig(patch) {
+    if (patch && typeof patch === "object") {
+      if (typeof patch.enabled === "boolean")
+        typingConfig.enabled = patch.enabled;
+      if (typeof patch.charsPerSec === "number" && patch.charsPerSec > 0) {
+        typingConfig.charsPerSec = patch.charsPerSec;
+      }
+      persistTypingConfig();
+    }
+    return getTypingConfig();
+  }
+
+  /* Animate one message (an array of word-wrapped lines) into the visible
+     story buffer. The slot index stays valid even if other writes append
+     above it in the meantime — storyLines.push() is append-only. */
+  function startTypingAnimation(wrappedLines) {
+    if (!wrappedLines || wrappedLines.length === 0) {
+      pushStoryLine("");
+      renderDisplay();
+      drainTypingQueue();
+      return;
+    }
+    var lineIdx = 0;
+    var charIdx = 0;
+    var line = wrappedLines[0];
+    var ms = Math.max(4, Math.round(1000 / typingConfig.charsPerSec));
+    pushStoryLine("");
+    var slotIdx = storyLines.length - 1;
+
+    function tick() {
+      if (!_activeTyping) return;
+      if (lineIdx >= wrappedLines.length) {
+        finish(true);
+        return;
+      }
+      if (charIdx >= line.length) {
+        lineIdx++;
+        charIdx = 0;
+        if (lineIdx >= wrappedLines.length) {
+          finish(true);
+          return;
+        }
+        line = wrappedLines[lineIdx];
+        pushStoryLine("");
+        slotIdx = storyLines.length - 1;
+        renderDisplay();
+        _activeTyping.timer = setTimeout(tick, ms);
+        return;
+      }
+      charIdx++;
+      storyLines[slotIdx] = escHtml(line.substring(0, charIdx));
+      renderDisplay();
+      _activeTyping.timer = setTimeout(tick, ms);
+    }
+
+    function finish(natural) {
+      if (!_activeTyping) return;
+      if (_activeTyping.timer) {
+        clearTimeout(_activeTyping.timer);
+      }
+      if (!natural) {
+        /* Skip: fill the current slot, then push remaining lines whole. */
+        storyLines[slotIdx] = escHtml(line);
+        lineIdx++;
+        for (; lineIdx < wrappedLines.length; lineIdx++) {
+          pushStoryLine(escHtml(wrappedLines[lineIdx]));
+        }
+      }
+      pushStoryLine("");
+      renderDisplay();
+      _activeTyping = null;
+      drainTypingQueue();
+    }
+
+    _activeTyping = { finish: finish, timer: null };
+    _activeTyping.timer = setTimeout(tick, ms);
+  }
+
+  function skipTyping() {
+    if (_activeTyping?.finish) {
+      _activeTyping.finish(false);
+    }
+  }
+
+  function drainTypingQueue() {
+    if (_activeTyping) return;
+    if (_typingQueue.length === 0) return;
+    var next = _typingQueue.shift();
+    startTypingAnimation(next);
+  }
+
+  function queueOrAnimate(wrappedLines) {
+    if (_activeTyping) {
+      _typingQueue.push(wrappedLines);
+      return;
+    }
+    startTypingAnimation(wrappedLines);
   }
 
   /* ── Current input text (for rendering the input line in the grid) ── */
@@ -540,6 +691,21 @@
         commandInput.focus();
       }
     });
+
+    /* Load persisted typing-effect settings (m13 #140). Default is off. */
+    loadTypingConfig();
+
+    /* Any key while a typing animation is active reveals the rest of
+       the current message immediately. Capture phase so it runs before
+       other handlers (command-input typing, scroll keys, menu toggle)
+       — those handlers continue to work, the skip just runs alongside. */
+    document.addEventListener(
+      "keydown",
+      () => {
+        if (_activeTyping) skipTyping();
+      },
+      true,
+    );
 
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
@@ -1096,14 +1262,21 @@
     /* Add to visible story column. Each wrapped line is HTML-escaped
        at push-time so Glulx prose containing <, >, & renders as text
        rather than as injected markup. Trusted tags (room headings,
-       echoes, cursor) are pushed pre-formatted via other paths. */
+       echoes, cursor) are pushed pre-formatted via other paths. When
+       the optional typing effect is enabled (m13 #140) the message is
+       routed through the animation engine, which queues subsequent
+       writes to preserve order. */
     var wrapped = wordWrap(text, STORY_W);
-    for (let i = 0; i < wrapped.length; i++) {
-      pushStoryLine(escHtml(wrapped[i]));
+    if (typingConfig.enabled) {
+      queueOrAnimate(wrapped);
+    } else {
+      for (let i = 0; i < wrapped.length; i++) {
+        pushStoryLine(escHtml(wrapped[i]));
+      }
+      pushStoryLine(""); // blank line between paragraphs
+      renderDisplay();
     }
-    pushStoryLine(""); // blank line between paragraphs
 
-    renderDisplay();
     detectRoomChange(text);
     checkForGameEnd(text);
   }
@@ -1902,6 +2075,9 @@
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
     getLamps: () => computeLamps(),
+    getTypingConfig: getTypingConfig,
+    setTypingConfig: setTypingConfig,
+    skipTyping: skipTyping,
   };
 
   /* ── Boot ── */
