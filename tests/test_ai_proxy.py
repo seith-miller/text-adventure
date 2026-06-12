@@ -354,13 +354,26 @@ class TestApiKeyNeverLeaked:
 
 
 class TestMissingApiKey:
-    def test_main_refuses_without_api_key(self):
-        """The main() function should exit if ANTHROPIC_API_KEY is unset."""
-        env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
-        with patch.dict(os.environ, env, clear=True):
-            with pytest.raises(SystemExit) as exc_info:
-                ai_proxy.main()
-            assert exc_info.value.code == 1
+    """Proxy starts without ANTHROPIC_API_KEY so session ingest works for
+    operators who don't use Argon-87 (#204). /v1/call returns 503 in that
+    state; /v1/sessions and /health continue to serve normally."""
+
+    def test_call_returns_503_when_key_missing(self, client):
+        """/v1/call returns 503 when AI is disabled."""
+        with patch("ai_proxy.AI_ENABLED", False):
+            resp = client.post(
+                "/v1/call",
+                json=_good_payload(),
+                headers={"Origin": GOOD_ORIGIN},
+            )
+            assert resp.status_code == 503
+            assert "ANTHROPIC_API_KEY" in resp.json()["detail"]
+
+    def test_health_works_when_key_missing(self, client):
+        """/health is unconditional."""
+        with patch("ai_proxy.AI_ENABLED", False):
+            resp = client.get("/health")
+            assert resp.status_code == 200
 
 
 # ── Bridge API errors ────────────────────────────────────────────────────────
