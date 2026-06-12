@@ -1312,6 +1312,19 @@
         appendSystemText("[Auto-saved]");
       }
     }
+
+    /* Per-column wipe cutscene on module change (#138). Only on actual room
+       change — re-rendering the same room shouldn't trigger it. The cutscene
+       runs as an overlay so state and input are preserved; the overlay
+       removes its own skip listener on completion so subsequent keys reach
+       the game. */
+    if (changed && state.currentRoom !== null && window.MirsEndCutscene) {
+      try {
+        window.MirsEndCutscene.transitionTo(key);
+      } catch (_e) {
+        /* swallow — a cutscene failure must not block room entry */
+      }
+    }
   }
 
   /* ── Scene art loading (cached, fetched on room change) ── */
