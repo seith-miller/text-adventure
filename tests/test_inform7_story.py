@@ -410,3 +410,39 @@ class TestPlayerVocabulary:
 
     def test_speaker_added_to_maintenance_panel(self, story_source):
         assert 'Understand "speaker" as the maintenance panel' in story_source
+
+    def test_talk_to_speaker_has_custom_action(self, story_source):
+        # Standard library wants a person for talk-to; the custom
+        # action lets the player's intent land on the dead speaker
+        # with the right capacitor-burst explanation.
+        assert "Talking to speaker is an action" in story_source
+        assert (
+            'Understand "talk to speaker"' in story_source
+            or 'Understand "talk to speaker" or "talk to voice"' in story_source
+        )
+
+    def test_pull_lever_placard_carries_an_instruction(self, story_source):
+        # The placard prose used to read as "do not pull this", which
+        # made cautious players back off. A trailing line names PULL
+        # explicitly so the path forward is visible.
+        assert "PULL the lever to equalize" in story_source
+
+    def test_notebook_discoverability_cue_fires_in_main_corridor(
+        self, story_source
+    ):
+        # Blind playtest missed Yevgenia's notebook because finding it
+        # required EXAMINE YEVGENIA. The Main Corridor cue surfaces the
+        # notebook as a takeable object on a later turn.
+        assert "Notebook-cue-shown is a truth state" in story_source
+        assert "Yevgenia[apostrophe]s flight notebook is still clipped" in story_source or (
+            "Yevgenia's flight notebook is still clipped" in story_source
+        )
+
+    def test_crew_quarters_personal_effects_helper_conditional(
+        self, story_source
+    ):
+        # The Crew Quarters flavor used to mention photograph/pen even
+        # after the player had taken them. Helper checks scope per
+        # render so the prose tracks world state.
+        assert "To say crew-quarters-personal-effects" in story_source
+        assert "if the photograph is in the Crew Quarters" in story_source

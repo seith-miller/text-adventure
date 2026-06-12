@@ -154,7 +154,17 @@ Part 2 - The Station
 
 Chapter 1 - Crew Quarters
 
-The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam. Personal effects drift in zero-g. A photograph. A pen. A sachet of reconstituted borscht. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. Beside it, a red-painted lever set into the bulkhead and a placard stenciled in three languages. A second hatch aft, trefoil-marked, to the Reactor Module."
+The Crew Quarters is a room. "You float in the sleeping bay of Mir-3. Four bunks in slots along the port wall. Yours is the second from forward.[if the chemical flashlight is lit][paragraph break]The Zhuchok throws a warm yellow beam.[crew-quarters-personal-effects] A sachet of reconstituted borscht drifts at the head of the bay. The status panel above your bunk is dead. The emergency locker sits on the starboard wall. Overhead, a dead reading light. The aft bulkhead wears the reactor warning triangle.[otherwise][paragraph break]The darkness is absolute. You can barely see your hand.[end if][paragraph break]A sealed hatch forward to the main corridor. Beside it, a red-painted lever set into the bulkhead and a placard stenciled in three languages. A second hatch aft, trefoil-marked, to the Reactor Module."
+
+[Auto-updating flavor — only mention drifting effects that the player
+ hasn't pocketed yet (#216 finding 6).]
+To say crew-quarters-personal-effects:
+	if the photograph is in the Crew Quarters and the pen is in the Crew Quarters:
+		say " Personal effects drift in zero-g. A photograph. A pen.";
+	otherwise if the photograph is in the Crew Quarters:
+		say " A photograph drifts in zero-g.";
+	otherwise if the pen is in the Crew Quarters:
+		say " A pen drifts in zero-g.".
 
 The player is in the Crew Quarters.
 
@@ -344,7 +354,7 @@ Corridor-pressurized is a truth state that varies. Corridor-pressurized is false
 
 The sealed hatch is scenery in the Crew Quarters. Understand "hatch" or "door" or "bulkhead" or "seal" as the sealed hatch. The description of the sealed hatch is "A heavy steel hatch. Emergency-sealed. The porthole is fogged with frost from the other side. You can feel the cold of vacuum coming through the metal. Beside the hatch, a red-painted emergency pressure-equalization valve with a three-language warning placard."
 
-The pressure valve is scenery in the Crew Quarters. Understand "valve" or "lever" or "equalizer" or "equaliser" or "placard" or "emergency valve" as the pressure valve. The description of the pressure valve is "[if corridor-pressurized is true]The valve is open. A faint whisper still moves through it as the air in the Crew Quarters continues to equalize with the corridor beyond. Pressure is stable. Low. Breathable.[otherwise]A red-painted lever set into the bulkhead next to the sealed hatch. The placard reads in Russian, English, and German: EMERGENCY EQUALIZATION. OPERATE ONLY IF CORRIDOR VENTED. IRREVERSIBLE. The needle beside it reads zero on the corridor side.[end if]"
+The pressure valve is scenery in the Crew Quarters. Understand "valve" or "lever" or "equalizer" or "equaliser" or "placard" or "emergency valve" as the pressure valve. The description of the pressure valve is "[if corridor-pressurized is true]The valve is open. A faint whisper still moves through it as the air in the Crew Quarters continues to equalize with the corridor beyond. Pressure is stable. Low. Breathable.[otherwise]A red-painted lever set into the bulkhead next to the sealed hatch. The placard reads in Russian, English, and German: EMERGENCY EQUALIZATION. OPERATE ONLY IF CORRIDOR VENTED. IRREVERSIBLE. The needle beside it reads zero on the corridor side.[paragraph break]The corridor outside has vented. The needle reads it. PULL the lever to equalize and unseal the forward hatch. You will lose some air to the dead corridor volume; there is no other way through.[end if]"
 
 Opening the pressure valve is an action applying to nothing.
 Understand "turn valve" or "pull valve" or "pull lever" or "turn lever" or "open valve" or "use valve" or "equalize" or "equalise" or "equalize pressure" or "pressurize corridor" or "pressurise corridor" as opening the pressure valve.
@@ -1477,6 +1487,17 @@ Every turn when the player is in the Main Corridor and argon-corridor-cue-shown 
 	now argon-corridor-cue-shown is true;
 	say "[paragraph break]A speaker in the maintenance panel clicks. Soft. Once.[paragraph break][italic type]I am still here, comrade. When you can hear me, I will hear you.[roman type][paragraph break]The voice is synthesized. Calm. Not unfamiliar. The speaker goes quiet. The bus that feeds him is dead with everything else. The words came out of stored capacitance and nothing more."
 
+[Notebook discoverability cue (#216). Blind playtest found that new
+ players often missed Yevgenia's notebook entirely because finding it
+ required EXAMINE YEVGENIA — a verb a lot of skimmers don't try on a
+ corpse. One ambient line on a later corridor turn surfaces the
+ notebook as a takeable object without spoiling what's in it.]
+Notebook-cue-shown is a truth state that varies. Notebook-cue-shown is false.
+
+Every turn when the player is in the Main Corridor and argon-corridor-cue-shown is true and notebook-cue-shown is false and Yevgenia's notebook is part of Yevgenia:
+	now notebook-cue-shown is true;
+	say "[paragraph break]Yevgenia's flight notebook is still clipped to her suit. Whatever she knew about restoring the station is in there. You should take it.".
+
 Part 10 - Score Tracking
 
 Chapter 1 - Achievements
@@ -1606,12 +1627,17 @@ Instead of telling the maintenance panel about:
 Instead of asking the maintenance panel about:
 	say "[italic type]The speaker stays dead. Argon-87's bus is gone with everything else; the line you heard came from stored capacitance and nothing more.[roman type]".
 
-[TALK TO routes through the standard answering action; that needs an addressee. Force the player's intent to land on the speaker not on a body.]
-Understand "talk to speaker" as a mistake ("You speak toward the speaker. The bus that feeds Argon-87's voice is dead; what you heard was stored capacitance. There is no live channel.").
-Understand "talk to voice" as a mistake ("You speak toward the speaker. The bus that feeds Argon-87's voice is dead; what you heard was stored capacitance. There is no live channel.").
-Understand "answer voice" as a mistake ("You answer the speaker. There is no live channel. Argon-87's bus is one of the ones the EMP took.").
-Understand "answer speaker" as a mistake ("You answer the speaker. There is no live channel. Argon-87's bus is one of the ones the EMP took.").
-Understand "say hello" as a mistake ("Your voice carries into the dead panel. Argon-87's bus is one of the ones the EMP took. The capacitor burst was a one-shot.").
+[TALK TO routes through standard library which wants a person. Use the
+ same custom-action pattern Part 9B uses for "Talking to argon" so the
+ player's intent lands on a real refusal about the dead bus.]
+Talking to speaker is an action applying to nothing.
+Understand "talk to speaker" or "talk to voice" or "talk to panel" or "speak to speaker" or "speak to voice" or "speak to panel" or "address speaker" or "address voice" or "answer voice" or "answer speaker" or "respond to speaker" or "respond to voice" or "say hello" or "say hi" as talking to speaker.
+
+Carry out talking to speaker:
+	if the player is in the Main Corridor:
+		say "You speak toward the maintenance panel. The bus that feeds Argon-87's voice is dead — what you heard was stored capacitance, a one-shot. There is no live channel.";
+	otherwise:
+		say "You speak toward no one in particular. Nothing answers.".
 
 Chapter 2 - Helpful refusals where the action doesn't exist
 
