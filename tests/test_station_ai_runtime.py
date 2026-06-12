@@ -313,4 +313,4 @@ class TestConfig:
         )
         # Aligned with the flag-OFF canned line so proxy-down reads as a
         # consistent "AI is unavailable" UX.
-        assert "AI channel is dead" in result
+        assert "runtime is not attached" in result

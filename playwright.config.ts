@@ -10,6 +10,10 @@ export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   reporter: [["list"]],
+  // Safety net for longer integration tests (e.g. e5-timer-guard).
+  // Most tests still finish well under the default 30s, but the per-test
+  // `test.setTimeout(...)` calls remain authoritative for the slow ones.
+  timeout: 60_000,
   use: {
     baseURL: "http://localhost:8181",
     trace: "retain-on-failure",

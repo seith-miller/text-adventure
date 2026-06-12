@@ -127,6 +127,14 @@
     content does not yank the viewport back to the bottom.
   surfaces: [dom, state]
 
+- id: crt-input-polish
+  area: ui
+  demonstrates: >
+    Typed text in the input row renders in bright phosphor (<bri>) with
+    a blinking block cursor, command history persists across sessions
+    via localStorage, and up/down arrow keys recall persisted history.
+  surfaces: [dom, storage, state]
+
 - id: bezel-version
   area: ui
   demonstrates: >
@@ -137,3 +145,26 @@
     build is running. Element hides itself when version.json is
     missing.
   surfaces: [dom]
+
+- id: reduced-motion
+  area: ui
+  demonstrates: >
+    The reduced-motion accessibility mode honors `prefers-reduced-motion:
+    reduce` automatically and exposes a Settings dialog (auto/on/off) on
+    the title screen. When reduced, the `html.reduced-motion` class is set,
+    the cursor stops blinking, the sweeping scanline pauses, and button
+    hover transitions snap instead of fading. Mode persists in localStorage.
+  surfaces: [dom, storage]
+
+- id: typing-effect
+  area: ui
+  demonstrates: >
+    Story text can render with an optional typewriter / decode-in
+    effect: characters appear one at a time at a configurable
+    chars-per-second rate. The effect is OFF by default (opt-in),
+    skippable per-message with any key (immediately revealing the
+    full text), persists settings to localStorage, and never blocks
+    later messages — queued text plays once the current animation
+    finishes or is skipped. Scrolling and existing rendering keep
+    working while the effect is active.
+  surfaces: [dom, state, storage]
