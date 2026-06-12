@@ -145,3 +145,13 @@
     build is running. Element hides itself when version.json is
     missing.
   surfaces: [dom]
+
+- id: reduced-motion
+  area: ui
+  demonstrates: >
+    The reduced-motion accessibility mode honors `prefers-reduced-motion:
+    reduce` automatically and exposes a Settings dialog (auto/on/off) on
+    the title screen. When reduced, the `html.reduced-motion` class is set,
+    the cursor stops blinking, the sweeping scanline pauses, and button
+    hover transitions snap instead of fading. Mode persists in localStorage.
+  surfaces: [dom, storage]
