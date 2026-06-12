@@ -1489,7 +1489,7 @@ Every turn when the player is in the Main Corridor and argon-corridor-cue-shown 
 
 [Notebook discoverability cue (#216). Blind playtest found that new
  players often missed Yevgenia's notebook entirely because finding it
- required EXAMINE YEVGENIA — a verb a lot of skimmers don't try on a
+ required EXAMINE YEVGENIA, a verb a lot of skimmers don't try on a
  corpse. One ambient line on a later corridor turn surfaces the
  notebook as a takeable object without spoiling what's in it.]
 Notebook-cue-shown is a truth state that varies. Notebook-cue-shown is false.
