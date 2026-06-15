@@ -220,7 +220,7 @@ class TestTerminalLayout:
     def test_bezel_plate(self, play_html):
         """Bezel includes the etched ID plate."""
         assert 'id="bezel-plate"' in play_html
-        assert "MIR-2" in play_html
+        assert "MIR-3" in play_html
 
     def test_scanline_effect(self, play_html):
         """Screen has a scanline overlay element."""

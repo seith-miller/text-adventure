@@ -46,8 +46,17 @@ from lib.playthrough_db import write_session  # noqa: E402
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
-ALLOWED_ORIGIN = os.environ.get("AI_PROXY_ALLOWED_ORIGIN", "http://localhost:8080")
+# The static server in playwright.config.ts + scripts/launch-local.py serves
+# the game from http://localhost:8181. Default to that so out-of-the-box
+# playtests have their session POSTs accepted. Override via env for anyone
+# running the static server on a different port.
+ALLOWED_ORIGIN = os.environ.get("AI_PROXY_ALLOWED_ORIGIN", "http://localhost:8181")
 RATE_LIMIT_PER_MINUTE = int(os.environ.get("AI_PROXY_RATE_LIMIT", "30"))
+
+# AI features (Argon-87, /v1/call) require ANTHROPIC_API_KEY. Session ingest
+# (/v1/sessions → SQLite) and /health do not. The proxy starts either way; if
+# the key is missing we log a warning and /v1/call returns 503.
+AI_ENABLED = bool(os.environ.get("ANTHROPIC_API_KEY"))
 VALID_ROLES = {"station-ai", "director", "narrator"}
 
 # ── Logging (never log the API key) ─────────────────────────────────────────
@@ -106,13 +115,16 @@ class CallResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Verify API key is set on startup."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        logger.error("ANTHROPIC_API_KEY is not set. Refusing to start.")
-        sys.exit(1)
+    """Log startup status. AI features are optional; session ingest always works."""
     logger.info("AI proxy starting on %s:%s", DEFAULT_HOST, DEFAULT_PORT)
     logger.info("Allowed origin: %s", ALLOWED_ORIGIN)
+    if AI_ENABLED:
+        logger.info("ANTHROPIC_API_KEY set — /v1/call enabled.")
+    else:
+        logger.warning(
+            "ANTHROPIC_API_KEY not set — /v1/call disabled (503). "
+            "Session ingest at /v1/sessions still works."
+        )
     yield
     logger.info("AI proxy shutting down.")
 
@@ -169,6 +181,16 @@ async def health():
 @app.post("/v1/call", response_model=CallResponse)
 async def call_llm(body: CallRequest):
     """Forward a prompt to Claude via the shared bridge."""
+    if not AI_ENABLED:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": (
+                    "ANTHROPIC_API_KEY is not set on the proxy. /v1/call is "
+                    "disabled; restart with the key in the environment to enable."
+                )
+            },
+        )
     # Validate role.
     if body.role not in VALID_ROLES:
         return JSONResponse(
@@ -334,11 +356,7 @@ async def ingest_session(body: dict):
 # ── Entry point ──────────────────────────────────────────────────────────────
 
 def main():
-    """Start the proxy server."""
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        logger.error("ANTHROPIC_API_KEY is not set. Refusing to start.")
-        sys.exit(1)
-
+    """Start the proxy server. AI key is optional; session ingest works either way."""
     host = os.environ.get("AI_PROXY_HOST", DEFAULT_HOST)
     port = int(os.environ.get("AI_PROXY_PORT", str(DEFAULT_PORT)))
 

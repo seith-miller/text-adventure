@@ -72,7 +72,12 @@
 
   var AI_PROXY_URL = "http://localhost:8787";
   var AI_ONBOARDING_KEY = "mirsend_ai_onboarding_seen";
-  var AI_CANNED_LINE = "The AI channel is dead. Argon-87's console is dark.";
+  // Neutral fallback when the AI runtime isn't attached this build. The prior
+  // wording ("Argon-87's console is dark") contradicted the in-game monitor
+  // description after power restoration, which says "the bus is alive again."
+  // Keep this line agnostic about bus state so prose and UI agree.
+  var AI_CANNED_LINE =
+    "You key the channel for Argon-87. No response. The runtime is not attached this watch.";
 
   /* ── State ── */
   var state = {
@@ -88,6 +93,23 @@
 
   /* ── Save key for localStorage (inline quick-save fallback) ── */
   var SAVE_KEY = "mirsend_save";
+  var HISTORY_KEY = "mirsend_command_history";
+
+  /* ── Optional typing / decode-in effect (m13 #140) ──
+     Off by default. When enabled, appendStoryText() reveals characters
+     into the visible buffer at typingConfig.charsPerSec, can be skipped
+     by any key (or by calling skipTyping()), and queues subsequent
+     messages so prose order is preserved. The hidden #story-output DOM
+     is always populated synchronously so session recording, transcript
+     export, and existing e2e assertions are unaffected. */
+  var TYPING_STORAGE_KEY = "mirsend_typing_settings";
+  var TYPING_DEFAULT = { enabled: false, charsPerSec: 60 };
+  var typingConfig = {
+    enabled: TYPING_DEFAULT.enabled,
+    charsPerSec: TYPING_DEFAULT.charsPerSec,
+  };
+  var _activeTyping = null;
+  var _typingQueue = [];
 
   /* ── Save/Load UI state ── */
   var _saveLoadModalOpen = false;
@@ -139,6 +161,141 @@
   function scrollToTop() {
     _storyScrollOffset = Math.max(0, storyLines.length - BODY_ROWS);
     renderDisplay();
+  }
+
+  /* ── Typing-effect config + animation engine ── */
+
+  function loadTypingConfig() {
+    var raw;
+    var saved;
+    try {
+      raw = localStorage.getItem(TYPING_STORAGE_KEY);
+      if (!raw) return;
+      saved = JSON.parse(raw);
+      if (saved && typeof saved === "object") {
+        if (typeof saved.enabled === "boolean")
+          typingConfig.enabled = saved.enabled;
+        if (typeof saved.charsPerSec === "number" && saved.charsPerSec > 0) {
+          typingConfig.charsPerSec = saved.charsPerSec;
+        }
+      }
+    } catch (_e) {
+      /* localStorage unavailable or corrupt — keep defaults */
+    }
+  }
+
+  function persistTypingConfig() {
+    try {
+      localStorage.setItem(TYPING_STORAGE_KEY, JSON.stringify(typingConfig));
+    } catch (_e) {
+      /* ignore */
+    }
+  }
+
+  function getTypingConfig() {
+    return {
+      enabled: typingConfig.enabled,
+      charsPerSec: typingConfig.charsPerSec,
+    };
+  }
+
+  function setTypingConfig(patch) {
+    if (patch && typeof patch === "object") {
+      if (typeof patch.enabled === "boolean")
+        typingConfig.enabled = patch.enabled;
+      if (typeof patch.charsPerSec === "number" && patch.charsPerSec > 0) {
+        typingConfig.charsPerSec = patch.charsPerSec;
+      }
+      persistTypingConfig();
+    }
+    return getTypingConfig();
+  }
+
+  /* Animate one message (an array of word-wrapped lines) into the visible
+     story buffer. The slot index stays valid even if other writes append
+     above it in the meantime — storyLines.push() is append-only. */
+  function startTypingAnimation(wrappedLines) {
+    if (!wrappedLines || wrappedLines.length === 0) {
+      pushStoryLine("");
+      renderDisplay();
+      drainTypingQueue();
+      return;
+    }
+    var lineIdx = 0;
+    var charIdx = 0;
+    var line = wrappedLines[0];
+    var ms = Math.max(4, Math.round(1000 / typingConfig.charsPerSec));
+    pushStoryLine("");
+    var slotIdx = storyLines.length - 1;
+
+    function tick() {
+      if (!_activeTyping) return;
+      if (lineIdx >= wrappedLines.length) {
+        finish(true);
+        return;
+      }
+      if (charIdx >= line.length) {
+        lineIdx++;
+        charIdx = 0;
+        if (lineIdx >= wrappedLines.length) {
+          finish(true);
+          return;
+        }
+        line = wrappedLines[lineIdx];
+        pushStoryLine("");
+        slotIdx = storyLines.length - 1;
+        renderDisplay();
+        _activeTyping.timer = setTimeout(tick, ms);
+        return;
+      }
+      charIdx++;
+      storyLines[slotIdx] = escHtml(line.substring(0, charIdx));
+      renderDisplay();
+      _activeTyping.timer = setTimeout(tick, ms);
+    }
+
+    function finish(natural) {
+      if (!_activeTyping) return;
+      if (_activeTyping.timer) {
+        clearTimeout(_activeTyping.timer);
+      }
+      if (!natural) {
+        /* Skip: fill the current slot, then push remaining lines whole. */
+        storyLines[slotIdx] = escHtml(line);
+        lineIdx++;
+        for (; lineIdx < wrappedLines.length; lineIdx++) {
+          pushStoryLine(escHtml(wrappedLines[lineIdx]));
+        }
+      }
+      pushStoryLine("");
+      renderDisplay();
+      _activeTyping = null;
+      drainTypingQueue();
+    }
+
+    _activeTyping = { finish: finish, timer: null };
+    _activeTyping.timer = setTimeout(tick, ms);
+  }
+
+  function skipTyping() {
+    if (_activeTyping?.finish) {
+      _activeTyping.finish(false);
+    }
+  }
+
+  function drainTypingQueue() {
+    if (_activeTyping) return;
+    if (_typingQueue.length === 0) return;
+    var next = _typingQueue.shift();
+    startTypingAnimation(next);
+  }
+
+  function queueOrAnimate(wrappedLines) {
+    if (_activeTyping) {
+      _typingQueue.push(wrappedLines);
+      return;
+    }
+    startTypingAnimation(wrappedLines);
   }
 
   /* ── Current input text (for rendering the input line in the grid) ── */
@@ -246,10 +403,24 @@
     rows.push("<hd>СИСТЕМЫ</hd>");
     rows.push("");
 
-    // System status lamps (static for now — wiring is #133)
-    rows.push("<grn>\u2588</grn> PWR              <grn>\u2588</grn> LIFE");
-    rows.push("<amb>\u2588</amb> COMM             <off>\u2588</off> NAV");
-    rows.push("<red>\u2588</red> HULL             <wht>\u2588</wht> DOCK");
+    // System status lamps (#173). Colors derive from computeLamps() which
+    // reads parsed MIRSEND lamp inputs + o2. Defaults reflect the canonical
+    // opening (PWR red, LIFE amb, COMM red, NAV amb, HULL grn, DOCK grn)
+    // so a fresh shell isn't lying before the first MIRSEND lands.
+    //
+    // Right cell is padded to a fixed visible width (6 chars = "\u2588 LIFE")
+    // so the right-lamp column stays at col 20 regardless of label length \u2014
+    // otherwise cells() right-aligns and NAV (3 chars) drifts one column
+    // right of LIFE/DOCK (4 chars).
+    var lamps = computeLamps();
+    var lamp = (k, label) => `<${lamps[k]}>\u2588</${lamps[k]}> ${label}`;
+    var rightLamp = (k, label) => {
+      var s = lamp(k, label);
+      return s + " ".repeat(Math.max(0, 6 - visLen(s)));
+    };
+    rows.push(cells(lamp("pwr", "PWR"), rightLamp("life", "LIFE"), SIDE_W));
+    rows.push(cells(lamp("comm", "COMM"), rightLamp("nav", "NAV"), SIDE_W));
+    rows.push(cells(lamp("hull", "HULL"), rightLamp("dock", "DOCK"), SIDE_W));
 
     rows.push("");
     rows.push("<hd>ИНВЕНТАРЬ</hd>");
@@ -300,7 +471,7 @@
       ? escHtml(state.currentRoom.toUpperCase())
       : "TERM-04";
     var header =
-      "SYS <bri>\u041C\u0418\u0420-2/" +
+      "SYS <bri>\u041C\u0418\u0420-3/" +
       roomLabel +
       "</bri>   " +
       "CONSOLE <bri>04</bri>   " +
@@ -345,7 +516,7 @@
 
     // Input line
     var inputText = escHtml(currentInputText);
-    var inputLine = `<bri>&gt;</bri> ${inputText}<cur>\u2588</cur>`;
+    var inputLine = `<bri>&gt;</bri> <bri>${inputText}</bri><cur>\u2588</cur>`;
     out.push(`\u2551 ${pad(inputLine, HEADER_W)} \u2551`);
 
     // Bottom border
@@ -385,6 +556,15 @@
       return a + Math.random() * (b - a);
     }
     function sweep() {
+      // Reduced-motion gate (#144). Re-checked per sweep so a live mode
+      // change in the Settings dialog snaps the effect off mid-loop
+      // rather than requiring a page reload. CSS also hides #scan-line
+      // under html.reduced-motion, so this is belt-and-suspenders.
+      if (window.MirsEndMotion?.isReduced?.()) {
+        bar.style.opacity = "0";
+        setTimeout(sweep, 2000);
+        return;
+      }
       var h = screen.clientHeight;
       var dur = rand(900, 4200);
       var op = rand(0.35, 1.0);
@@ -416,6 +596,9 @@
     commandInput.addEventListener("keydown", handleKeyDown);
     commandInput.addEventListener("input", handleInputChange);
 
+    /* Restore command history from a previous session if available. */
+    loadCommandHistory();
+
     /* Menu button handlers */
     document
       .getElementById("menu-new-game")
@@ -423,10 +606,16 @@
     menuContinueBtn.addEventListener("click", continueGame);
     ingameMenuBtn.addEventListener("click", showMenu);
 
-    /* ESC key to toggle menu during gameplay */
+    /* ESC key: close the save/load modal if it is open, otherwise toggle
+       the in-game menu. The modal is layered above the menu, so it must
+       take ESC priority. */
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (window.MirsEndIntro?.isActive()) return;
+        if (_saveLoadModalOpen) {
+          closeSaveLoadModal();
+          return;
+        }
         if (
           state.gameStarted &&
           titleScreen &&
@@ -502,6 +691,21 @@
         commandInput.focus();
       }
     });
+
+    /* Load persisted typing-effect settings (m13 #140). Default is off. */
+    loadTypingConfig();
+
+    /* Any key while a typing animation is active reveals the rest of
+       the current message immediately. Capture phase so it runs before
+       other handlers (command-input typing, scroll keys, menu toggle)
+       — those handlers continue to work, the skip just runs alongside. */
+    document.addEventListener(
+      "keydown",
+      () => {
+        if (_activeTyping) skipTyping();
+      },
+      true,
+    );
 
     /* Wire up save/load UI buttons (SaveManager multi-slot system) */
     initSaveLoadButtons();
@@ -777,6 +981,32 @@
     panel.appendChild(badge);
   }
 
+  /* ── Command history persistence ── */
+  function loadCommandHistory() {
+    var raw;
+    var parsed;
+    try {
+      raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) {
+        parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          state.commandHistory = parsed;
+          state.historyIndex = parsed.length;
+        }
+      }
+    } catch (_e) {
+      /* localStorage may be unavailable */
+    }
+  }
+
+  function saveCommandHistory() {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.commandHistory));
+    } catch (_e) {
+      /* localStorage may be unavailable or full */
+    }
+  }
+
   /* ── Input change handler — update display on every keystroke ── */
   function handleInputChange() {
     currentInputText = commandInput.value;
@@ -791,6 +1021,7 @@
 
       state.commandHistory.push(cmd);
       state.historyIndex = state.commandHistory.length;
+      saveCommandHistory();
       commandInput.value = "";
       currentInputText = "";
 
@@ -830,13 +1061,13 @@
 
   /* ── Display functions ── */
 
-  // The Inform 7 status line is currently:
-  //   [MIRSEND o2=N morale=N inv=ITEM1,ITEM2 b1=N b2=N act2=PATH]
-  // The trailing fields (b1/b2/act2) are story-state instrumentation, not
-  // inventory. Capture inv=... non-greedily and let the optional trailing
-  // " key=value..." block be discarded.
+  // The Inform 7 status line carries the positional fields o2/morale/inv
+  // and an extensible trailing block of name=value pairs. Capture inv=...
+  // non-greedily and keep the trailing block in group 4 so we can parse
+  // forward-compatible lamp inputs (pwr/comm-tx/dock per #173) and other
+  // story-state instrumentation (b1/b2/act2) out of it.
   var MIRSEND_STATUS_RE =
-    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)(?:\s+\w+=[^\]]*)?\]/;
+    /\[MIRSEND o2=(-?\d+) morale=(-?\d+) inv=(.*?)((?:\s+[\w-]+=[^\]\s]*)*)\]/;
 
   function interceptAiPrompt(text) {
     if (!window.StationAI) return false;
@@ -856,12 +1087,82 @@
     var o2 = parseInt(m[1], 10);
     var morale = parseInt(m[2], 10);
     var invStr = (m[3] || "").trim();
+    var trailing = (m[4] || "").trim();
     var inventory = invStr === "" ? [] : invStr.split(",").map((s) => s.trim());
     state.o2 = o2;
     state.morale = morale;
     state.inventory = inventory;
+    parseLampInputs(trailing);
+    parseScore(trailing);
     updateStatus();
     return true;
+  }
+
+  // Extract score=N from the MIRSEND trailing block (#216 finding 11).
+  // The MCP server reads state.score via window.MirsEnd.getScore.
+  function parseScore(trailing) {
+    var m = /score=(-?\d+)/.exec(trailing);
+    if (m) state.score = parseInt(m[1], 10);
+  }
+
+  // Extract boolean lamp inputs (pwr/comm-tx/dock) from the MIRSEND trailing
+  // key=value block. Each is "0"|"1"; absent fields leave the prior value in
+  // place so a transient story.ni emit gap doesn't flicker the lamps.
+  function parseLampInputs(trailing) {
+    if (!state.lampInputs) state.lampInputs = {};
+    var re = /(pwr|comm-tx|dock)=([01])/g;
+    var match = re.exec(trailing);
+    var key;
+    while (match !== null) {
+      key = match[1] === "comm-tx" ? "commTx" : match[1];
+      state.lampInputs[key] = match[2] === "1";
+      match = re.exec(trailing);
+    }
+  }
+
+  // Derive lamp colors from current ship state. Returns a {pwr,life,comm,
+  // nav,hull,dock} map of tag names ("grn"|"amb"|"red"|"off"). Defaults
+  // reflect the canonical opening per lib/ship-state.js so the panel reads
+  // correctly even before the first MIRSEND lands.
+  //
+  // Severity convention: grn = nominal, amb = degraded but functional,
+  //                      red = actively failed, off = system absent / detached.
+  function computeLamps() {
+    var i = state.lampInputs || {};
+    var lamps = {
+      pwr: "red", // main bus offline at opening
+      life: "amb", // O2 reserve full but gen offline, LiOH passive
+      comm: "red", // no live channel (distress loop only)
+      nav: "amb", // no orientation lock without power
+      hull: "grn", // breached but sealed — airtight
+      dock: "grn", // Soyuz + Progress both docked
+    };
+
+    if (i.pwr) lamps.pwr = "grn";
+
+    // LIFE: amber until power restores life support; then track o2 reserve.
+    // Even unpowered, drop straight to red on critical o2 — the lamp should
+    // scream when the player is actually suffocating.
+    if (i.pwr) {
+      if (state.o2 > 50) lamps.life = "grn";
+      else if (state.o2 > 25) lamps.life = "amb";
+      else lamps.life = "red";
+    } else if (state.o2 <= 25) {
+      lamps.life = "red";
+    }
+
+    // COMM: red without power; amber once powered (can receive); green once
+    // the player has transmitted (two-way channel established).
+    if (i.commTx) lamps.comm = "grn";
+    else if (i.pwr) lamps.comm = "amb";
+
+    if (i.pwr) lamps.nav = "grn";
+
+    // DOCK goes off when chose-descent is true (Soyuz detached). story.ni
+    // emits dock=0 after that flag flips.
+    if (i.dock === false) lamps.dock = "off";
+
+    return lamps;
   }
 
   /* ── Perception variant overlay (m5 #41) ──
@@ -969,14 +1270,21 @@
     /* Add to visible story column. Each wrapped line is HTML-escaped
        at push-time so Glulx prose containing <, >, & renders as text
        rather than as injected markup. Trusted tags (room headings,
-       echoes, cursor) are pushed pre-formatted via other paths. */
+       echoes, cursor) are pushed pre-formatted via other paths. When
+       the optional typing effect is enabled (m13 #140) the message is
+       routed through the animation engine, which queues subsequent
+       writes to preserve order. */
     var wrapped = wordWrap(text, STORY_W);
-    for (let i = 0; i < wrapped.length; i++) {
-      pushStoryLine(escHtml(wrapped[i]));
+    if (typingConfig.enabled) {
+      queueOrAnimate(wrapped);
+    } else {
+      for (let i = 0; i < wrapped.length; i++) {
+        pushStoryLine(escHtml(wrapped[i]));
+      }
+      pushStoryLine(""); // blank line between paragraphs
+      renderDisplay();
     }
-    pushStoryLine(""); // blank line between paragraphs
 
-    renderDisplay();
     detectRoomChange(text);
     checkForGameEnd(text);
   }
@@ -1183,6 +1491,19 @@
       const result = window.SaveManager.autoSave();
       if (result.success) {
         appendSystemText("[Auto-saved]");
+      }
+    }
+
+    /* Per-column wipe cutscene on module change (#138). Only on actual room
+       change — re-rendering the same room shouldn't trigger it. The cutscene
+       runs as an overlay so state and input are preserved; the overlay
+       removes its own skip listener on completion so subsequent keys reach
+       the game. */
+    if (changed && state.currentRoom !== null && window.MirsEndCutscene) {
+      try {
+        window.MirsEndCutscene.transitionTo(key);
+      } catch (_e) {
+        /* swallow — a cutscene failure must not block room entry */
       }
     }
   }
@@ -1447,6 +1768,24 @@
 
   /* ── Save/Load UI ── */
 
+  /* Width (in monospace cells) of the box-drawing frame around the modal.
+     Wide enough for the bilingual title plus a comfortable margin. */
+  var SAVE_LOAD_FRAME_WIDTH = 56;
+
+  function buildBoxFrameLine(kind, width) {
+    var fill = "═".repeat(Math.max(0, width - 2));
+    if (kind === "top") return `╔${fill}╗`;
+    if (kind === "bottom") return `╚${fill}╝`;
+    return `║${" ".repeat(Math.max(0, width - 2))}║`;
+  }
+
+  /* Slot label in the v3 style: `SLOT 01 / СЛОТ 01` (or `AUTO / АВТО`). */
+  function bilingualSlotLabel(slot) {
+    if (slot === "auto") return "AUTO / АВТО";
+    var n = String(slot).padStart(2, "0");
+    return `SLOT ${n} / СЛОТ ${n}`;
+  }
+
   function showSaveLoadModal(mode) {
     closeSaveLoadModal();
     _saveLoadModalOpen = true;
@@ -1460,15 +1799,36 @@
     var modal = document.createElement("div");
     modal.id = "save-load-modal";
 
+    /* Box-drawing frame wraps the entire modal content. The corners and
+       edges (╔ ═ ╗ ║ ╚ ╝) are rendered as text inside <pre> blocks so
+       they align in IBM Plex Mono. */
+    var frame = document.createElement("div");
+    frame.className = "save-load-frame";
+
+    var frameTop = document.createElement("pre");
+    frameTop.className = "save-load-frame-edge";
+    frameTop.textContent = buildBoxFrameLine("top", SAVE_LOAD_FRAME_WIDTH);
+    frame.appendChild(frameTop);
+
+    var body = document.createElement("div");
+    body.className = "save-load-frame-body";
+
     var title = document.createElement("h2");
-    title.textContent = mode === "save" ? "Save Game" : "Load Game";
-    modal.appendChild(title);
+    var titleEn = document.createElement("span");
+    titleEn.className = "save-load-title-en";
+    titleEn.textContent = mode === "save" ? "SAVE GAME" : "LOAD GAME";
+    var titleRu = document.createElement("span");
+    titleRu.className = "save-load-title-ru";
+    titleRu.textContent = mode === "save" ? "СОХРАНИТЬ ИГРУ" : "ЗАГРУЗИТЬ ИГРУ";
+    title.appendChild(titleEn);
+    title.appendChild(titleRu);
+    body.appendChild(title);
 
     if (!window.SaveManager?.storageAvailable()) {
       const msg = document.createElement("p");
       msg.className = "save-load-error";
       msg.textContent = `localStorage is not available. Cannot ${mode} games.`;
-      modal.appendChild(msg);
+      body.appendChild(msg);
     } else {
       const slots = window.SaveManager.listSlots();
       for (let i = 0; i < slots.length; i++) {
@@ -1478,8 +1838,7 @@
 
           const label = document.createElement("span");
           label.className = "save-slot-label";
-          label.textContent =
-            slot.slot === "auto" ? "Auto-save" : `Slot ${slot.slot}`;
+          label.textContent = bilingualSlotLabel(slot.slot);
 
           const summary = document.createElement("span");
           summary.className = "save-slot-summary";
@@ -1491,7 +1850,7 @@
           if (mode === "save" && slot.slot !== "auto") {
             const saveBtn = document.createElement("button");
             saveBtn.className = "save-slot-btn";
-            saveBtn.textContent = "Save";
+            saveBtn.textContent = "SAVE";
             saveBtn.addEventListener("click", () => {
               const result = window.SaveManager.saveToSlot(slot.slot);
               appendSystemText(`[${result.message}]`);
@@ -1501,7 +1860,7 @@
           } else if (mode === "load" && slot.hasData) {
             const loadBtn = document.createElement("button");
             loadBtn.className = "save-slot-btn";
-            loadBtn.textContent = "Load";
+            loadBtn.textContent = "LOAD";
             loadBtn.addEventListener("click", () => {
               let result;
               if (slot.slot === "auto") {
@@ -1520,17 +1879,28 @@
             row.appendChild(loadBtn);
           }
 
-          modal.appendChild(row);
+          body.appendChild(row);
         })(slots[i]);
       }
     }
 
     var closeBtn = document.createElement("button");
     closeBtn.id = "save-load-close";
-    closeBtn.textContent = "Close";
+    closeBtn.textContent = "CANCEL";
     closeBtn.addEventListener("click", closeSaveLoadModal);
-    modal.appendChild(closeBtn);
+    body.appendChild(closeBtn);
 
+    frame.appendChild(body);
+
+    var frameBottom = document.createElement("pre");
+    frameBottom.className = "save-load-frame-edge";
+    frameBottom.textContent = buildBoxFrameLine(
+      "bottom",
+      SAVE_LOAD_FRAME_WIDTH,
+    );
+    frame.appendChild(frameBottom);
+
+    modal.appendChild(frame);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
   }
@@ -1712,6 +2082,11 @@
     scrollToBottom: scrollToBottom,
     getScrollOffset: () => _storyScrollOffset,
     getStoryLineCount: () => storyLines.length,
+    getLamps: () => computeLamps(),
+    getScore: () => state.score || 0,
+    getTypingConfig: getTypingConfig,
+    setTypingConfig: setTypingConfig,
+    skipTyping: skipTyping,
   };
 
   /* ── Boot ── */
