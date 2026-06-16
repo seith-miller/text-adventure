@@ -46,6 +46,7 @@ from .core import (
     write_session,
 )
 from .formatting import format_session_markdown
+from .normalize import normalize_session_payload
 from .queries import (
     commands_attempted,
     ending_distribution,
@@ -67,6 +68,7 @@ __all__ = [
     "get_session",
     "init_db",
     "list_sessions",
+    "normalize_session_payload",
     "session_summaries",
     "stuck_moments",
     "stuck_moments_for_session",
